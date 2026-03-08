@@ -31,6 +31,20 @@ export type {
 } from './interfaces/index.js';
 export { acquireLock, isLocked, releaseLock } from './lock.js';
 export {
+  buildArchitectTask,
+  buildBuilderTask,
+  buildContextPackage,
+  buildCriticTask,
+  type BuilderOutput,
+  mergeAndWrite,
+  type MergeOptions,
+  orchestrate,
+  type OrchestrateResult,
+  parseArchitectOutput,
+  parseBuilderOutput,
+  parseCriticOutput,
+} from './orchestrator/index.js';
+export {
   actualStaleness,
   computeEffectiveStaleness,
   isStale,
