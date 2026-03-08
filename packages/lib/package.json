@@ -80,7 +80,7 @@
     "git": {
       "changelog": "npx auto-changelog --unreleased-only --stdout --template https://raw.githubusercontent.com/release-it/release-it/main/templates/changelog-compact.hbs",
       "commitMessage": "chore: release @karmaniverous/jeeves-synth v${version}",
-      "tagName": "service/${version}",
+      "tagName": "lib/${version}",
       "requireBranch": "main"
     },
     "github": {
@@ -98,8 +98,8 @@
         "git add -A"
       ],
       "after:release": [
-        "git switch -c release/service/${version}",
-        "git push -u origin release/service/${version}",
+        "git switch -c release/lib/${version}",
+        "git push -u origin release/lib/${version}",
         "git switch ${branchName}"
       ]
     },
