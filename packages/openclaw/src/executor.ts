@@ -1,0 +1,136 @@
+/**
+ * SynthExecutor implementation for the OpenClaw plugin.
+ *
+ * Uses the OpenClaw gateway HTTP API to spawn sessions and poll
+ * for completion. This allows the plugin to run full synthesis
+ * cycles from within tool calls.
+ *
+ * @module executor
+ */
+
+import type {
+  SynthExecutor,
+  SynthSpawnOptions,
+} from '@karmaniverous/jeeves-synth';
+
+const DEFAULT_POLL_INTERVAL_MS = 5000;
+const DEFAULT_TIMEOUT_MS = 600_000; // 10 minutes
+
+/** Options for the GatewayExecutor. */
+export interface GatewayExecutorOptions {
+  /** OpenClaw gateway base URL. Default: http://127.0.0.1:3000 */
+  gatewayUrl?: string;
+  /** API key for gateway authentication. */
+  apiKey?: string;
+  /** Polling interval in ms. Default: 5000. */
+  pollIntervalMs?: number;
+}
+
+/** Sleep helper. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * SynthExecutor that spawns OpenClaw sessions via the gateway API.
+ *
+ * Note: This executor is designed for interactive (plugin) use.
+ * For scheduled (runner) use, a different executor implementation
+ * would call the gateway API from an external process.
+ */
+export class GatewayExecutor implements SynthExecutor {
+  private readonly gatewayUrl: string;
+  private readonly apiKey: string | undefined;
+  private readonly pollIntervalMs: number;
+
+  constructor(options: GatewayExecutorOptions = {}) {
+    this.gatewayUrl = (options.gatewayUrl ?? 'http://127.0.0.1:3000').replace(
+      /\/+$/,
+      '',
+    );
+    this.apiKey = options.apiKey;
+    this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+  }
+
+  async spawn(task: string, options?: SynthSpawnOptions): Promise<string> {
+    const timeoutMs = (options?.timeout ?? DEFAULT_TIMEOUT_MS / 1000) * 1000;
+    const deadline = Date.now() + timeoutMs;
+
+    // Spawn a sub-agent session
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (this.apiKey) {
+      headers['Authorization'] = 'Bearer ' + this.apiKey;
+    }
+
+    const spawnRes = await fetch(this.gatewayUrl + '/api/sessions/spawn', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        task,
+        mode: 'run',
+        model: options?.model,
+        runTimeoutSeconds: options?.timeout,
+      }),
+    });
+
+    if (!spawnRes.ok) {
+      const text = await spawnRes.text();
+      throw new Error(
+        'Gateway spawn failed: HTTP ' +
+          spawnRes.status.toString() +
+          ' - ' +
+          text,
+      );
+    }
+
+    const spawnData = (await spawnRes.json()) as {
+      sessionKey?: string;
+      error?: string;
+    };
+    if (!spawnData.sessionKey) {
+      throw new Error(
+        'Gateway spawn returned no sessionKey: ' + JSON.stringify(spawnData),
+      );
+    }
+
+    const { sessionKey } = spawnData;
+
+    // Poll for completion
+    while (Date.now() < deadline) {
+      await sleep(this.pollIntervalMs);
+
+      const historyRes = await fetch(
+        this.gatewayUrl +
+          '/api/sessions/' +
+          encodeURIComponent(sessionKey) +
+          '/history?limit=50',
+        { headers },
+      );
+
+      if (!historyRes.ok) continue;
+
+      const history = (await historyRes.json()) as {
+        messages?: Array<{ role: string; content: string }>;
+        status?: string;
+      };
+
+      // Check if session completed
+      if (history.status === 'completed' || history.status === 'done') {
+        // Extract the last assistant message as output
+        const messages = history.messages ?? [];
+        for (let i = messages.length - 1; i >= 0; i--) {
+          if (messages[i].role === 'assistant' && messages[i].content) {
+            return messages[i].content;
+          }
+        }
+        return ''; // Completed but no assistant output
+      }
+    }
+
+    throw new Error(
+      'Synthesis subprocess timed out after ' + timeoutMs.toString() + 'ms',
+    );
+  }
+}

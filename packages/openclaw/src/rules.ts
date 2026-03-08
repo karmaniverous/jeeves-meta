@@ -1,0 +1,149 @@
+/**
+ * Virtual rule definitions and registration for jeeves-synth.
+ *
+ * Registers three inference rules with the watcher at plugin startup:
+ * 1. synth-meta-live — indexes live .meta/meta.json files
+ * 2. synth-meta-archive — indexes archived snapshots
+ * 3. synth-config — indexes the synth config file
+ *
+ * @module rules
+ */
+
+import { HttpWatcherClient } from '@karmaniverous/jeeves-synth';
+
+const SOURCE = 'jeeves-synth';
+
+/** Virtual rule definitions per spec Section 15. */
+const SYNTH_RULES = [
+  {
+    name: 'synth-meta-live',
+    description: 'Live jeeves-synth .meta/meta.json files',
+    match: {
+      properties: {
+        file: {
+          properties: {
+            path: { type: 'string', glob: '**/.meta/meta.json' },
+          },
+        },
+      },
+    },
+    schema: [
+      'base',
+      {
+        properties: {
+          domains: { set: ['synth-meta'] },
+          synth_id: { type: 'string', set: '{{json._id}}' },
+          synth_steer: { type: 'string', set: '{{json._steer}}' },
+          synth_depth: { type: 'number', set: '{{json._depth}}' },
+          generated_at_unix: {
+            type: 'integer',
+            set: '{{toUnix json._generatedAt}}',
+            description:
+              'Synthesis timestamp as Unix seconds for range queries',
+          },
+          has_error: {
+            type: 'boolean',
+            set: '{{#if json._error}}true{{else}}false{{/if}}',
+          },
+        },
+      },
+    ],
+    render: {
+      frontmatter: [
+        'synth_id',
+        'synth_steer',
+        'generated_at_unix',
+        'synth_depth',
+      ],
+      body: [
+        {
+          path: 'json._content',
+          heading: 1,
+          label: 'Synthesis',
+        },
+      ],
+    },
+    renderAs: 'md',
+  },
+  {
+    name: 'synth-meta-archive',
+    description: 'Archived jeeves-synth .meta/archive snapshots',
+    match: {
+      properties: {
+        file: {
+          properties: {
+            path: { type: 'string', glob: '**/.meta/archive/*.json' },
+          },
+        },
+      },
+    },
+    schema: [
+      'base',
+      {
+        properties: {
+          domains: { set: ['synth-archive'] },
+          synth_id: { type: 'string', set: '{{json._id}}' },
+          archived: { type: 'boolean', set: 'true' },
+          archived_at: { type: 'string', set: '{{json._archivedAt}}' },
+        },
+      },
+    ],
+    render: {
+      frontmatter: ['synth_id', 'archived', 'archived_at'],
+      body: [
+        {
+          path: 'json._content',
+          heading: 1,
+          label: 'Synthesis (archived)',
+        },
+      ],
+    },
+    renderAs: 'md',
+  },
+  {
+    name: 'synth-config',
+    description: 'jeeves-synth configuration file',
+    match: {
+      properties: {
+        file: {
+          properties: {
+            path: { type: 'string', glob: '**/jeeves-synth.config.json' },
+          },
+        },
+      },
+    },
+    schema: [
+      'base',
+      {
+        properties: {
+          domains: { set: ['synth-config'] },
+        },
+      },
+    ],
+    template: 'synth-config.hbs',
+    renderAs: 'md',
+  },
+];
+
+/**
+ * Register jeeves-synth virtual rules with the watcher.
+ *
+ * Called at plugin startup. Rules are additive — the watcher appends
+ * them after config-file rules (last-match-wins).
+ *
+ * @param watcherUrl - Base URL for the watcher service.
+ */
+export async function registerSynthRules(watcherUrl: string): Promise<void> {
+  const client = new HttpWatcherClient({ baseUrl: watcherUrl });
+  await client.registerRules(SOURCE, SYNTH_RULES);
+}
+
+/**
+ * Unregister jeeves-synth virtual rules from the watcher.
+ *
+ * @param watcherUrl - Base URL for the watcher service.
+ */
+export async function unregisterSynthRules(watcherUrl: string): Promise<void> {
+  const client = new HttpWatcherClient({ baseUrl: watcherUrl });
+  await client.unregisterRules(SOURCE);
+}

@@ -287,4 +287,74 @@ export function registerSynthTools(api: PluginApi): void {
       }
     },
   });
+  // ─── synth_trigger ────────────────────────────────────────────
+  api.registerTool({
+    name: 'synth_trigger',
+    description:
+      'Manually trigger synthesis for a specific meta or the next-stalest candidate. Runs the full 3-step cycle (architect, builder, critic).',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Optional: specific .meta/ or owner path to synthesize. If omitted, synthesizes the stalest candidate.',
+        },
+      },
+    },
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
+      try {
+        const { orchestrate, synthConfigSchema } =
+          await import('@karmaniverous/jeeves-synth');
+        const { GatewayExecutor } = await import('./executor.js');
+
+        // Build config
+        const config = synthConfigSchema.parse({
+          watchPaths,
+          watcherUrl,
+          defaultArchitect:
+            'You are a knowledge architect. Analyze the data shape and produce a task brief for synthesis.',
+          defaultCritic:
+            'You are a synthesis critic. Evaluate the quality, completeness, and accuracy of the synthesis.',
+        });
+
+        const executor = new GatewayExecutor();
+        const watcher = new HttpWatcherClient({ baseUrl: watcherUrl });
+
+        // If path specified, temporarily override watchPaths to target it
+        const targetPath = params.path as string | undefined;
+        const effectiveConfig = targetPath
+          ? {
+              ...config,
+              watchPaths: [targetPath.replace(/[/\\]\.meta[/\\]?$/, '')],
+            }
+          : config;
+
+        const result = await orchestrate(effectiveConfig, executor, watcher);
+
+        if (!result.synthesized) {
+          return ok({
+            message:
+              'No synthesis performed — no stale metas found or all locked.',
+          });
+        }
+
+        return ok({
+          synthesized: true,
+          metaPath: result.metaPath,
+          error: result.error ?? null,
+          message: result.error
+            ? 'Synthesis completed with error in ' +
+              result.error.step +
+              ' step.'
+            : 'Synthesis completed successfully.',
+        });
+      } catch (error) {
+        return fail(error);
+      }
+    },
+  });
 }
