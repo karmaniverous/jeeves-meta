@@ -25,6 +25,13 @@ export type {
   WatcherClient,
 } from './interfaces/index.js';
 export {
+  actualStaleness,
+  computeEffectiveStaleness,
+  isStale,
+  selectCandidate,
+  type StalenessCandidate,
+} from './scheduling/index.js';
+export {
   type MetaJson,
   metaJsonSchema,
   type SynthConfig,
