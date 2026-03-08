@@ -15,7 +15,8 @@ describe('synthConfigSchema', () => {
     expect(result.success).toBe(true);
     expect(result.data).toMatchObject({
       architectEvery: 10,
-      depthWeight: 1,
+      depthWeight: 0.5,
+      skipUnchanged: true,
       maxArchive: 20,
       maxLines: 500,
       architectTimeout: 120,

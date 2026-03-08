@@ -21,7 +21,7 @@ export const synthConfigSchema = z.object({
   architectEvery: z.number().int().min(1).default(10),
 
   /** Exponent for depth weighting in staleness formula. */
-  depthWeight: z.number().min(0).default(1),
+  depthWeight: z.number().min(0).default(0.5),
 
   /** Maximum archive snapshots to retain per meta. */
   maxArchive: z.number().int().min(1).default(20),
