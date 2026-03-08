@@ -5,6 +5,11 @@
  */
 
 export {
+  createSnapshot,
+  pruneArchive,
+  readLatestArchive,
+} from './archive/index.js';
+export {
   buildOwnershipTree,
   ensureMetaJson,
   filterInScope,
@@ -24,6 +29,7 @@ export type {
   SynthSpawnOptions,
   WatcherClient,
 } from './interfaces/index.js';
+export { acquireLock, isLocked, releaseLock } from './lock.js';
 export {
   actualStaleness,
   computeEffectiveStaleness,
@@ -39,3 +45,4 @@ export {
   type SynthError,
   synthErrorSchema,
 } from './schema/index.js';
+export { computeStructureHash } from './structureHash.js';
