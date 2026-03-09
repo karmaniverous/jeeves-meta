@@ -1,0 +1,32 @@
+@startuml plugin-lifecycle
+
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 12
+
+title jeeves-synth-openclaw — Plugin Lifecycle
+
+participant "OpenClaw Gateway" as GW
+participant "Plugin\nregister()" as Plugin
+participant "Tools\nregistry" as Tools
+participant "jeeves-watcher" as Watcher
+
+== Startup ==
+
+GW -> Plugin: register(api)
+Plugin -> Tools: registerSynthTools(api)
+note right of Tools: synth_list\nsynth_detail\nsynth_trigger\nsynth_preview
+
+Plugin -> Watcher: POST /rules/register\n(fire-and-forget)
+note right of Watcher: synth-meta-live\nsynth-meta-archive\nsynth-config
+
+== Tool Invocation ==
+
+GW -> Tools: synth_trigger({ path })
+Tools -> Tools: loadSynthConfig()
+note right of Tools: Reads config JSON\nResolves @file: refs
+Tools -> Tools: createSynthEngine(config)
+Tools -> Tools: engine.orchestrate({ target })
+Tools --> GW: OrchestrateResult
+
+@enduml
