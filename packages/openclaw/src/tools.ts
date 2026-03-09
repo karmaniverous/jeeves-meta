@@ -6,6 +6,7 @@
 
 import {
   actualStaleness,
+  paginatedScan,
   buildOwnershipTree,
   computeEffectiveStaleness,
   computeStructureHash,
@@ -373,14 +374,14 @@ export function registerSynthTools(api: PluginApi): void {
         const meta = ensureMetaJson(targetNode.metaPath);
         const watcher = new HttpWatcherClient({ baseUrl: watcherUrl });
 
-        // Scope files
-        const scanResult = await watcher.scan({
+        // Scope files (paginated for completeness)
+        const allScanFiles = await paginatedScan(watcher, {
           pathPrefix: targetNode.ownerPath,
         });
-        const allFiles = scanResult.files.map((f) => f.file_path);
+        const allFiles = allScanFiles.map((f) => f.file_path);
         const scopeFiles = filterInScope(targetNode, allFiles);
 
-        // Structure hash
+        // Structure hash on scope-filtered files (matches orchestrator)
         const structureHash = computeStructureHash(scopeFiles);
         const structureChanged = structureHash !== meta._structureHash;
 
@@ -403,13 +404,13 @@ export function registerSynthTools(api: PluginApi): void {
           const modifiedAfter = Math.floor(
             new Date(meta._generatedAt).getTime() / 1000,
           );
-          const deltaResult = await watcher.scan({
+          const deltaScanFiles = await paginatedScan(watcher, {
             pathPrefix: targetNode.ownerPath,
             modifiedAfter,
           });
           deltaFiles = filterInScope(
             targetNode,
-            deltaResult.files.map((f) => f.file_path),
+            deltaScanFiles.map((f) => f.file_path),
           );
         } else {
           deltaFiles = scopeFiles;

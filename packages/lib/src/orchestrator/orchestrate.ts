@@ -20,7 +20,7 @@ import {
   ensureMetaJson,
   globMetas,
 } from '../discovery/index.js';
-import { getScopePrefix } from '../discovery/scope.js';
+import { filterInScope, getScopePrefix } from '../discovery/scope.js';
 import { toSynthError } from '../errors.js';
 import type { SynthExecutor, WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
@@ -190,7 +190,10 @@ async function orchestrateOnce(
     const allScanFiles = await paginatedScan(watcher, {
       pathPrefix: scopePrefix,
     });
-    const scopeFiles = allScanFiles.map((f) => f.file_path);
+    const allFilePaths = allScanFiles.map((f) => f.file_path);
+    // Structure hash uses scope-filtered files (excluding child subtrees)
+    // so changes in child scopes don't trigger parent architect re-runs
+    const scopeFiles = filterInScope(node, allFilePaths);
     const newStructureHash = computeStructureHash(scopeFiles);
     const structureChanged = newStructureHash !== currentMeta._structureHash;
 

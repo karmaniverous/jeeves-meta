@@ -114,9 +114,9 @@ describe('orchestrate', () => {
   it('skips architect when builder is cached and structure unchanged', async () => {
     mkdirSync(join(testRoot, 'domain/.meta/archive'), { recursive: true });
 
-    // Compute the structure hash for an empty file list
-    // Hash must match the mock watcher's file list
-    const fileHash = createHash('sha256').update('test-file.md').digest('hex');
+    // Hash must match scope-filtered file list from mock watcher
+    const fullFilePath = testRoot.replaceAll('\\', '/') + '/domain/test-file.md';
+    const fileHash = createHash('sha256').update(fullFilePath).digest('hex');
 
     const metaJson: MetaJson = {
       _id: '550e8400-e29b-41d4-a716-446655440000',
@@ -136,8 +136,8 @@ describe('orchestrate', () => {
       JSON.stringify(metaJson),
     );
 
-    // Need at least one file so isStale returns true
-    const watcher = createMockWatcher(['test-file.md']);
+    // Need at least one file so isStale returns true (full paths for filterInScope)
+    const watcher = createMockWatcher([fullFilePath]);
     const executor = createMockExecutor();
     const spawnSpy = vi.spyOn(executor, 'spawn');
 
