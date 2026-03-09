@@ -4,11 +4,13 @@ children:
   - ./plugin-setup.md
   - ./tools-reference.md
   - ./virtual-rules.md
+  - ./tools-injection.md
   - ../CHANGELOG.md
 ---
 
 # OpenClaw Plugin
 
-- [Plugin Setup](./plugin-setup.md) -- installation, configuration, and config loader.
-- [Tools Reference](./tools-reference.md) -- synth_list, synth_detail, synth_trigger, synth_preview.
-- [Virtual Rules](./virtual-rules.md) -- inference rules registered with jeeves-watcher for Qdrant indexing.
+- [Plugin Setup](./plugin-setup.md) — installation, configuration, lifecycle, and config loader.
+- [Tools Reference](./tools-reference.md) — synth_list, synth_detail, synth_trigger, synth_preview.
+- [Virtual Rules](./virtual-rules.md) — inference rules registered with jeeves-watcher for Qdrant indexing.
+- [TOOLS.md Injection](./tools-injection.md) — dynamic system prompt generation with entity stats.

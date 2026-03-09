@@ -9,18 +9,23 @@ title: Architecture Patterns
 The `SynthExecutor` interface decouples the engine from any specific LLM runtime:
 
 ```typescript
-interface SynthExecutor {
-  spawn(task: string, options?: { timeout?: number }): Promise<SynthSpawnResult>;
+interface SynthSpawnOptions {
+  model?: string;    // Model override for this subprocess
+  timeout?: number;  // Timeout in seconds
 }
 
 interface SynthSpawnResult {
-  output: string;
-  tokens?: number;
+  output: string;    // Subprocess output text
+  tokens?: number;   // Token count, if available from the executor
+}
+
+interface SynthExecutor {
+  spawn(task: string, options?: SynthSpawnOptions): Promise<SynthSpawnResult>;
 }
 ```
 
 Implementations:
-- **GatewayExecutor** (in the OpenClaw plugin) — spawns sessions via the gateway HTTP API
+- **GatewayExecutor** (included in lib) — spawns sessions via the OpenClaw gateway HTTP API, extracts token counts from session metadata
 - **Mock executor** (in tests) — returns canned responses for unit testing
 
 ## Pluggable WatcherClient
@@ -35,14 +40,37 @@ interface WatcherClient {
 }
 ```
 
-The included `HttpWatcherClient` implementation adds retry logic (3 attempts, exponential backoff).
+The included `HttpWatcherClient` implementation adds retry logic (3 attempts, exponential backoff):
+
+```typescript
+import { HttpWatcherClient } from '@karmaniverous/jeeves-meta';
+
+const watcher = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
+```
+
+For paginated scanning across large result sets:
+
+```typescript
+import { paginatedScan } from '@karmaniverous/jeeves-meta';
+
+const allFiles = await paginatedScan(watcher, {
+  pathPrefix: 'j:/domains',
+  fields: ['generated_at_unix', 'has_error'],
+});
+```
 
 ## Engine Factory
 
 `createSynthEngine()` binds config, executor, and watcher into a `SynthEngine`:
 
 ```typescript
-const engine = createSynthEngine({ config, executor, watcher });
-const results = await engine.orchestrate();
-// Also available: engine.orchestrate({ target: 'path/to/.meta' })
+import { createSynthEngine } from '@karmaniverous/jeeves-meta';
+
+const engine = createSynthEngine(config, executor, watcher);
+
+// Synthesize next-stalest candidate(s) up to batchSize
+const results = await engine.synthesize();
+
+// Target a specific owner path
+const results = await engine.synthesizePath('j:/domains/email');
 ```
