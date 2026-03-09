@@ -76,6 +76,24 @@ export const metaJsonSchema = z
      */
     _emphasis: z.number().min(0).optional(),
 
+    /** Token count from last architect subprocess call. */
+    _architectTokens: z.number().int().optional(),
+
+    /** Token count from last builder subprocess call. */
+    _builderTokens: z.number().int().optional(),
+
+    /** Token count from last critic subprocess call. */
+    _criticTokens: z.number().int().optional(),
+
+    /** Exponential moving average of architect token usage (decay 0.3). */
+    _architectTokensAvg: z.number().optional(),
+
+    /** Exponential moving average of builder token usage (decay 0.3). */
+    _builderTokensAvg: z.number().optional(),
+
+    /** Exponential moving average of critic token usage (decay 0.3). */
+    _criticTokensAvg: z.number().optional(),
+
     /**
      * Structured error from last cycle. Present when a step failed.
      * Cleared on successful cycle.

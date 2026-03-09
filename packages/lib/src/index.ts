@@ -20,6 +20,7 @@ export {
   type MetaNode,
   type OwnershipTree,
 } from './discovery/index.js';
+export { computeEma } from './ema.js';
 export { createSynthEngine, type SynthEngine } from './engine.js';
 export { toSynthError } from './errors.js';
 export type {
@@ -30,6 +31,7 @@ export type {
   SynthContext,
   SynthExecutor,
   SynthSpawnOptions,
+  SynthSpawnResult,
   WatcherClient,
 } from './interfaces/index.js';
 export { acquireLock, isLocked, releaseLock } from './lock.js';

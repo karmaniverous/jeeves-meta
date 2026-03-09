@@ -50,6 +50,9 @@ export const synthConfigSchema = z.object({
    * _generatedAt bumped to prevent re-selection next cycle.
    */
   skipUnchanged: z.boolean().default(true),
+
+  /** Number of metas to synthesize per invocation. */
+  batchSize: z.number().int().min(1).default(1),
 });
 
 /** Inferred type for jeeves-synth configuration. */

@@ -16,6 +16,36 @@ import type { SynthContext, WatcherClient } from '../interfaces/index.js';
 import { paginatedScan } from '../paginatedScan.js';
 import type { MetaJson } from '../schema/index.js';
 
+/**
+ * Condense a file list into glob-like summaries.
+ * Groups by directory + extension pattern.
+ *
+ * @param files - Array of file paths.
+ * @param maxIndividual - Show individual files up to this count.
+ * @returns Condensed summary string.
+ */
+export function condenseScopeFiles(
+  files: string[],
+  maxIndividual: number = 30,
+): string {
+  if (files.length <= maxIndividual) return files.join('\n');
+
+  // Group by dir + extension
+  const groups = new Map<string, number>();
+  for (const f of files) {
+    const dir = f.substring(0, f.lastIndexOf('/') + 1) || './';
+    const ext = f.includes('.') ? f.substring(f.lastIndexOf('.')) : '(no ext)';
+    const key = dir + '*' + ext;
+    groups.set(key, (groups.get(key) ?? 0) + 1);
+  }
+
+  // Sort by count descending
+  const sorted = [...groups.entries()].sort((a, b) => b[1] - a[1]);
+  return sorted
+    .map(([pattern, count]) => pattern + ' (' + count.toString() + ' files)')
+    .join('\n');
+}
+
 /** Filter files to exclude child meta subtrees. */
 function excludeChildSubtrees(
   files: string[],

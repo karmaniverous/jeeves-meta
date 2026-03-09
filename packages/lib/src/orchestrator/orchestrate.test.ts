@@ -28,6 +28,7 @@ const config: SynthConfig = {
   defaultArchitect: 'You are the architect.',
   defaultCritic: 'You are the critic.',
   skipUnchanged: true,
+  batchSize: 1,
 };
 
 function createMockWatcher(files: string[] = []): WatcherClient {
@@ -54,15 +55,15 @@ function createMockExecutor(responses?: Record<string, string>): SynthExecutor {
   ];
 
   return {
-    spawn: vi.fn().mockImplementation((task: string): Promise<string> => {
+    spawn: vi.fn().mockImplementation((task: string) => {
       if (responses) {
         for (const [key, val] of Object.entries(responses)) {
-          if (task.includes(key)) return Promise.resolve(val);
+          if (task.includes(key)) return Promise.resolve({ output: val });
         }
       }
       const response = defaultResponses[callIndex] ?? 'output';
       callIndex++;
-      return Promise.resolve(response);
+      return Promise.resolve({ output: response });
     }),
   };
 }
@@ -148,13 +149,13 @@ describe('orchestrate', () => {
   it('handles builder failure gracefully', async () => {
     mkdirSync(join(testRoot, 'domain/.meta'), { recursive: true });
 
-    const watcher = createMockWatcher([]);
+    const watcher = createMockWatcher(['test-file.md']);
     const executor: SynthExecutor = {
-      spawn: vi.fn().mockImplementation((task: string): Promise<string> => {
+      spawn: vi.fn().mockImplementation((task: string) => {
         if (task.includes('TASK BRIEF')) {
           return Promise.reject(new Error('Builder timed out'));
         }
-        return Promise.resolve('architect output');
+        return Promise.resolve({ output: 'architect output' });
       }),
     };
 

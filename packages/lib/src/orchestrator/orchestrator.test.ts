@@ -33,6 +33,7 @@ const sampleConfig: SynthConfig = {
   defaultArchitect: 'You are an architect. Analyze the data shape.',
   defaultCritic: 'You are a critic. Evaluate the synthesis.',
   skipUnchanged: true,
+  batchSize: 1,
 };
 
 const sampleMeta: MetaJson = {

@@ -74,6 +74,9 @@ function finalizeCycle(
   structureHash: string,
   synthesisCount: number,
   error: SynthError | null,
+  architectTokens?: number,
+  builderTokens?: number,
+  criticTokens?: number,
 ): MetaJson {
   const updated = mergeAndWrite({
     metaPath,
@@ -86,6 +89,9 @@ function finalizeCycle(
     structureHash,
     synthesisCount,
     error,
+    architectTokens,
+    builderTokens,
+    criticTokens,
   });
   createSnapshot(metaPath, updated);
   pruneArchive(metaPath, config.maxArchive);
@@ -207,14 +213,18 @@ export async function orchestrate(
     let builderBrief = currentMeta._builder ?? '';
     let synthesisCount = currentMeta._synthesisCount ?? 0;
     let stepError: SynthError | null = null;
+    let architectTokens: number | undefined;
+    let builderTokens: number | undefined;
+    let criticTokens: number | undefined;
 
     if (architectTriggered) {
       try {
         const architectTask = buildArchitectTask(ctx, currentMeta, config);
-        const architectOutput = await executor.spawn(architectTask, {
+        const architectResult = await executor.spawn(architectTask, {
           timeout: config.architectTimeout,
         });
-        builderBrief = parseArchitectOutput(architectOutput);
+        builderBrief = parseArchitectOutput(architectResult.output);
+        architectTokens = architectResult.tokens;
         synthesisCount = 0;
       } catch (err) {
         stepError = toSynthError('architect', err);
@@ -233,6 +243,7 @@ export async function orchestrate(
             newStructureHash,
             synthesisCount,
             stepError,
+            architectTokens,
           );
           return {
             synthesized: true,
@@ -249,10 +260,11 @@ export async function orchestrate(
     let builderOutput: BuilderOutput | null = null;
     try {
       const builderTask = buildBuilderTask(ctx, metaForBuilder, config);
-      const builderRaw = await executor.spawn(builderTask, {
+      const builderResult = await executor.spawn(builderTask, {
         timeout: config.builderTimeout,
       });
-      builderOutput = parseBuilderOutput(builderRaw);
+      builderOutput = parseBuilderOutput(builderResult.output);
+      builderTokens = builderResult.tokens;
       synthesisCount++;
     } catch (err) {
       stepError = toSynthError('builder', err);
@@ -267,10 +279,11 @@ export async function orchestrate(
     let feedback: string | null = null;
     try {
       const criticTask = buildCriticTask(ctx, metaForCritic, config);
-      const criticRaw = await executor.spawn(criticTask, {
+      const criticResult = await executor.spawn(criticTask, {
         timeout: config.criticTimeout,
       });
-      feedback = parseCriticOutput(criticRaw);
+      feedback = parseCriticOutput(criticResult.output);
+      criticTokens = criticResult.tokens;
       stepError = null; // Clear any architect error on full success
     } catch (err) {
       stepError = stepError ?? toSynthError('critic', err);
@@ -289,6 +302,9 @@ export async function orchestrate(
       newStructureHash,
       synthesisCount,
       stepError,
+      architectTokens,
+      builderTokens,
+      criticTokens,
     );
 
     return {

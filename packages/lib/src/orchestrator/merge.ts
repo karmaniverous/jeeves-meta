@@ -11,6 +11,7 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { computeEma } from '../ema.js';
 import type { SynthError } from '../schema/index.js';
 import { type MetaJson, metaJsonSchema } from '../schema/index.js';
 import type { BuilderOutput } from './parseOutput.js';
@@ -37,6 +38,12 @@ export interface MergeOptions {
   synthesisCount: number;
   /** Error from any step, or null on full success. */
   error: SynthError | null;
+  /** Token count from architect step. */
+  architectTokens?: number;
+  /** Token count from builder step. */
+  builderTokens?: number;
+  /** Token count from critic step. */
+  criticTokens?: number;
 }
 
 /**
@@ -52,6 +59,7 @@ export function mergeAndWrite(options: MergeOptions): MetaJson {
     _id: options.current._id,
     _steer: options.current._steer,
     _depth: options.current._depth,
+    _emphasis: options.current._emphasis,
 
     // Engine fields
     _architect: options.architect,
@@ -60,6 +68,26 @@ export function mergeAndWrite(options: MergeOptions): MetaJson {
     _generatedAt: new Date().toISOString(),
     _structureHash: options.structureHash,
     _synthesisCount: options.synthesisCount,
+
+    // Token tracking
+    _architectTokens: options.architectTokens,
+    _builderTokens: options.builderTokens,
+    _criticTokens: options.criticTokens,
+    _architectTokensAvg:
+      options.architectTokens !== undefined
+        ? computeEma(
+            options.architectTokens,
+            options.current._architectTokensAvg,
+          )
+        : options.current._architectTokensAvg,
+    _builderTokensAvg:
+      options.builderTokens !== undefined
+        ? computeEma(options.builderTokens, options.current._builderTokensAvg)
+        : options.current._builderTokensAvg,
+    _criticTokensAvg:
+      options.criticTokens !== undefined
+        ? computeEma(options.criticTokens, options.current._criticTokensAvg)
+        : options.current._criticTokensAvg,
 
     // Content from builder
     _content: options.builderOutput?.content ?? options.current._content,
@@ -77,6 +105,14 @@ export function mergeAndWrite(options: MergeOptions): MetaJson {
   // Clean up undefined optional fields
   if (merged._steer === undefined) delete merged._steer;
   if (merged._depth === undefined) delete merged._depth;
+  if (merged._emphasis === undefined) delete merged._emphasis;
+  if (merged._architectTokens === undefined) delete merged._architectTokens;
+  if (merged._builderTokens === undefined) delete merged._builderTokens;
+  if (merged._criticTokens === undefined) delete merged._criticTokens;
+  if (merged._architectTokensAvg === undefined)
+    delete merged._architectTokensAvg;
+  if (merged._builderTokensAvg === undefined) delete merged._builderTokensAvg;
+  if (merged._criticTokensAvg === undefined) delete merged._criticTokensAvg;
   if (merged._error === undefined) delete merged._error;
   if (merged._content === undefined) delete merged._content;
   if (merged._feedback === undefined) delete merged._feedback;

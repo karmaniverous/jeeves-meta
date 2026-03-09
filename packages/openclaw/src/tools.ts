@@ -32,68 +32,121 @@ export function registerSynthTools(api: PluginApi): void {
   const watcherUrl = getWatcherUrl(api);
   const watchPaths = getWatchPaths(api);
 
-  // ─── synth_status ─────────────────────────────────────────────
+  // Default depthWeight for staleness calculations (used by synth_list)
+  const config_depthWeight = 0.5;
+
+  // ─── synth_list ──────────────────────────────────────────────
   api.registerTool({
-    name: 'synth_status',
+    name: 'synth_list',
     description:
-      'Engine status: meta count, stale count, last synthesized, stalest candidate.',
+      'List metas with summary stats and per-meta projection. Replaces synth_status + synth_entities.',
     parameters: {
       type: 'object',
-      properties: {},
+      properties: {
+        pathPrefix: {
+          type: 'string',
+          description: 'Filter metas by path prefix (e.g. "github/").',
+        },
+        fields: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Fields to include per meta. Default: path, depth, emphasis, stalenessSeconds, lastSynthesized, hasError, locked, architectTokens, builderTokens, criticTokens.',
+        },
+      },
     },
-    execute: async (): Promise<ToolResult> => {
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
       try {
+        const pathPrefix = params.pathPrefix as string | undefined;
         await Promise.resolve();
         const metaPaths = globMetas(watchPaths);
-        const metas = metaPaths.map((mp) => ({
-          path: mp,
-          meta: ensureMetaJson(mp),
-        }));
-
-        const staleCount = metas.filter(
-          (m) => actualStaleness(m.meta) > 0,
-        ).length;
-
-        // Find most recently synthesized
-        let lastSynthesized: { path: string; at: string } | null = null;
-        for (const m of metas) {
-          if (m.meta._generatedAt) {
-            if (!lastSynthesized || m.meta._generatedAt > lastSynthesized.at) {
-              lastSynthesized = {
-                path: m.path,
-                at: m.meta._generatedAt,
-              };
-            }
-          }
-        }
-
-        // Find stalest candidate
         const tree = buildOwnershipTree(metaPaths);
-        const candidates = [];
+
+        const entities = [];
+        let staleCount = 0;
+        let errorCount = 0;
+        let lockedCount = 0;
+        let neverSynthesized = 0;
+        let totalArchTokens = 0;
+        let totalBuilderTokens = 0;
+        let totalCriticTokens = 0;
+        let lastSynthPath: string | null = null;
+        let lastSynthAt: string | null = null;
+        let stalestPath: string | null = null;
+        let stalestEffective = 0;
+
         for (const node of tree.nodes.values()) {
-          const meta = metas.find(
-            (m) => m.path.replaceAll('\\', '/') === node.metaPath,
-          )?.meta;
-          if (!meta) continue;
+          if (pathPrefix && !node.metaPath.includes(pathPrefix)) continue;
+
+          const meta = ensureMetaJson(node.metaPath);
           const staleness = actualStaleness(meta);
-          if (staleness > 0) {
-            candidates.push({ node, meta, actualStaleness: staleness });
+          const locked = isLocked(node.metaPath.replaceAll('/', '\\'));
+          const hasError = Boolean(meta._error);
+
+          if (staleness > 0) staleCount++;
+          if (hasError) errorCount++;
+          if (locked) lockedCount++;
+          if (!meta._generatedAt) neverSynthesized++;
+          if (meta._architectTokens) totalArchTokens += meta._architectTokens;
+          if (meta._builderTokens) totalBuilderTokens += meta._builderTokens;
+          if (meta._criticTokens) totalCriticTokens += meta._criticTokens;
+
+          if (
+            meta._generatedAt &&
+            (!lastSynthAt || meta._generatedAt > lastSynthAt)
+          ) {
+            lastSynthAt = meta._generatedAt;
+            lastSynthPath = node.metaPath;
           }
+
+          // Compute effective staleness for stalest candidate
+          const depth = meta._depth ?? node.treeDepth;
+          const emphasis = meta._emphasis ?? 1;
+          const effective =
+            staleness * Math.pow(depth + 1, config_depthWeight * emphasis);
+          if (effective > stalestEffective) {
+            stalestEffective = effective;
+            stalestPath = node.metaPath;
+          }
+
+          entities.push({
+            path: node.metaPath,
+            depth: meta._depth ?? node.treeDepth,
+            emphasis: meta._emphasis ?? 1,
+            stalenessSeconds:
+              staleness === Infinity
+                ? 'never-synthesized'
+                : Math.round(staleness),
+            lastSynthesized: meta._generatedAt ?? null,
+            hasError,
+            locked,
+            architectTokens: meta._architectTokens ?? null,
+            builderTokens: meta._builderTokens ?? null,
+            criticTokens: meta._criticTokens ?? null,
+            children: node.children.length,
+          });
         }
-        const weighted = computeEffectiveStaleness(candidates, 1);
-        const stalest = selectCandidate(weighted);
 
         return ok({
-          totalMetas: metaPaths.length,
-          staleCount,
-          lastSynthesized,
-          stalestCandidate: stalest
-            ? {
-                path: stalest.node.metaPath,
-                actualStalenessSeconds: Math.round(stalest.actualStaleness),
-                effectiveStaleness: Math.round(stalest.effectiveStaleness),
-              }
-            : null,
+          summary: {
+            total: entities.length,
+            stale: staleCount,
+            errors: errorCount,
+            locked: lockedCount,
+            neverSynthesized,
+            tokens: {
+              architect: totalArchTokens,
+              builder: totalBuilderTokens,
+              critic: totalCriticTokens,
+            },
+            stalestPath,
+            lastSynthesizedPath: lastSynthPath,
+            lastSynthesizedAt: lastSynthAt,
+          },
+          items: entities.sort((a, b) => a.path.localeCompare(b.path)),
         });
       } catch (error) {
         return fail(error);
@@ -101,51 +154,113 @@ export function registerSynthTools(api: PluginApi): void {
     },
   });
 
-  // ─── synth_entities ───────────────────────────────────────────
+  // ─── synth_detail ────────────────────────────────────────────
   api.registerTool({
-    name: 'synth_entities',
+    name: 'synth_detail',
     description:
-      'List all .meta/ directories with staleness, last synthesized, depth, and lock status.',
+      'Full detail for a single meta, with optional archive history.',
     parameters: {
       type: 'object',
-      properties: {},
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Path to .meta/ directory or owner directory (required).',
+        },
+        fields: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'Fields to include. Default: all except _architect, _builder, _critic, _content, _feedback.',
+        },
+        includeArchive: {
+          oneOf: [{ type: 'boolean' }, { type: 'number' }],
+          description:
+            'false (default), true (all snapshots), or number (N most recent).',
+        },
+      },
+      required: ['path'],
     },
-    execute: async (): Promise<ToolResult> => {
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
       try {
-        await Promise.resolve();
+        const targetPath = (params.path as string).replaceAll('\\', '/');
+        const includeArchive = params.includeArchive as
+          | boolean
+          | number
+          | undefined;
+        const defaultExclude = new Set([
+          '_architect',
+          '_builder',
+          '_critic',
+          '_content',
+          '_feedback',
+        ]);
+        const fields = params.fields as string[] | undefined;
+
         const metaPaths = globMetas(watchPaths);
         const tree = buildOwnershipTree(metaPaths);
 
-        const entities = [];
-        for (const node of tree.nodes.values()) {
-          const meta = ensureMetaJson(
-            node.metaPath.replaceAll('/', '\\').replace(/^\//, ''),
-          );
-          // Actually we need the original OS path, not the normalized one
-          // ensureMetaJson needs the real fs path
-          const staleness = actualStaleness(meta);
-          entities.push({
-            metaPath: node.metaPath,
-            ownerPath: node.ownerPath,
-            depth: meta._depth ?? node.treeDepth,
-            stalenessSeconds:
-              staleness === Infinity
-                ? 'never-synthesized'
-                : Math.round(staleness),
-            lastSynthesized: meta._generatedAt ?? null,
-            hasContent: Boolean(meta._content),
-            hasError: Boolean(meta._error),
-            locked: isLocked(node.metaPath.replaceAll('/', '\\')),
-            children: node.children.length,
-          });
+        const targetNode = Array.from(tree.nodes.values()).find(
+          (n) => n.metaPath === targetPath || n.ownerPath === targetPath,
+        );
+        if (!targetNode) {
+          return fail('Meta path not found: ' + targetPath);
         }
 
-        return ok({
-          count: entities.length,
-          entities: entities.sort((a, b) =>
-            a.metaPath.localeCompare(b.metaPath),
-          ),
-        });
+        const meta = ensureMetaJson(targetNode.metaPath);
+
+        // Apply field projection
+        const projectMeta = (
+          m: Record<string, unknown>,
+        ): Record<string, unknown> => {
+          if (fields) {
+            const result: Record<string, unknown> = {};
+            for (const f of fields) result[f] = m[f];
+            return result;
+          }
+          // Default: exclude big text blobs
+          const result: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(m)) {
+            if (!defaultExclude.has(k)) result[k] = v;
+          }
+          return result;
+        };
+
+        const response: Record<string, unknown> = {
+          meta: projectMeta(meta as unknown as Record<string, unknown>),
+        };
+
+        // Archive history
+        if (includeArchive) {
+          const { readFileSync } = await import('node:fs');
+          const { join } = await import('node:path');
+          const { listArchiveFiles } =
+            await import('@karmaniverous/jeeves-synth');
+
+          const archiveFiles = listArchiveFiles(targetNode.metaPath);
+          const limit =
+            typeof includeArchive === 'number'
+              ? includeArchive
+              : archiveFiles.length;
+
+          // Most recent first (files are sorted by timestamp)
+          const selected = archiveFiles.slice(-limit).reverse();
+          const archives = selected.map((af) => {
+            const raw = readFileSync(
+              join(targetNode.metaPath, 'archive', af),
+              'utf8',
+            );
+            const parsed = JSON.parse(raw) as Record<string, unknown>;
+            return projectMeta(parsed);
+          });
+
+          response.archive = archives;
+        }
+
+        return ok(response);
       } catch (error) {
         return fail(error);
       }
@@ -195,7 +310,10 @@ export function registerSynthTools(api: PluginApi): void {
               candidates.push({ node, meta, actualStaleness: staleness });
             }
           }
-          const weighted = computeEffectiveStaleness(candidates, 1);
+          const weighted = computeEffectiveStaleness(
+            candidates,
+            config_depthWeight,
+          );
           const winner = selectCandidate(weighted);
           if (!winner) {
             return ok({

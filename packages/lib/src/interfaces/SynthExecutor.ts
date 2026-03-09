@@ -1,11 +1,6 @@
 /**
  * Pluggable executor interface for LLM subprocess invocation.
  *
- * Consumers provide the executor implementation:
- * - Runner script: HTTP calls to OpenClaw gateway API
- * - OpenClaw plugin: sessions_spawn + sessions_history polling
- * - Tests: mock executor returning canned responses
- *
  * @module interfaces/SynthExecutor
  */
 
@@ -17,12 +12,20 @@ export interface SynthSpawnOptions {
   timeout?: number;
 }
 
+/** Result of a spawn call, including optional token usage. */
+export interface SynthSpawnResult {
+  /** Subprocess output text. */
+  output: string;
+  /** Token count for this call, if available from the executor. */
+  tokens?: number;
+}
+
 /**
  * Interface for spawning synthesis subprocesses.
  *
  * The executor abstracts the LLM invocation mechanism. The orchestrator
  * calls spawn() sequentially for architect, builder, and critic steps.
- * Each call blocks until the subprocess completes and returns its output.
+ * Each call blocks until the subprocess completes and returns its result.
  */
 export interface SynthExecutor {
   /**
@@ -30,7 +33,7 @@ export interface SynthExecutor {
    *
    * @param task - Full task prompt for the subprocess.
    * @param options - Optional model and timeout overrides.
-   * @returns The subprocess output as a string.
+   * @returns The subprocess result with output and optional token count.
    */
-  spawn(task: string, options?: SynthSpawnOptions): Promise<string>;
+  spawn(task: string, options?: SynthSpawnOptions): Promise<SynthSpawnResult>;
 }

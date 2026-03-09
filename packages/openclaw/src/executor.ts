@@ -11,6 +11,7 @@
 import type {
   SynthExecutor,
   SynthSpawnOptions,
+  SynthSpawnResult,
 } from '@karmaniverous/jeeves-synth';
 
 const DEFAULT_POLL_INTERVAL_MS = 5000;
@@ -52,7 +53,10 @@ export class GatewayExecutor implements SynthExecutor {
     this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
   }
 
-  async spawn(task: string, options?: SynthSpawnOptions): Promise<string> {
+  async spawn(
+    task: string,
+    options?: SynthSpawnOptions,
+  ): Promise<SynthSpawnResult> {
     const timeoutMs = (options?.timeout ?? DEFAULT_TIMEOUT_MS / 1000) * 1000;
     const deadline = Date.now() + timeoutMs;
 
@@ -122,10 +126,10 @@ export class GatewayExecutor implements SynthExecutor {
         const messages = history.messages ?? [];
         for (let i = messages.length - 1; i >= 0; i--) {
           if (messages[i].role === 'assistant' && messages[i].content) {
-            return messages[i].content;
+            return { output: messages[i].content };
           }
         }
-        return ''; // Completed but no assistant output
+        return { output: '' }; // Completed but no assistant output
       }
     }
 

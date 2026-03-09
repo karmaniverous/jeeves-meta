@@ -5,7 +5,11 @@
  */
 
 export type { SynthContext } from './SynthContext.js';
-export type { SynthExecutor, SynthSpawnOptions } from './SynthExecutor.js';
+export type {
+  SynthExecutor,
+  SynthSpawnOptions,
+  SynthSpawnResult,
+} from './SynthExecutor.js';
 export type {
   InferenceRuleSpec,
   ScanFile,

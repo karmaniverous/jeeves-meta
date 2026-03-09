@@ -6,6 +6,7 @@
 
 import type { SynthContext } from '../interfaces/index.js';
 import type { MetaJson, SynthConfig } from '../schema/index.js';
+import { condenseScopeFiles } from './contextPackage.js';
 
 /** Append optional context sections shared across all step prompts. */
 function appendSharedSections(
@@ -73,7 +74,7 @@ export function buildArchitectTask(
     `Files changed since last synthesis: ${ctx.deltaFiles.length.toString()}`,
     '',
     '### File listing (scope)',
-    ...ctx.scopeFiles.slice(0, config.maxLines).map((f) => `- ${f}`),
+    condenseScopeFiles(ctx.scopeFiles),
   ];
 
   appendSharedSections(sections, ctx);
