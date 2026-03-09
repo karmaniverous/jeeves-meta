@@ -136,11 +136,38 @@ Before the synthesis engine can operate:
 
 ### Installation
 
+1. Install the core library globally (provides the CLI and the dependency for the plugin):
+
+```bash
+npm install -g @karmaniverous/jeeves-meta
+```
+
+2. Install the OpenClaw plugin:
+
 ```bash
 npx @karmaniverous/jeeves-meta-openclaw install
 ```
 
-Then restart the OpenClaw gateway to load the plugin.
+3. Configure the plugin in `openclaw.json`:
+
+```json
+{
+  "plugins": {
+    "entries": {
+      "jeeves-meta-openclaw": {
+        "enabled": true,
+        "config": {
+          "configPath": "/path/to/jeeves-meta.config.json"
+        }
+      }
+    }
+  }
+}
+```
+
+Alternatively, set the `JEEVES_META_CONFIG` environment variable instead of using plugin config.
+
+4. Restart the OpenClaw gateway to load the plugin.
 
 ### First Synthesis
 
