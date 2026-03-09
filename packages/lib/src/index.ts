@@ -39,6 +39,7 @@ export type {
   WatcherClient,
 } from './interfaces/index.js';
 export { acquireLock, isLocked, releaseLock } from './lock.js';
+export { normalizePath } from './normalizePath.js';
 export {
   buildArchitectTask,
   buildBuilderTask,

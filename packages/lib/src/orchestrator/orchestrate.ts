@@ -24,6 +24,7 @@ import { filterInScope, getScopePrefix } from '../discovery/scope.js';
 import { toSynthError } from '../errors.js';
 import type { SynthExecutor, WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
+import { normalizePath } from '../normalizePath.js';
 import { paginatedScan } from '../paginatedScan.js';
 import {
   actualStaleness,
@@ -32,11 +33,6 @@ import {
 } from '../scheduling/index.js';
 import type { MetaJson, SynthConfig, SynthError } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
-/** Normalize path separators to forward slashes. */
-function normalizePath(p: string): string {
-  return p.replaceAll('\\', '/');
-}
-
 import {
   buildArchitectTask,
   buildBuilderTask,
