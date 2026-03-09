@@ -14,6 +14,7 @@ import {
   globMetas,
   HttpWatcherClient,
   isLocked,
+  normalizePath,
   paginatedScan,
   readLatestArchive,
   selectCandidate,
@@ -135,7 +136,7 @@ export function registerSynthTools(api: PluginApi): void {
           if (filter) {
             const staleness = actualStaleness(meta);
             const hasErr = Boolean(meta._error);
-            const locked = isLocked(node.metaPath.replaceAll('/', '\\'));
+            const locked = isLocked(normalizePath(node.metaPath));
             const neverSynth = !meta._generatedAt;
 
             if (filter.hasError !== undefined && hasErr !== filter.hasError)
@@ -154,7 +155,7 @@ export function registerSynthTools(api: PluginApi): void {
               continue;
           }
           const staleness = actualStaleness(meta);
-          const locked = isLocked(node.metaPath.replaceAll('/', '\\'));
+          const locked = isLocked(normalizePath(node.metaPath));
           const hasError = Boolean(meta._error);
 
           if (staleness > 0) staleCount++;
@@ -282,7 +283,7 @@ export function registerSynthTools(api: PluginApi): void {
       params: Record<string, unknown>,
     ): Promise<ToolResult> => {
       try {
-        const targetPath = (params.path as string).replaceAll('\\', '/');
+        const targetPath = normalizePath(params.path as string);
         const includeArchive = params.includeArchive as
           | boolean
           | number
@@ -389,7 +390,7 @@ export function registerSynthTools(api: PluginApi): void {
 
         let targetNode;
         if (targetPath) {
-          const normalized = targetPath.replaceAll('\\', '/');
+          const normalized = normalizePath(targetPath);
           targetNode = Array.from(tree.nodes.values()).find(
             (n) => n.metaPath === normalized || n.ownerPath === normalized,
           );
