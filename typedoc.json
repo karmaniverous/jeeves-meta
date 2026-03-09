@@ -47,6 +47,6 @@
   "searchInComments": true,
   "searchInDocuments": true,
   "validation": {
-    "notDocumented": true
+    "notDocumented": false
   }
 }

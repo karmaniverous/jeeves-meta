@@ -16,8 +16,8 @@ Results are written to `.meta/meta.json` files with full archive history, enabli
 
 | Package | Description |
 |---------|-------------|
-| [`@karmaniverous/jeeves-synth`](./packages/lib/) | Core synthesis engine library — schemas, discovery, scheduling, orchestration |
-| [`@karmaniverous/jeeves-synth-openclaw`](./packages/openclaw/) | OpenClaw plugin — interactive tools, gateway executor, virtual inference rules |
+| [`@karmaniverous/jeeves-synth`](https://github.com/karmaniverous/jeeves-synth/tree/main/packages/lib) | Core synthesis engine library — schemas, discovery, scheduling, orchestration |
+| [`@karmaniverous/jeeves-synth-openclaw`](https://github.com/karmaniverous/jeeves-synth/tree/main/packages/openclaw) | OpenClaw plugin — interactive tools, gateway executor, virtual inference rules |
 
 ## Architecture
 
