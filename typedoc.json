@@ -31,7 +31,6 @@
     "typedoc-plugin-replace-text"
   ],
   "projectDocuments": [
-    "./CHANGELOG.md",
     "./packages/lib/guides/index.md",
     "./packages/openclaw/guides/index.md"
   ],

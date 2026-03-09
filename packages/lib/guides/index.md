@@ -6,6 +6,7 @@ children:
   - ./orchestration.md
   - ./scheduling.md
   - ./architecture-patterns.md
+  - ../CHANGELOG.md
 ---
 
 # Engine Guides

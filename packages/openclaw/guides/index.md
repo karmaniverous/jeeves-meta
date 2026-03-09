@@ -4,6 +4,7 @@ children:
   - ./plugin-setup.md
   - ./tools-reference.md
   - ./virtual-rules.md
+  - ../CHANGELOG.md
 ---
 
 # OpenClaw Plugin
