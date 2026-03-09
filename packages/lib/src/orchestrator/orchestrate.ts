@@ -326,13 +326,13 @@ async function orchestrateOnce(
  * @param config - Validated synthesis config.
  * @param executor - Pluggable LLM executor.
  * @param watcher - Watcher HTTP client.
- * @returns Array of results from each cycle.
+ * @returns Array of results, one per cycle attempted.
  */
 export async function orchestrate(
   config: SynthConfig,
   executor: SynthExecutor,
   watcher: WatcherClient,
-): Promise<OrchestrateResult> {
+): Promise<OrchestrateResult[]> {
   const results: OrchestrateResult[] = [];
 
   for (let i = 0; i < config.batchSize; i++) {
@@ -341,8 +341,5 @@ export async function orchestrate(
     if (!result.synthesized) break; // No more candidates
   }
 
-  // Return the last meaningful result (or first if none synthesized)
-  const synthesized = results.filter((r) => r.synthesized);
-  if (synthesized.length === 0) return { synthesized: false };
-  return synthesized[synthesized.length - 1];
+  return results;
 }

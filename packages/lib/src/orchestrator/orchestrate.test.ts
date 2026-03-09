@@ -80,8 +80,8 @@ describe('orchestrate', () => {
   it('returns synthesized: false when no .meta/ directories exist', async () => {
     const watcher = createMockWatcher();
     const executor = createMockExecutor();
-    const result = await orchestrate(config, executor, watcher);
-    expect(result.synthesized).toBe(false);
+    const results = await orchestrate(config, executor, watcher);
+    expect(results[0]?.synthesized ?? false).toBe(false);
   });
 
   it('runs a full cycle on a fresh meta (first synthesis)', async () => {
@@ -93,7 +93,8 @@ describe('orchestrate', () => {
     const executor = createMockExecutor();
     const spawnSpy = vi.spyOn(executor, 'spawn');
 
-    const result = await orchestrate(config, executor, watcher);
+    const results = await orchestrate(config, executor, watcher);
+    const result = results[0];
 
     expect(result.synthesized).toBe(true);
     expect(result.metaPath).toBeDefined();
@@ -140,7 +141,8 @@ describe('orchestrate', () => {
     const executor = createMockExecutor();
     const spawnSpy = vi.spyOn(executor, 'spawn');
 
-    await orchestrate(config, executor, watcher);
+    const results = await orchestrate(config, executor, watcher);
+    void results;
 
     // Only builder + critic (2 calls, no architect)
     expect(spawnSpy).toHaveBeenCalledTimes(2);
@@ -159,7 +161,8 @@ describe('orchestrate', () => {
       }),
     };
 
-    const result = await orchestrate(config, executor, watcher);
+    const results = await orchestrate(config, executor, watcher);
+    const result = results[0];
 
     expect(result.synthesized).toBe(true);
     expect(result.error).toBeDefined();
@@ -180,7 +183,7 @@ describe('orchestrate', () => {
 
     const watcher = createMockWatcher();
     const executor = createMockExecutor();
-    const result = await orchestrate(config, executor, watcher);
-    expect(result.synthesized).toBe(false);
+    const results = await orchestrate(config, executor, watcher);
+    expect(results[0]?.synthesized ?? false).toBe(false);
   });
 });

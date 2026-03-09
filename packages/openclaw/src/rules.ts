@@ -35,6 +35,31 @@ const SYNTH_RULES = [
           synth_id: { type: 'string', set: '{{json._id}}' },
           synth_steer: { type: 'string', set: '{{json._steer}}' },
           synth_depth: { type: 'number', set: '{{json._depth}}' },
+          synth_emphasis: { type: 'number', set: '{{json._emphasis}}' },
+          synth_synthesis_count: {
+            type: 'integer',
+            set: '{{json._synthesisCount}}',
+          },
+          synth_structure_hash: {
+            type: 'string',
+            set: '{{json._structureHash}}',
+          },
+          synth_architect_tokens: {
+            type: 'integer',
+            set: '{{json._architectTokens}}',
+          },
+          synth_builder_tokens: {
+            type: 'integer',
+            set: '{{json._builderTokens}}',
+          },
+          synth_critic_tokens: {
+            type: 'integer',
+            set: '{{json._criticTokens}}',
+          },
+          synth_error_step: {
+            type: 'string',
+            set: '{{json._error.step}}',
+          },
           generated_at_unix: {
             type: 'integer',
             set: '{{toUnix json._generatedAt}}',
@@ -54,6 +79,10 @@ const SYNTH_RULES = [
         'synth_steer',
         'generated_at_unix',
         'synth_depth',
+        'synth_emphasis',
+        'synth_architect_tokens',
+        'synth_builder_tokens',
+        'synth_critic_tokens',
       ],
       body: [
         {

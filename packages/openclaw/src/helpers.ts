@@ -50,6 +50,15 @@ export function getWatchPaths(api: PluginApi): string[] {
   return Array.isArray(paths) ? (paths as string[]) : ['j:/domains'];
 }
 
+/**
+ * Get the config file path from plugin settings.
+ * Default: J:/config/jeeves-synth.config.json
+ */
+export function getConfigPath(api: PluginApi): string {
+  const p = getPluginConfig(api)?.configPath;
+  return typeof p === 'string' ? p : 'J:/config/jeeves-synth.config.json';
+}
+
 /** Format a successful tool result. */
 export function ok(data: unknown): ToolResult {
   return {

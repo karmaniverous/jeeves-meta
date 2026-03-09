@@ -16,10 +16,13 @@ import {
   isLocked,
   readLatestArchive,
   selectCandidate,
+  type SynthConfig,
 } from '@karmaniverous/jeeves-synth';
 
+import { loadSynthConfig } from './configLoader.js';
 import {
   fail,
+  getConfigPath,
   getWatcherUrl,
   getWatchPaths,
   ok,
@@ -31,9 +34,16 @@ import {
 export function registerSynthTools(api: PluginApi): void {
   const watcherUrl = getWatcherUrl(api);
   const watchPaths = getWatchPaths(api);
+  const configPath = getConfigPath(api);
 
-  // Default depthWeight for staleness calculations (used by synth_list)
-  const config_depthWeight = 0.5;
+  // Lazy-load config (resolved once on first use)
+  let _config: SynthConfig | null = null;
+  const getConfig = (): SynthConfig => {
+    if (!_config) {
+      _config = loadSynthConfig(configPath);
+    }
+    return _config;
+  };
 
   // ─── synth_list ──────────────────────────────────────────────
   api.registerTool({
@@ -107,7 +117,7 @@ export function registerSynthTools(api: PluginApi): void {
           const depth = meta._depth ?? node.treeDepth;
           const emphasis = meta._emphasis ?? 1;
           const effective =
-            staleness * Math.pow(depth + 1, config_depthWeight * emphasis);
+            staleness * Math.pow(depth + 1, getConfig().depthWeight * emphasis);
           if (effective > stalestEffective) {
             stalestEffective = effective;
             stalestPath = node.metaPath;
@@ -313,7 +323,7 @@ export function registerSynthTools(api: PluginApi): void {
           }
           const weighted = computeEffectiveStaleness(
             candidates,
-            config_depthWeight,
+            getConfig().depthWeight,
           );
           const winner = selectCandidate(weighted);
           if (!winner) {
@@ -349,7 +359,7 @@ export function registerSynthTools(api: PluginApi): void {
           !meta._builder ||
           structureChanged ||
           steerChanged ||
-          (meta._synthesisCount ?? 0) >= 10;
+          (meta._synthesisCount ?? 0) >= getConfig().architectEvery;
 
         // Delta files
         let deltaFiles: string[] = [];
@@ -392,7 +402,7 @@ export function registerSynthTools(api: PluginApi): void {
             ...(!meta._builder ? ['no cached builder (first run)'] : []),
             ...(structureChanged ? ['structure changed'] : []),
             ...(steerChanged ? ['steer changed'] : []),
-            ...((meta._synthesisCount ?? 0) >= 10
+            ...((meta._synthesisCount ?? 0) >= getConfig().architectEvery
               ? ['periodic refresh (architectEvery)']
               : []),
           ],
@@ -426,19 +436,11 @@ export function registerSynthTools(api: PluginApi): void {
       params: Record<string, unknown>,
     ): Promise<ToolResult> => {
       try {
-        const { orchestrate, synthConfigSchema } =
-          await import('@karmaniverous/jeeves-synth');
+        const { orchestrate } = await import('@karmaniverous/jeeves-synth');
         const { GatewayExecutor } = await import('./executor.js');
 
-        // Build config
-        const config = synthConfigSchema.parse({
-          watchPaths,
-          watcherUrl,
-          defaultArchitect:
-            'You are a knowledge architect. Analyze the data shape and produce a task brief for synthesis.',
-          defaultCritic:
-            'You are a synthesis critic. Evaluate the quality, completeness, and accuracy of the synthesis.',
-        });
+        // Load config from canonical config file
+        const config = getConfig();
 
         const executor = new GatewayExecutor();
         const watcher = new HttpWatcherClient({ baseUrl: watcherUrl });
@@ -452,9 +454,10 @@ export function registerSynthTools(api: PluginApi): void {
             }
           : config;
 
-        const result = await orchestrate(effectiveConfig, executor, watcher);
+        const results = await orchestrate(effectiveConfig, executor, watcher);
+        const synthesized = results.filter((r) => r.synthesized);
 
-        if (!result.synthesized) {
+        if (synthesized.length === 0) {
           return ok({
             message:
               'No synthesis performed — no stale metas found or all locked.',
@@ -462,14 +465,17 @@ export function registerSynthTools(api: PluginApi): void {
         }
 
         return ok({
-          synthesized: true,
-          metaPath: result.metaPath,
-          error: result.error ?? null,
-          message: result.error
-            ? 'Synthesis completed with error in ' +
-              result.error.step +
-              ' step.'
-            : 'Synthesis completed successfully.',
+          synthesizedCount: synthesized.length,
+          results: synthesized.map((r) => ({
+            metaPath: r.metaPath,
+            error: r.error ?? null,
+          })),
+          message:
+            synthesized.length.toString() +
+            ' meta(s) synthesized.' +
+            (synthesized.some((r) => r.error)
+              ? ' Some completed with errors.'
+              : ''),
         });
       } catch (error) {
         return fail(error);
