@@ -10,23 +10,29 @@ jeeves-meta discovers `.meta/` directories across watched filesystem paths, buil
 2. **Builder** — executes the brief, reads source files, queries the semantic index, and produces a synthesis
 3. **Critic** — spot-checks claims, evaluates against steering prompts, and provides feedback
 
-Results are written to `.meta/meta.json` files with full archive history, enabling self-improving feedback loops and future Supervisor optimization.
+Results are written to `.meta/meta.json` files with full archive history, enabling self-improving feedback loops.
 
 ## Packages
 
 | Package | Description |
 |---------|-------------|
-| [`@karmaniverous/jeeves-meta`](https://github.com/karmaniverous/jeeves-meta/tree/main/packages/lib) | Core synthesis engine library — schemas, discovery, scheduling, orchestration |
-| [`@karmaniverous/jeeves-meta-openclaw`](https://github.com/karmaniverous/jeeves-meta/tree/main/packages/openclaw) | OpenClaw plugin — interactive tools, gateway executor, virtual inference rules |
+| [`@karmaniverous/jeeves-meta`](packages/lib) | Core synthesis engine — schemas, discovery, scheduling, orchestration, CLI |
+| [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw) | OpenClaw plugin — interactive tools, gateway executor, virtual inference rules, TOOLS.md injection |
 
 ## Architecture
 
-![System Architecture](packages/lib/assets/system-architecture.png)
+```
+jeeves-runner (cron) ──→ jeeves-meta CLI ──→ orchestrator ──→ GatewayExecutor
+                                                  │                    │
+                                                  ├── discovery        ├── architect session
+                                                  ├── scheduling       ├── builder session
+                                                  └── archive          └── critic session
+                                                  │
+                                                  └──→ jeeves-watcher (scan / rules)
+```
 
-For the full per-cycle sequence diagram, see [Orchestration Guide](packages/lib/guides/orchestration.md).
-
-- **jeeves-runner** invokes synthesis cycles on a cron schedule
-- **jeeves-meta** (library) orchestrates the 3-step LLM pipeline
+- **jeeves-runner** invokes `npx @karmaniverous/jeeves-meta synthesize` on a cron schedule
+- **jeeves-meta** (library) orchestrates the 3-step LLM pipeline via pluggable executors
 - **jeeves-watcher** provides structured queries (`POST /scan`) and semantic search
 - **OpenClaw plugin** provides interactive tools (`synth_list`, `synth_detail`, `synth_trigger`, `synth_preview`)
 
@@ -35,20 +41,38 @@ For the full per-cycle sequence diagram, see [Orchestration Guide](packages/lib/
 ### As a library
 
 ```typescript
-import { createSynthEngine } from '@karmaniverous/jeeves-meta';
+import {
+  createSynthEngine,
+  HttpWatcherClient,
+  loadSynthConfig,
+} from '@karmaniverous/jeeves-meta';
 
-const engine = createSynthEngine({
-  config,    // SynthConfig (Zod-validated)
-  executor,  // SynthExecutor implementation
-  watcher,   // WatcherClient implementation
-});
+const config = loadSynthConfig('/path/to/jeeves-meta.config.json');
+const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
 
-const results = await engine.orchestrate();
+const engine = createSynthEngine(config, myExecutor, watcher);
+const results = await engine.synthesize();
+```
+
+### As a CLI
+
+```bash
+# Set config path
+export JEEVES_META_CONFIG=/path/to/jeeves-meta.config.json
+
+# Check engine status
+npx @karmaniverous/jeeves-meta status
+
+# Run synthesis
+npx @karmaniverous/jeeves-meta synthesize
+
+# See all commands
+npx @karmaniverous/jeeves-meta help
 ```
 
 ### As an OpenClaw plugin
 
-Install the plugin package and register it with the gateway. Tools become available to the agent:
+Install and register the plugin package. Four tools become available to the agent:
 
 - `synth_list` — list metas with summary stats and filtering
 - `synth_detail` — full detail for a single meta with optional archive history
@@ -63,14 +87,15 @@ npm run build
 npm run lint
 npm run typecheck
 npm test
-npm run docs    # generate TypeDoc documentation
+npm run knip       # detect unused exports/deps
+npm run docs       # generate TypeDoc documentation
 ```
 
 ## Documentation
 
-Full docs, guides, and API reference:
-
-**[docs.karmanivero.us/jeeves-meta](https://docs.karmanivero.us/jeeves-meta)**
+- **[Engine Guides](packages/lib/guides/index.md)** — concepts, configuration, orchestration, scheduling, architecture patterns
+- **[CLI Reference](packages/lib/guides/cli.md)** — all 10 CLI commands with usage examples
+- **[Plugin Guides](packages/openclaw/guides/index.md)** — setup, tools reference, virtual rules, TOOLS.md injection
 
 ## License
 

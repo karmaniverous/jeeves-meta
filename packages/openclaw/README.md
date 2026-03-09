@@ -5,14 +5,10 @@ OpenClaw plugin for [jeeves-meta](../lib/). Registers synthesis tools and virtua
 ## Features
 
 - **Four interactive tools** — `synth_list`, `synth_detail`, `synth_trigger`, `synth_preview`
-- **GatewayExecutor** — spawns LLM sessions via the OpenClaw gateway HTTP API
+- **GatewayExecutor** — spawns LLM sessions via the OpenClaw gateway HTTP API (included in core lib)
 - **Virtual inference rules** — registers Qdrant indexing rules for `.meta/meta.json` files, archive snapshots, and config
-- **Config loader** — reads `jeeves-meta.config.json` with `@file:` reference resolution
+- **TOOLS.md injection** — dynamic system prompt with entity stats and tool listing
 - **Consumer skill** — `SKILL.md` for agent integration
-
-## Architecture
-
-![Plugin Lifecycle](assets/plugin-lifecycle.png)
 
 ## Install
 
@@ -20,24 +16,34 @@ OpenClaw plugin for [jeeves-meta](../lib/). Registers synthesis tools and virtua
 npm install @karmaniverous/jeeves-meta-openclaw
 ```
 
+Then run the CLI installer to register with the OpenClaw gateway:
+
+```bash
+npx @karmaniverous/jeeves-meta-openclaw install
+```
+
 ## Configuration
 
-The plugin reads its config from `J:\config\jeeves-meta.config.json`. Prompt files are referenced via `@file:` indirection:
+The plugin reads its config path from the plugin `configPath` setting in `openclaw.json`. The config file itself is a standard `SynthConfig` JSON:
 
 ```json
 {
   "watchPaths": ["j:/domains"],
   "watcherUrl": "http://localhost:1936",
+  "gatewayUrl": "http://127.0.0.1:3000",
   "defaultArchitect": "@file:jeeves-meta/prompts/architect.md",
   "defaultCritic": "@file:jeeves-meta/prompts/critic.md"
 }
 ```
 
+See the [Configuration Guide](../lib/guides/configuration.md) for all fields and defaults.
+
 ## Documentation
 
-Full docs, guides, and API reference:
-
-**[docs.karmanivero.us/jeeves-meta](https://docs.karmanivero.us/jeeves-meta)**
+- **[Plugin Setup](guides/plugin-setup.md)** — installation, config, lifecycle
+- **[Tools Reference](guides/tools-reference.md)** — synth_list, synth_detail, synth_trigger, synth_preview
+- **[Virtual Rules](guides/virtual-rules.md)** — Qdrant inference rules
+- **[TOOLS.md Injection](guides/tools-injection.md)** — dynamic prompt generation
 
 ## License
 
