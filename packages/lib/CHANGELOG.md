@@ -2,8 +2,9 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### 0.2.1
+#### 0.2.2
 
+- fix: map watcher scan response shape [`#18`](https://github.com/karmaniverous/jeeves-meta/pull/18)
 - fix: SKILL.md bootstrap + duplicate shebang [`#17`](https://github.com/karmaniverous/jeeves-meta/pull/17)
 - fix: clean up knip configs in both packages [`#16`](https://github.com/karmaniverous/jeeves-meta/pull/16)
 - fix: add outDir to CLI rollup builds for clean-build compatibility [`#15`](https://github.com/karmaniverous/jeeves-meta/pull/15)
@@ -50,8 +51,11 @@ All notable changes to this project will be documented in this file. Dates are d
 - added env.local.template [`4d0ebcc`](https://github.com/karmaniverous/jeeves-meta/commit/4d0ebcc82c8290a9bc283f8227b726888dfd3ec7)
 - docs: resolve all typedoc warnings [`e340852`](https://github.com/karmaniverous/jeeves-meta/commit/e3408521be8c29691ec4fb807587c7430f689a89)
 - chore: release @karmaniverous/jeeves-meta v0.2.0 [`f14c168`](https://github.com/karmaniverous/jeeves-meta/commit/f14c16829e7c073d4a9fba70947b96405c2be457)
+- fix: map watcher scan response (points/cursor to files/next) [`9319a9c`](https://github.com/karmaniverous/jeeves-meta/commit/9319a9c4da4ef5b2c5fdb50094b2b3da8c0a717e)
 - revert: undo schema extraction, keep docs fixes [`8ef3342`](https://github.com/karmaniverous/jeeves-meta/commit/8ef33420c6995601c9b4c8e714b0f7c9df8adba5)
 - installed dotenvx [`d3c437b`](https://github.com/karmaniverous/jeeves-meta/commit/d3c437bcbd4504b1a0d3ef85492d783c892e42e0)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.1.1 [`cfe1e03`](https://github.com/karmaniverous/jeeves-meta/commit/cfe1e03dbe0d32e2f2f77164ae26166a646574d1)
+- chore: release @karmaniverous/jeeves-meta v0.2.1 [`17bbb31`](https://github.com/karmaniverous/jeeves-meta/commit/17bbb3117b09504d2589cd1f6e785dfe431c219f)
 - fix: correct lib release-it tag from service to lib [`cc9f815`](https://github.com/karmaniverous/jeeves-meta/commit/cc9f81514a8528e684432bf693ab6dca7fbbe02c)
 - change depthWeight default from 1 to 0.5 [`5cf4e3c`](https://github.com/karmaniverous/jeeves-meta/commit/5cf4e3c147f737875e7919538728279f07b20dd8)
 - fix: resolve TypeDoc warnings — use README.md links instead of directory links [`353a103`](https://github.com/karmaniverous/jeeves-meta/commit/353a103a4c3d2e67ab9cd869599cd7b7fc928b02)
