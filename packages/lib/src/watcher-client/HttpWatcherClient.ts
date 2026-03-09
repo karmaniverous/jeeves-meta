@@ -9,6 +9,7 @@
 
 import type {
   InferenceRuleSpec,
+  ScanFile,
   ScanParams,
   ScanResponse,
   WatcherClient,
@@ -110,8 +111,23 @@ export class HttpWatcherClient implements WatcherClient {
       body.cursor = params.cursor;
     }
 
-    const result = await this.post('/scan', body);
-    return result as ScanResponse;
+    const raw = (await this.post('/scan', body)) as Record<string, unknown>;
+
+    // jeeves-watcher returns { points, cursor }; map to ScanResponse.
+    const points = (raw.points ?? raw.files ?? []) as Record<string, unknown>[];
+    const next = (raw.cursor ?? raw.next) as string | undefined;
+
+    const files: ScanFile[] = points.map((p) => {
+      const payload = (p.payload ?? p) as Record<string, unknown>;
+      return {
+        file_path: (payload.file_path ?? payload.path ?? '') as string,
+        modified_at: (payload.modified_at ?? payload.mtime ?? 0) as number,
+        content_hash: (payload.content_hash ?? '') as string,
+        ...payload,
+      };
+    });
+
+    return { files, next: next ?? undefined };
   }
 
   async registerRules(
