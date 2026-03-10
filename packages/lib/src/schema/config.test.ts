@@ -80,4 +80,30 @@ describe('synthConfigSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+  it('applies default metaProperty and metaArchiveProperty', () => {
+    const result = synthConfigSchema.safeParse(validConfig);
+    expect(result.success).toBe(true);
+    expect(result.data?.metaProperty).toEqual({ domains: ['meta'] });
+    expect(result.data?.metaArchiveProperty).toEqual({
+      domains: ['meta-archive'],
+    });
+  });
+
+  it('accepts custom metaProperty domains', () => {
+    const result = synthConfigSchema.safeParse({
+      ...validConfig,
+      metaProperty: { domains: ['synth-meta'] },
+      metaArchiveProperty: { domains: ['synth-archive'] },
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.metaProperty).toEqual({ domains: ['synth-meta'] });
+  });
+
+  it('rejects metaProperty with empty domains', () => {
+    const result = synthConfigSchema.safeParse({
+      ...validConfig,
+      metaProperty: { domains: [] },
+    });
+    expect(result.success).toBe(false);
+  });
 });

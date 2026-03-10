@@ -30,6 +30,8 @@ const config: SynthConfig = {
   defaultCritic: 'You are the critic.',
   skipUnchanged: true,
   batchSize: 1,
+  metaProperty: { domains: ['meta'] },
+  metaArchiveProperty: { domains: ['meta-archive'] },
 };
 
 function createMockWatcher(files: string[] = []): WatcherClient {

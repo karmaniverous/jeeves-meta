@@ -35,6 +35,8 @@ const sampleConfig: SynthConfig = {
   defaultCritic: 'You are a critic. Evaluate the synthesis.',
   skipUnchanged: true,
   batchSize: 1,
+  metaProperty: { domains: ['meta'] },
+  metaArchiveProperty: { domains: ['meta-archive'] },
 };
 
 const sampleMeta: MetaJson = {
