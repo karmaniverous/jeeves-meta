@@ -13,7 +13,7 @@ import { buildMetaFilter, discoverMetas } from './discoverMetas.js';
 const config = {
   metaProperty: { domains: ['meta'] },
   metaArchiveProperty: { domains: ['meta-archive'] },
-} as SynthConfig;
+} as unknown as SynthConfig;
 
 function mockWatcher(files: Array<{ file_path: string }>) {
   const scan = vi.fn().mockResolvedValue({
@@ -48,11 +48,25 @@ describe('buildMetaFilter', () => {
     const custom = {
       ...config,
       metaProperty: { domains: ['synth-meta'] },
-    } as SynthConfig;
+    } as unknown as SynthConfig;
     const filter = buildMetaFilter(custom);
     expect(filter).toEqual({
       must: [
         { key: 'domains', match: { value: 'synth-meta' } },
+        { key: 'file_path', match: { text: 'meta.json' } },
+      ],
+    });
+  });
+
+  it('builds filter from scalar metaProperty', () => {
+    const scalar = {
+      ...config,
+      metaProperty: { _meta: 'current' },
+    } as unknown as SynthConfig;
+    const filter = buildMetaFilter(scalar);
+    expect(filter).toEqual({
+      must: [
+        { key: '_meta', match: { value: 'current' } },
         { key: 'file_path', match: { text: 'meta.json' } },
       ],
     });

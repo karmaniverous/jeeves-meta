@@ -38,7 +38,12 @@ function buildSynthRules(config: SynthConfig) {
         'base',
         {
           properties: {
-            domains: { set: config.metaProperty.domains },
+            ...Object.fromEntries(
+              Object.entries(config.metaProperty).map(([k, v]) => [
+                k,
+                { set: v },
+              ]),
+            ),
             synth_id: { type: 'string', set: '{{json._id}}' },
             synth_steer: { type: 'string', set: '{{json._steer}}' },
             synth_depth: { type: 'number', set: '{{json._depth}}' },
@@ -117,7 +122,12 @@ function buildSynthRules(config: SynthConfig) {
         'base',
         {
           properties: {
-            domains: { set: config.metaArchiveProperty.domains },
+            ...Object.fromEntries(
+              Object.entries(config.metaArchiveProperty).map(([k, v]) => [
+                k,
+                { set: v },
+              ]),
+            ),
             synth_id: { type: 'string', set: '{{json._id}}' },
             archived: { type: 'boolean', set: 'true' },
             archived_at: { type: 'string', set: '{{json._archivedAt}}' },

@@ -13,24 +13,44 @@ import { paginatedScan } from '../paginatedScan.js';
 import type { SynthConfig } from '../schema/index.js';
 
 /**
+ * Build a single Qdrant filter clause from a key-value pair.
+ *
+ * Arrays use `match.value` on the first element (Qdrant array membership).
+ * Scalars use `match.value` directly.
+ */
+function buildMatchClause(
+  key: string,
+  value: unknown,
+): Record<string, unknown> {
+  if (Array.isArray(value)) {
+    return { key, match: { value: value[0] as string | number | boolean } };
+  }
+  return { key, match: { value: value as string | number | boolean } };
+}
+
+/**
  * Build a Qdrant filter from config metaProperty.
+ *
+ * Iterates all key-value pairs in `metaProperty` (a generic record)
+ * to construct `must` clauses. Always appends `file_path: meta.json`
+ * for deduplication.
  *
  * @param config - Synth config with metaProperty.
  * @returns Qdrant filter object for scanning live metas.
  */
 export function buildMetaFilter(config: SynthConfig): Record<string, unknown> {
-  return {
-    must: [
-      {
-        key: 'domains',
-        match: { value: config.metaProperty.domains[0] },
-      },
-      {
-        key: 'file_path',
-        match: { text: 'meta.json' },
-      },
-    ],
-  };
+  const must: Record<string, unknown>[] = [];
+
+  for (const [key, value] of Object.entries(config.metaProperty)) {
+    must.push(buildMatchClause(key, value));
+  }
+
+  must.push({
+    key: 'file_path',
+    match: { text: 'meta.json' },
+  });
+
+  return { must };
 }
 
 /**
