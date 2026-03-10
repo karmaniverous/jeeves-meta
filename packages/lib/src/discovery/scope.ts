@@ -23,16 +23,6 @@ export function getScopePrefix(node: MetaNode): string {
 }
 
 /**
- * Get paths that should be excluded from the scope (child meta subtrees).
- *
- * @param node - The meta node to compute exclusions for.
- * @returns Array of path prefixes to exclude from scope queries.
- */
-export function getScopeExclusions(node: MetaNode): string[] {
-  return node.children.map((child) => child.ownerPath);
-}
-
-/**
  * Filter a list of file paths to only those in scope for a meta node.
  *
  * Includes files under ownerPath, excludes files under child meta ownerPaths,

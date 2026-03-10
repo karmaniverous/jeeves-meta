@@ -6,5 +6,5 @@
 
 export { buildMetaFilter, discoverMetas } from './discoverMetas.js';
 export { buildOwnershipTree, findNode } from './ownershipTree.js';
-export { filterInScope, getScopeExclusions, getScopePrefix } from './scope.js';
+export { filterInScope, getScopePrefix } from './scope.js';
 export type { MetaNode, OwnershipTree } from './types.js';
