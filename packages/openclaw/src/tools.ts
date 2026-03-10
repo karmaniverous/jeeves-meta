@@ -1,5 +1,5 @@
 /**
- * Synth tool registrations for OpenClaw.
+ * Meta tool registrations for OpenClaw.
  *
  * @module tools
  */
@@ -21,7 +21,7 @@ import {
   selectCandidate,
 } from '@karmaniverous/jeeves-meta';
 
-import { loadSynthConfig } from './configLoader.js';
+import { loadMetaConfig } from './configLoader.js';
 import {
   fail,
   getConfigPath,
@@ -30,16 +30,16 @@ import {
   type ToolResult,
 } from './helpers.js';
 
-/** Register all synth_* tools. */
-export function registerSynthTools(api: PluginApi): void {
+/** Register all meta_* tools. */
+export function registerMetaTools(api: PluginApi): void {
   const configPath = getConfigPath(api);
 
   // Lazy-load config (resolved once on first use)
-  let _config: ReturnType<typeof loadSynthConfig> | null = null;
+  let _config: ReturnType<typeof loadMetaConfig> | null = null;
 
   const getConfig = () => {
     if (!_config) {
-      _config = loadSynthConfig(configPath);
+      _config = loadMetaConfig(configPath);
     }
     return _config;
   };
@@ -54,7 +54,7 @@ export function registerSynthTools(api: PluginApi): void {
   api.registerTool({
     name: 'synth_list',
     description:
-      'List metas with summary stats and per-meta projection. Replaces synth_status + synth_entities.',
+      'List metas with summary stats and per-meta projection. Replaces meta_status + meta_entities.',
     parameters: {
       type: 'object',
       properties: {

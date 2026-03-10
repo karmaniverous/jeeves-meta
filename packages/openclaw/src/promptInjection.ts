@@ -10,7 +10,7 @@
 import {
   HttpWatcherClient,
   listMetas,
-  type SynthConfig,
+  type MetaConfig,
 } from '@karmaniverous/jeeves-meta';
 
 /**
@@ -21,10 +21,10 @@ import {
  * 2. No entities found - ACTION REQUIRED with setup guidance
  * 3. Healthy - entity stats + tool listing + skill reference
  *
- * @param config - Full synth config (for listMetas and watcherUrl).
+ * @param config - Full meta config (for listMetas and watcherUrl).
  * @returns Markdown string for the Meta section.
  */
-export async function generateMetaMenu(config: SynthConfig): Promise<string> {
+export async function generateMetaMenu(config: MetaConfig): Promise<string> {
   let result;
 
   try {

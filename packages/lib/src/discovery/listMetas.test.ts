@@ -10,11 +10,11 @@ import type {
   WatcherClient,
 } from '../interfaces/index.js';
 import { normalizePath } from '../normalizePath.js';
-import type { SynthConfig } from '../schema/index.js';
+import type { MetaConfig } from '../schema/index.js';
 import { listMetas } from './listMetas.js';
 
 // Minimal valid config for testing
-function makeConfig(overrides: Partial<SynthConfig> = {}): SynthConfig {
+function makeConfig(overrides: Partial<MetaConfig> = {}): MetaConfig {
   return {
     watcherUrl: 'http://localhost:1936',
     gatewayUrl: 'http://localhost:3000',
@@ -31,7 +31,7 @@ function makeConfig(overrides: Partial<SynthConfig> = {}): SynthConfig {
     depthWeight: 0.5,
     skipUnchanged: false,
     metaProperty: { domains: ['synth-meta'] },
-    metaArchiveProperty: { domains: ['synth-meta-archive'] },
+    metaArchiveProperty: { domains: ['meta-archive'] },
     ...overrides,
   };
 }

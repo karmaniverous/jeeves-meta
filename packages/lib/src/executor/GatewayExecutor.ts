@@ -1,5 +1,5 @@
 /**
- * SynthExecutor implementation using the OpenClaw gateway HTTP API.
+ * MetaExecutor implementation using the OpenClaw gateway HTTP API.
  *
  * Lives in the library package so both plugin and runner can import it.
  * Spawns sub-agent sessions via the gateway, polls for completion,
@@ -9,9 +9,9 @@
  */
 
 import type {
-  SynthExecutor,
-  SynthSpawnOptions,
-  SynthSpawnResult,
+  MetaExecutor,
+  MetaSpawnOptions,
+  MetaSpawnResult,
 } from '../interfaces/index.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 5000;
@@ -33,13 +33,13 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * SynthExecutor that spawns OpenClaw sessions via the gateway HTTP API.
+ * MetaExecutor that spawns OpenClaw sessions via the gateway HTTP API.
  *
  * Used by both the OpenClaw plugin (in-process tool calls) and the
  * runner/CLI (external invocation). Constructs from `gatewayUrl` and
- * optional `apiKey` — typically sourced from `SynthConfig`.
+ * optional `apiKey` — typically sourced from `MetaConfig`.
  */
-export class GatewayExecutor implements SynthExecutor {
+export class GatewayExecutor implements MetaExecutor {
   private readonly gatewayUrl: string;
   private readonly apiKey: string | undefined;
   private readonly pollIntervalMs: number;
@@ -55,8 +55,8 @@ export class GatewayExecutor implements SynthExecutor {
 
   async spawn(
     task: string,
-    options?: SynthSpawnOptions,
-  ): Promise<SynthSpawnResult> {
+    options?: MetaSpawnOptions,
+  ): Promise<MetaSpawnResult> {
     const timeoutMs = (options?.timeout ?? DEFAULT_TIMEOUT_MS / 1000) * 1000;
     const deadline = Date.now() + timeoutMs;
 

@@ -1,11 +1,11 @@
 /**
  * Pluggable executor interface for LLM subprocess invocation.
  *
- * @module interfaces/SynthExecutor
+ * @module interfaces/MetaExecutor
  */
 
 /** Options for spawning a synthesis subprocess. */
-export interface SynthSpawnOptions {
+export interface MetaSpawnOptions {
   /** Model override for this subprocess. */
   model?: string;
   /** Timeout in seconds. */
@@ -13,7 +13,7 @@ export interface SynthSpawnOptions {
 }
 
 /** Result of a spawn call, including optional token usage. */
-export interface SynthSpawnResult {
+export interface MetaSpawnResult {
   /** Subprocess output text. */
   output: string;
   /** Token count for this call, if available from the executor. */
@@ -27,7 +27,7 @@ export interface SynthSpawnResult {
  * calls spawn() sequentially for architect, builder, and critic steps.
  * Each call blocks until the subprocess completes and returns its result.
  */
-export interface SynthExecutor {
+export interface MetaExecutor {
   /**
    * Spawn a subprocess with the given task prompt.
    *
@@ -35,5 +35,5 @@ export interface SynthExecutor {
    * @param options - Optional model and timeout overrides.
    * @returns The subprocess result with output and optional token count.
    */
-  spawn(task: string, options?: SynthSpawnOptions): Promise<SynthSpawnResult>;
+  spawn(task: string, options?: MetaSpawnOptions): Promise<MetaSpawnResult>;
 }

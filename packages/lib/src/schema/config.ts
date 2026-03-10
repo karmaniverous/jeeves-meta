@@ -10,7 +10,7 @@
 import { z } from 'zod';
 
 /** Zod schema for jeeves-meta configuration. */
-export const synthConfigSchema = z.object({
+export const metaConfigSchema = z.object({
   /** Filesystem paths to watch for .meta/ directories. */
 
   /** Watcher service base URL. */
@@ -78,4 +78,4 @@ export const synthConfigSchema = z.object({
 });
 
 /** Inferred type for jeeves-meta configuration. */
-export type SynthConfig = z.infer<typeof synthConfigSchema>;
+export type MetaConfig = z.infer<typeof metaConfigSchema>;
