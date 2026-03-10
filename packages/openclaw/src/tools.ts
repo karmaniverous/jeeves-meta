@@ -6,17 +6,18 @@
 
 import {
   actualStaleness,
+  buildMetaFilter,
   buildOwnershipTree,
   computeEffectiveStaleness,
   computeStructureHash,
-  ensureMetaJson,
+  discoverMetas,
   filterInScope,
   findNode,
-  globMetas,
   hasSteerChanged,
   HttpWatcherClient,
   isArchitectTriggered,
   isLocked,
+  type MetaJson,
   normalizePath,
   paginatedScan,
   readLatestArchive,
@@ -64,9 +65,6 @@ export function registerSynthTools(api: PluginApi): void {
   /** Derive watcherUrl from loaded config. */
   const getWatcherUrl = (): string => getConfig().watcherUrl;
 
-  /** Derive watchPaths from loaded config. */
-  const getWatchPaths = (): string[] => getConfig().watchPaths;
-
   // ─── synth_list ──────────────────────────────────────────────
   api.registerTool({
     name: 'synth_list',
@@ -105,13 +103,12 @@ export function registerSynthTools(api: PluginApi): void {
       try {
         const pathPrefix = params.pathPrefix as string | undefined;
         const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
+        const config = getConfig();
 
-        // Query watcher for synth-meta domain points
+        // Query watcher for synth entity points using configured filter
         const scanFiles = await paginatedScan(watcher, {
           ...(pathPrefix ? { pathPrefix } : {}),
-          filter: {
-            must: [{ key: 'domains', match: { value: 'synth-meta' } }],
-          },
+          filter: buildMetaFilter(config),
           fields: [
             'file_path',
             'synth_depth',
@@ -123,6 +120,15 @@ export function registerSynthTools(api: PluginApi): void {
             'generated_at_unix',
             'synth_error_step',
           ],
+        });
+
+        // Deduplicate by file_path (watcher chunks files into multiple points)
+        const seenPaths = new Set<string>();
+        const dedupedFiles = scanFiles.filter((sf) => {
+          const fp = sf.file_path;
+          if (seenPaths.has(fp)) return false;
+          seenPaths.add(fp);
+          return true;
         });
 
         const entities: Array<
@@ -140,9 +146,7 @@ export function registerSynthTools(api: PluginApi): void {
         let stalestPath: string | null = null;
         let stalestEffective = -1;
 
-        const config = getConfig();
-
-        for (const sf of scanFiles) {
+        for (const sf of dedupedFiles) {
           const filePath = sf.file_path;
           const depth =
             typeof sf['synth_depth'] === 'number' ? sf['synth_depth'] : 0;
@@ -331,7 +335,8 @@ export function registerSynthTools(api: PluginApi): void {
         ]);
         const fields = params.fields as string[] | undefined;
 
-        const metaPaths = globMetas(getWatchPaths());
+        const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
+        const metaPaths = await discoverMetas(getConfig(), watcher);
         const tree = buildOwnershipTree(metaPaths);
 
         const targetNode = findNode(tree, targetPath);
@@ -339,7 +344,11 @@ export function registerSynthTools(api: PluginApi): void {
           return fail('Meta path not found: ' + targetPath);
         }
 
-        const meta = ensureMetaJson(targetNode.metaPath);
+        const { readFileSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        const meta = JSON.parse(
+          readFileSync(join(targetNode.metaPath, 'meta.json'), 'utf8'),
+        ) as Record<string, unknown>;
 
         // Apply field projection
         const projectMeta = (
@@ -417,7 +426,8 @@ export function registerSynthTools(api: PluginApi): void {
     ): Promise<ToolResult> => {
       try {
         const targetPath = params.path as string | undefined;
-        const metaPaths = globMetas(getWatchPaths());
+        const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
+        const metaPaths = await discoverMetas(getConfig(), watcher);
         const tree = buildOwnershipTree(metaPaths);
 
         let targetNode;
@@ -429,12 +439,20 @@ export function registerSynthTools(api: PluginApi): void {
           }
         } else {
           // Select stalest
+          const { readFileSync: readFs } = await import('node:fs');
+          const { join: joinPath } = await import('node:path');
           const candidates = [];
           for (const node of tree.nodes.values()) {
-            const meta = ensureMetaJson(node.metaPath);
-            const staleness = actualStaleness(meta);
-            if (staleness > 0) {
-              candidates.push({ node, meta, actualStaleness: staleness });
+            try {
+              const meta: MetaJson = JSON.parse(
+                readFs(joinPath(node.metaPath, 'meta.json'), 'utf8'),
+              ) as MetaJson;
+              const staleness = actualStaleness(meta);
+              if (staleness > 0) {
+                candidates.push({ node, meta, actualStaleness: staleness });
+              }
+            } catch {
+              // skip unreadable
             }
           }
           const weighted = computeEffectiveStaleness(
@@ -450,8 +468,11 @@ export function registerSynthTools(api: PluginApi): void {
           targetNode = winner.node;
         }
 
-        const meta = ensureMetaJson(targetNode.metaPath);
-        const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
+        const { readFileSync: readMeta } = await import('node:fs');
+        const { join: joinMeta } = await import('node:path');
+        const meta: MetaJson = JSON.parse(
+          readMeta(joinMeta(targetNode.metaPath, 'meta.json'), 'utf8'),
+        ) as MetaJson;
 
         // Scope files (paginated for completeness)
         const allScanFiles = await paginatedScan(watcher, {
@@ -567,16 +588,13 @@ export function registerSynthTools(api: PluginApi): void {
         });
         const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
 
-        // If path specified, temporarily override watchPaths to target it
         const targetPath = params.path as string | undefined;
-        const effectiveConfig = targetPath
-          ? {
-              ...config,
-              watchPaths: [targetPath.replace(/[/\\]\.meta[/\\]?$/, '')],
-            }
-          : config;
-
-        const results = await orchestrate(effectiveConfig, executor, watcher);
+        const results = await orchestrate(
+          config,
+          executor,
+          watcher,
+          targetPath,
+        );
         const synthesized = results.filter((r) => r.synthesized);
 
         if (synthesized.length === 0) {

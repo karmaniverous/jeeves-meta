@@ -18,18 +18,25 @@ import {
   actualStaleness,
   buildOwnershipTree,
   computeEffectiveStaleness,
-  ensureMetaJson,
+  discoverMetas,
   findNode,
   GatewayExecutor,
-  globMetas,
   hasSteerChanged,
   HttpWatcherClient,
   isArchitectTriggered,
   isLocked,
+  type MetaJson,
   normalizePath,
   orchestrate,
   type SynthConfig,
 } from './index.js';
+
+/** Read and parse a meta.json file with proper typing. */
+function readMeta(metaPath: string): MetaJson {
+  return JSON.parse(
+    readFileSync(join(metaPath, 'meta.json'), 'utf8'),
+  ) as MetaJson;
+}
 
 const args = process.argv.slice(2);
 const command = args.find((a) => !a.startsWith('-'));
@@ -67,8 +74,9 @@ function output(data: unknown): void {
   }
 }
 
-function runStatus(config: SynthConfig): void {
-  const metaPaths = globMetas(config.watchPaths);
+async function runStatus(config: SynthConfig): Promise<void> {
+  const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+  const metaPaths = await discoverMetas(config, watcher);
   const tree = buildOwnershipTree(metaPaths);
 
   let stale = 0;
@@ -80,7 +88,12 @@ function runStatus(config: SynthConfig): void {
   let critTokens = 0;
 
   for (const node of tree.nodes.values()) {
-    const meta = ensureMetaJson(node.metaPath);
+    let meta: MetaJson;
+    try {
+      meta = readMeta(node.metaPath);
+    } catch {
+      continue;
+    }
     const s = actualStaleness(meta);
     if (s > 0) stale++;
     if (meta._error) errors++;
@@ -101,10 +114,11 @@ function runStatus(config: SynthConfig): void {
   });
 }
 
-function runList(config: SynthConfig): void {
+async function runList(config: SynthConfig): Promise<void> {
   const prefix = getArg('--prefix');
   const filter = getArg('--filter');
-  const metaPaths = globMetas(config.watchPaths);
+  const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+  const metaPaths = await discoverMetas(config, watcher);
   const tree = buildOwnershipTree(metaPaths);
 
   interface Row {
@@ -119,7 +133,12 @@ function runList(config: SynthConfig): void {
   const rows: Row[] = [];
   for (const node of tree.nodes.values()) {
     if (prefix && !node.metaPath.includes(prefix)) continue;
-    const meta = ensureMetaJson(node.metaPath);
+    let meta: MetaJson;
+    try {
+      meta = readMeta(node.metaPath);
+    } catch {
+      continue;
+    }
     const s = actualStaleness(meta);
     const hasError = Boolean(meta._error);
     const isLockedNow = isLocked(normalizePath(node.metaPath));
@@ -150,7 +169,8 @@ async function runDetail(config: SynthConfig): Promise<void> {
   }
 
   const archiveArg = getArg('--archive');
-  const metaPaths = globMetas(config.watchPaths);
+  const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+  const metaPaths = await discoverMetas(config, watcher);
   const tree = buildOwnershipTree(metaPaths);
   const normalized = normalizePath(targetPath);
 
@@ -160,7 +180,7 @@ async function runDetail(config: SynthConfig): Promise<void> {
     process.exit(1);
   }
 
-  const meta = ensureMetaJson(node.metaPath);
+  const meta = readMeta(node.metaPath);
   const result: Record<string, unknown> = { meta };
 
   if (archiveArg) {
@@ -187,9 +207,9 @@ async function runPreview(config: SynthConfig): Promise<void> {
     selectCandidate,
   } = await import('./index.js');
 
-  const metaPaths = globMetas(config.watchPaths);
-  const tree = buildOwnershipTree(metaPaths);
   const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+  const metaPaths = await discoverMetas(config, watcher);
+  const tree = buildOwnershipTree(metaPaths);
 
   let targetNode;
   if (targetPath) {
@@ -202,7 +222,12 @@ async function runPreview(config: SynthConfig): Promise<void> {
   } else {
     const candidates = [];
     for (const node of tree.nodes.values()) {
-      const meta = ensureMetaJson(node.metaPath);
+      let meta: MetaJson;
+      try {
+        meta = readMeta(node.metaPath);
+      } catch {
+        continue;
+      }
       const s = actualStaleness(meta);
       if (s > 0) candidates.push({ node, meta, actualStaleness: s });
     }
@@ -215,7 +240,7 @@ async function runPreview(config: SynthConfig): Promise<void> {
     targetNode = winner.node;
   }
 
-  const meta = ensureMetaJson(targetNode.metaPath);
+  const meta = readMeta(targetNode.metaPath);
   const allFiles = await paginatedScan(watcher, {
     pathPrefix: targetNode.ownerPath,
   });
@@ -259,9 +284,6 @@ async function runSynthesize(config: SynthConfig): Promise<void> {
 
   const effectiveConfig = {
     ...config,
-    ...(targetPath
-      ? { watchPaths: [targetPath.replace(/[/\\]\.meta[/\\]?$/, '')] }
-      : {}),
     ...(batchArg ? { batchSize: parseInt(batchArg, 10) } : {}),
   };
 
@@ -271,7 +293,12 @@ async function runSynthesize(config: SynthConfig): Promise<void> {
   });
   const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
 
-  const results = await orchestrate(effectiveConfig, executor, watcher);
+  const results = await orchestrate(
+    effectiveConfig,
+    executor,
+    watcher,
+    targetPath ?? undefined,
+  );
   const synthesized = results.filter((r) => r.synthesized);
 
   output({
@@ -349,9 +376,15 @@ async function runValidate(config: SynthConfig): Promise<void> {
     checks.gateway = 'UNREACHABLE (' + config.gatewayUrl + ')';
   }
 
-  // Check watch paths
-  const metaPaths = globMetas(config.watchPaths);
-  checks.metas = String(metaPaths.length) + ' .meta/ directories found';
+  // Check meta discovery via watcher
+  try {
+    const watcherClient = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+    const metaPaths = await discoverMetas(config, watcherClient);
+    checks.metas =
+      String(metaPaths.length) + ' .meta/ entities discovered via watcher';
+  } catch {
+    checks.metas = 'FAILED — could not discover metas (watcher may be down)';
+  }
 
   output({ config: 'valid', checks });
 }
@@ -423,10 +456,10 @@ async function main(): Promise<void> {
 
   switch (command) {
     case 'status':
-      runStatus(config);
+      await runStatus(config);
       break;
     case 'list':
-      runList(config);
+      await runList(config);
       break;
     case 'detail':
       await runDetail(config);

@@ -24,20 +24,16 @@ import {
  * @param watcherUrl - Watcher API base URL.
  * @returns Markdown string for the Meta section.
  */
-export async function generateMetaMenu(watcherUrl: string): Promise<string> {
+export async function generateMetaMenu(
+  watcherUrl: string,
+  metaFilter: Record<string, unknown>,
+): Promise<string> {
   let entities: ScanFile[] = [];
 
   try {
     const watcher = new HttpWatcherClient({ baseUrl: watcherUrl });
     entities = await paginatedScan(watcher, {
-      filter: {
-        must: [
-          {
-            key: 'domains',
-            match: { value: 'synth-meta' },
-          },
-        ],
-      },
+      filter: metaFilter,
       fields: [
         'synth_depth',
         'synth_emphasis',
@@ -60,6 +56,15 @@ export async function generateMetaMenu(watcherUrl: string): Promise<string> {
       '> for setup instructions. Do not attempt synthesis until watcher is available.',
     ].join('\n');
   }
+
+  // Deduplicate by file_path (watcher chunks files into multiple points)
+  const seenPaths = new Set<string>();
+  entities = entities.filter((e) => {
+    const fp = e.file_path;
+    if (seenPaths.has(fp)) return false;
+    seenPaths.add(fp);
+    return true;
+  });
 
   if (entities.length === 0) {
     return [

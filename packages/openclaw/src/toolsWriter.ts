@@ -10,6 +10,8 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+import { buildMetaFilter, type SynthConfig } from '@karmaniverous/jeeves-meta';
+
 import type { PluginApi } from './helpers.js';
 import { generateMetaMenu } from './promptInjection.js';
 
@@ -97,9 +99,12 @@ export function upsertMetaSection(existing: string, metaMenu: string): string {
  */
 async function refreshToolsMd(
   api: PluginApi,
-  watcherUrl: string,
+  config: SynthConfig,
 ): Promise<boolean> {
-  const menu = await generateMetaMenu(watcherUrl);
+  const menu = await generateMetaMenu(
+    config.watcherUrl,
+    buildMetaFilter(config),
+  );
 
   if (menu === lastWrittenMenu) {
     return false;
@@ -133,10 +138,10 @@ async function refreshToolsMd(
  * @param api - Plugin API.
  * @param watcherUrl - Watcher API base URL.
  */
-export function startToolsWriter(api: PluginApi, watcherUrl: string): void {
+export function startToolsWriter(api: PluginApi, config: SynthConfig): void {
   // Deferred initial write
   setTimeout(() => {
-    refreshToolsMd(api, watcherUrl).catch((err: unknown) => {
+    refreshToolsMd(api, config).catch((err: unknown) => {
       console.error('[jeeves-meta] Failed to write TOOLS.md:', err);
     });
   }, INITIAL_DELAY_MS);
@@ -146,7 +151,7 @@ export function startToolsWriter(api: PluginApi, watcherUrl: string): void {
     clearInterval(intervalHandle);
   }
   intervalHandle = setInterval(() => {
-    refreshToolsMd(api, watcherUrl).catch((err: unknown) => {
+    refreshToolsMd(api, config).catch((err: unknown) => {
       console.error('[jeeves-meta] Failed to refresh TOOLS.md:', err);
     });
   }, REFRESH_INTERVAL_MS);

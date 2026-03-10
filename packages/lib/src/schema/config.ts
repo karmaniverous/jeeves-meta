@@ -12,7 +12,6 @@ import { z } from 'zod';
 /** Zod schema for jeeves-meta configuration. */
 export const synthConfigSchema = z.object({
   /** Filesystem paths to watch for .meta/ directories. */
-  watchPaths: z.array(z.string()).min(1),
 
   /** Watcher service base URL. */
   watcherUrl: z.url(),
@@ -59,6 +58,23 @@ export const synthConfigSchema = z.object({
 
   /** Number of metas to synthesize per invocation. */
   batchSize: z.number().int().min(1).default(1),
+
+  /**
+   * Watcher metadata properties for live .meta/meta.json files.
+   * Virtual rules use these to tag live metas; scan queries derive
+   * their filter from the first domain value.
+   */
+  metaProperty: z
+    .object({ domains: z.array(z.string()).min(1) })
+    .default({ domains: ['meta'] }),
+
+  /**
+   * Watcher metadata properties for .meta/archive/** snapshots.
+   * Virtual rules use these to tag archive files.
+   */
+  metaArchiveProperty: z
+    .object({ domains: z.array(z.string()).min(1) })
+    .default({ domains: ['meta-archive'] }),
 });
 
 /** Inferred type for jeeves-meta configuration. */

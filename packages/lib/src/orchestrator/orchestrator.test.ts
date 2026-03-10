@@ -21,7 +21,6 @@ import {
 const testRoot = join(tmpdir(), `jeeves-meta-orch-${Date.now().toString()}`);
 
 const sampleConfig: SynthConfig = {
-  watchPaths: ['/test'],
   watcherUrl: 'http://localhost:3456',
   gatewayUrl: 'http://127.0.0.1:3000',
   depthWeight: 1,
@@ -35,6 +34,8 @@ const sampleConfig: SynthConfig = {
   defaultCritic: 'You are a critic. Evaluate the synthesis.',
   skipUnchanged: true,
   batchSize: 1,
+  metaProperty: { domains: ['meta'] },
+  metaArchiveProperty: { domains: ['meta-archive'] },
 };
 
 const sampleMeta: MetaJson = {

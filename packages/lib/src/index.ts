@@ -12,18 +12,16 @@ export {
 } from './archive/index.js';
 export { loadSynthConfig, resolveConfigPath } from './configLoader.js';
 export {
+  buildMetaFilter,
   buildOwnershipTree,
-  ensureMetaJson,
+  discoverMetas,
   filterInScope,
   findNode,
-  getScopeExclusions,
   getScopePrefix,
-  globMetas,
   type MetaNode,
   type OwnershipTree,
 } from './discovery/index.js';
 export { computeEma } from './ema.js';
-export { createSynthEngine, type SynthEngine } from './engine.js';
 export { toSynthError } from './errors.js';
 export {
   GatewayExecutor,
