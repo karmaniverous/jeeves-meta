@@ -5,6 +5,7 @@
  */
 
 export { ensureMetaJson } from './ensureMetaJson.js';
+export { buildMetaFilter, discoverMetas } from './discoverMetas.js';
 export { globMetas } from './globMetas.js';
 export { buildOwnershipTree, findNode } from './ownershipTree.js';
 export { filterInScope, getScopeExclusions, getScopePrefix } from './scope.js';

@@ -18,6 +18,8 @@ export {
   findNode,
   getScopeExclusions,
   getScopePrefix,
+  buildMetaFilter,
+  discoverMetas,
   globMetas,
   type MetaNode,
   type OwnershipTree,
