@@ -28,5 +28,5 @@ export default function register(api: PluginApi): void {
   });
 
   // Start periodic TOOLS.md writer
-  startToolsWriter(api, config.watcherUrl);
+  startToolsWriter(api, config);
 }

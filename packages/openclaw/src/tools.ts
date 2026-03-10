@@ -6,13 +6,13 @@
 
 import {
   actualStaleness,
+  buildMetaFilter,
   buildOwnershipTree,
   computeEffectiveStaleness,
   computeStructureHash,
-  ensureMetaJson,
+  discoverMetas,
   filterInScope,
   findNode,
-  globMetas,
   hasSteerChanged,
   HttpWatcherClient,
   isArchitectTriggered,
@@ -331,7 +331,8 @@ export function registerSynthTools(api: PluginApi): void {
         ]);
         const fields = params.fields as string[] | undefined;
 
-        const metaPaths = globMetas(getWatchPaths());
+        const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
+        const metaPaths = await discoverMetas(getConfig(), watcher);
         const tree = buildOwnershipTree(metaPaths);
 
         const targetNode = findNode(tree, targetPath);
@@ -339,7 +340,11 @@ export function registerSynthTools(api: PluginApi): void {
           return fail('Meta path not found: ' + targetPath);
         }
 
-        const meta = ensureMetaJson(targetNode.metaPath);
+        const { readFileSync } = await import('node:fs');
+        const { join } = await import('node:path');
+        const meta = JSON.parse(
+          readFileSync(join(targetNode.metaPath, 'meta.json'), 'utf8'),
+        ) as Record<string, unknown>;
 
         // Apply field projection
         const projectMeta = (
@@ -417,7 +422,8 @@ export function registerSynthTools(api: PluginApi): void {
     ): Promise<ToolResult> => {
       try {
         const targetPath = params.path as string | undefined;
-        const metaPaths = globMetas(getWatchPaths());
+        const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
+        const metaPaths = await discoverMetas(getConfig(), watcher);
         const tree = buildOwnershipTree(metaPaths);
 
         let targetNode;
@@ -429,12 +435,20 @@ export function registerSynthTools(api: PluginApi): void {
           }
         } else {
           // Select stalest
+          const { readFileSync: readFs } = await import('node:fs');
+          const { join: joinPath } = await import('node:path');
           const candidates = [];
           for (const node of tree.nodes.values()) {
-            const meta = ensureMetaJson(node.metaPath);
-            const staleness = actualStaleness(meta);
-            if (staleness > 0) {
-              candidates.push({ node, meta, actualStaleness: staleness });
+            try {
+              const meta = JSON.parse(
+                readFs(joinPath(node.metaPath, 'meta.json'), 'utf8'),
+              );
+              const staleness = actualStaleness(meta);
+              if (staleness > 0) {
+                candidates.push({ node, meta, actualStaleness: staleness });
+              }
+            } catch {
+              // skip unreadable
             }
           }
           const weighted = computeEffectiveStaleness(
@@ -450,8 +464,11 @@ export function registerSynthTools(api: PluginApi): void {
           targetNode = winner.node;
         }
 
-        const meta = ensureMetaJson(targetNode.metaPath);
-        const watcher = new HttpWatcherClient({ baseUrl: getWatcherUrl() });
+        const { readFileSync: readMeta } = await import('node:fs');
+        const { join: joinMeta } = await import('node:path');
+        const meta = JSON.parse(
+          readMeta(joinMeta(targetNode.metaPath, 'meta.json'), 'utf8'),
+        );
 
         // Scope files (paginated for completeness)
         const allScanFiles = await paginatedScan(watcher, {
