@@ -2,8 +2,9 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### 0.3.1
+#### 0.3.2
 
+- fix: filter watcher scan to meta.json files only [`#21`](https://github.com/karmaniverous/jeeves-meta/pull/21)
 - Consolidate meta listing/dedup in lib [`#20`](https://github.com/karmaniverous/jeeves-meta/pull/20)
 - Phase 7e: Standardize meta discovery on watcher scan [`#19`](https://github.com/karmaniverous/jeeves-meta/pull/19)
 - fix: map watcher scan response shape [`#18`](https://github.com/karmaniverous/jeeves-meta/pull/18)
@@ -59,6 +60,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - chore: release @karmaniverous/jeeves-meta v0.1.0 [`17bcc60`](https://github.com/karmaniverous/jeeves-meta/commit/17bcc607e612ec3577382b90b7e7e7cd45afe63b)
 - fix all spec-vs-implementation gaps (round 2) [`351dec5`](https://github.com/karmaniverous/jeeves-meta/commit/351dec535b43ec3811772192c9656284d200b338)
 - fix: SKILL.md bootstrap with global install, remove duplicate shebang [`4aafdd5`](https://github.com/karmaniverous/jeeves-meta/commit/4aafdd55019699fd82a5ef83651efe705fe60274)
+- fix: filter watcher scan to meta.json files only in buildMetaFilter [`8acc06f`](https://github.com/karmaniverous/jeeves-meta/commit/8acc06f44d9ef0289af95df922b8a95b573b1e16)
 - feat: virtual rules use configurable domain tags from metaProperty/metaArchiveProperty [`07818c3`](https://github.com/karmaniverous/jeeves-meta/commit/07818c3e78792d81961af4ed96bf64a85fd08377)
 - docs: move changelogs to package level [`15a9c8d`](https://github.com/karmaniverous/jeeves-meta/commit/15a9c8d17afe342af81cc940aa32047f003ea155)
 - added env.local.template [`4d0ebcc`](https://github.com/karmaniverous/jeeves-meta/commit/4d0ebcc82c8290a9bc283f8227b726888dfd3ec7)
@@ -69,7 +71,9 @@ All notable changes to this project will be documented in this file. Dates are d
 - revert: undo schema extraction, keep docs fixes [`8ef3342`](https://github.com/karmaniverous/jeeves-meta/commit/8ef33420c6995601c9b4c8e714b0f7c9df8adba5)
 - installed dotenvx [`d3c437b`](https://github.com/karmaniverous/jeeves-meta/commit/d3c437bcbd4504b1a0d3ef85492d783c892e42e0)
 - chore: release @karmaniverous/jeeves-meta v0.3.0 [`e15e4ce`](https://github.com/karmaniverous/jeeves-meta/commit/e15e4ce82c3cfc1ed82dffe1079ea97a006ec8f7)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.1.3 [`fd3f668`](https://github.com/karmaniverous/jeeves-meta/commit/fd3f668d146a91e4e6095c7fa1dc44a6015ac987)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.1.1 [`cfe1e03`](https://github.com/karmaniverous/jeeves-meta/commit/cfe1e03dbe0d32e2f2f77164ae26166a646574d1)
+- chore: release @karmaniverous/jeeves-meta v0.3.1 [`afba770`](https://github.com/karmaniverous/jeeves-meta/commit/afba7701af15322d5884ed90d3d30cad211ae812)
 - chore: release @karmaniverous/jeeves-meta v0.2.2 [`2d2d181`](https://github.com/karmaniverous/jeeves-meta/commit/2d2d181d5ab63e68f2c7c805229165cf09f3df96)
 - chore: release @karmaniverous/jeeves-meta v0.2.1 [`17bbb31`](https://github.com/karmaniverous/jeeves-meta/commit/17bbb3117b09504d2589cd1f6e785dfe431c219f)
 - fix: correct lib release-it tag from service to lib [`cc9f815`](https://github.com/karmaniverous/jeeves-meta/commit/cc9f81514a8528e684432bf693ab6dca7fbbe02c)
