@@ -2,7 +2,7 @@
   "id": "jeeves-meta-openclaw",
   "name": "Jeeves Meta",
   "description": "Knowledge synthesis tools — trigger synthesis, view status, manage entities.",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "skills": [
     "dist/skills/jeeves-meta"
   ],
