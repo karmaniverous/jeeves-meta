@@ -15,6 +15,18 @@ import { HttpWatcherClient } from '@karmaniverous/jeeves-meta';
 const SOURCE = 'jeeves-meta';
 
 /**
+ * Convert a `Record<string, unknown>` config property into watcher
+ * schema `set` directives: `{ key: { set: value } }` per entry.
+ */
+function toSchemaSetDirectives(
+  props: Record<string, unknown>,
+): Record<string, { set: unknown }> {
+  return Object.fromEntries(
+    Object.entries(props).map(([k, v]) => [k, { set: v }]),
+  );
+}
+
+/**
  * Build virtual rule definitions using configured domain tags.
  *
  * @param config - Synth config with metaProperty/metaArchiveProperty.
@@ -38,12 +50,7 @@ function buildSynthRules(config: SynthConfig) {
         'base',
         {
           properties: {
-            ...Object.fromEntries(
-              Object.entries(config.metaProperty).map(([k, v]) => [
-                k,
-                { set: v },
-              ]),
-            ),
+            ...toSchemaSetDirectives(config.metaProperty),
             synth_id: { type: 'string', set: '{{json._id}}' },
             synth_steer: { type: 'string', set: '{{json._steer}}' },
             synth_depth: { type: 'number', set: '{{json._depth}}' },
@@ -122,12 +129,7 @@ function buildSynthRules(config: SynthConfig) {
         'base',
         {
           properties: {
-            ...Object.fromEntries(
-              Object.entries(config.metaArchiveProperty).map(([k, v]) => [
-                k,
-                { set: v },
-              ]),
-            ),
+            ...toSchemaSetDirectives(config.metaArchiveProperty),
             synth_id: { type: 'string', set: '{{json._id}}' },
             archived: { type: 'boolean', set: 'true' },
             archived_at: { type: 'string', set: '{{json._archivedAt}}' },
