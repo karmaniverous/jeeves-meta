@@ -490,44 +490,72 @@ export function registerMetaTools(api: PluginApi): void {
       params: Record<string, unknown>,
     ): Promise<ToolResult> => {
       try {
-        const { orchestrate } = await import('@karmaniverous/jeeves-meta');
+        const { orchestrate, listMetas } =
+          await import('@karmaniverous/jeeves-meta');
         const { GatewayExecutor } = await import('@karmaniverous/jeeves-meta');
 
         const config = getConfig();
+        const watcher = getWatcher();
+        const targetPath = params.path as string | undefined;
+
+        // Pre-flight: verify there are discoverable metas and a valid target
+        const list = await listMetas(config, watcher);
+        if (list.entries.length === 0) {
+          return ok({
+            status: 'skipped',
+            message: 'No metas discovered — nothing to synthesize.',
+          });
+        }
+
+        if (targetPath) {
+          const { normalizePath } = await import('@karmaniverous/jeeves-meta');
+          const normalized = normalizePath(targetPath);
+          const found = list.entries.some(
+            (e) =>
+              normalizePath(e.path) === normalized ||
+              normalizePath(e.path) === normalized + '/.meta',
+          );
+          if (!found) {
+            return ok({
+              status: 'skipped',
+              message:
+                'Target path not found in discovered metas: ' + targetPath,
+            });
+          }
+        }
+
+        // Fire-and-forget: run orchestration in background
         const executor = new GatewayExecutor({
           gatewayUrl: config.gatewayUrl,
           apiKey: config.gatewayApiKey,
         });
-        const watcher = getWatcher();
 
-        const targetPath = params.path as string | undefined;
-        const results = await orchestrate(
-          config,
-          executor,
-          watcher,
-          targetPath,
+        void orchestrate(config, executor, watcher, targetPath).then(
+          (results) => {
+            const synthesized = results.filter((r) => r.synthesized);
+            if (synthesized.length > 0) {
+              console.log(
+                '[jeeves-meta] Synthesis complete:',
+                synthesized.length,
+                'meta(s).',
+                synthesized.some((r) => r.error)
+                  ? 'Some had errors.'
+                  : 'All succeeded.',
+              );
+            }
+          },
+          (err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error('[jeeves-meta] Synthesis failed:', msg);
+          },
         );
-        const synthesized = results.filter((r) => r.synthesized);
-
-        if (synthesized.length === 0) {
-          return ok({
-            message:
-              'No synthesis performed — no stale metas found or all locked.',
-          });
-        }
 
         return ok({
-          synthesizedCount: synthesized.length,
-          results: synthesized.map((r) => ({
-            metaPath: r.metaPath,
-            error: r.error ?? null,
-          })),
+          status: 'accepted',
+          target: targetPath ?? 'stalest candidate',
           message:
-            synthesized.length.toString() +
-            ' meta(s) synthesized.' +
-            (synthesized.some((r) => r.error)
-              ? ' Some completed with errors.'
-              : ''),
+            'Synthesis started in background.' +
+            ' Results will appear in meta.json when complete.',
         });
       } catch (error) {
         return fail(error);
