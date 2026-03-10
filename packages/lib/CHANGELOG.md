@@ -2,8 +2,9 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### 0.3.2
+#### 0.3.3
 
+-  feat: configurable meta property shape [`#22`](https://github.com/karmaniverous/jeeves-meta/pull/22)
 - fix: filter watcher scan to meta.json files only [`#21`](https://github.com/karmaniverous/jeeves-meta/pull/21)
 - Consolidate meta listing/dedup in lib [`#20`](https://github.com/karmaniverous/jeeves-meta/pull/20)
 - Phase 7e: Standardize meta discovery on watcher scan [`#19`](https://github.com/karmaniverous/jeeves-meta/pull/19)
@@ -44,9 +45,11 @@ All notable changes to this project will be documented in this file. Dates are d
 - feat: Phase 6 - HttpWatcherClient implementation [`917388f`](https://github.com/karmaniverous/jeeves-meta/commit/917388f01d03f846c77b1013592d6e9100bc0ae5)
 - resolve spec-vs-implementation gaps [`b1e177b`](https://github.com/karmaniverous/jeeves-meta/commit/b1e177b892d07d15374b623cfdfcb73536ded3c3)
 - chore: rename jeeves-synth to jeeves-meta everywhere [`2406330`](https://github.com/karmaniverous/jeeves-meta/commit/240633079c56e798448eb410516e4e2a9de4caf9)
+- docs: rewrite SKILL.md admin sections for current architecture [`1055200`](https://github.com/karmaniverous/jeeves-meta/commit/105520009160a84cf847e27c6476997d0928b50a)
 - fix: type SynthEntity, resolve all lint/tsdoc warnings, clean knip findings [`ded29a8`](https://github.com/karmaniverous/jeeves-meta/commit/ded29a8c16ede6b0d823dc110f3a9843e1574eff)
 - feat: add discoverMetas() watcher-based meta discovery with tests [`3515330`](https://github.com/karmaniverous/jeeves-meta/commit/35153300b028260ecf5872e474e06ccd9f1d1aa1)
 - fix: round 3 spec/impl alignment [`9c7c62b`](https://github.com/karmaniverous/jeeves-meta/commit/9c7c62bf0a3d60f2cd4636fe2153013413cd69ea)
+- feat: configurable meta property shape (Phase 7m) [`dc9553e`](https://github.com/karmaniverous/jeeves-meta/commit/dc9553ee3d07988358c6234343be80d88ca269a0)
 - add _emphasis meta field and skipUnchanged config option [`787a7c5`](https://github.com/karmaniverous/jeeves-meta/commit/787a7c52b8f28da2d0c9f725892567de4fb3c231)
 - refactor: orchestrator discovers metas via watcher scan [`34c60fc`](https://github.com/karmaniverous/jeeves-meta/commit/34c60fc25533aa0e2b75ed9b3a9d438182c0af76)
 - fix: round 4 gaps + architect self-reference [`6d6e2c3`](https://github.com/karmaniverous/jeeves-meta/commit/6d6e2c30c9a5e5285828a9f62d37f909137c9af3)
@@ -54,8 +57,10 @@ All notable changes to this project will be documented in this file. Dates are d
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.1.0 [`fcf4d15`](https://github.com/karmaniverous/jeeves-meta/commit/fcf4d150969a31aa0ff8ef6326dff99f08af27ce)
 - fix: round 5 — structure hash scoping + SKILL.md + preview pagination [`c9bfffc`](https://github.com/karmaniverous/jeeves-meta/commit/c9bfffc4d466eab4d53214ad309c86a5dcd17bfa)
 - chore: remove dead code (getScopeExclusions, createSynthEngine) [`811f66b`](https://github.com/karmaniverous/jeeves-meta/commit/811f66bd05f0cb7ac74597fd966a118be138f548)
+- test: add buildMetaFilter edge case tests [`44a4970`](https://github.com/karmaniverous/jeeves-meta/commit/44a4970611b8d025f15b426711ddbab3807bd1e5)
 - refactor: CLI uses watcher-based discovery instead of filesystem glob [`ead5e78`](https://github.com/karmaniverous/jeeves-meta/commit/ead5e788b4836c198f104675ffc632e07f0348ce)
 - feat: add metaProperty/metaArchiveProperty to SynthConfig schema [`5f734c4`](https://github.com/karmaniverous/jeeves-meta/commit/5f734c46dd459704b5686f3a760def0b9edcf9fb)
+- refactor: DRY and robustness pass [`fcda1d7`](https://github.com/karmaniverous/jeeves-meta/commit/fcda1d7b968dc5c7d529deafb191c3e7df830a2c)
 - ci: add GitHub Pages docs deployment workflow [`9c131f1`](https://github.com/karmaniverous/jeeves-meta/commit/9c131f14b1171cc5f077960017f28deeb44a0852)
 - chore: release @karmaniverous/jeeves-meta v0.1.0 [`17bcc60`](https://github.com/karmaniverous/jeeves-meta/commit/17bcc607e612ec3577382b90b7e7e7cd45afe63b)
 - fix all spec-vs-implementation gaps (round 2) [`351dec5`](https://github.com/karmaniverous/jeeves-meta/commit/351dec535b43ec3811772192c9656284d200b338)
@@ -72,11 +77,14 @@ All notable changes to this project will be documented in this file. Dates are d
 - installed dotenvx [`d3c437b`](https://github.com/karmaniverous/jeeves-meta/commit/d3c437bcbd4504b1a0d3ef85492d783c892e42e0)
 - chore: release @karmaniverous/jeeves-meta v0.3.0 [`e15e4ce`](https://github.com/karmaniverous/jeeves-meta/commit/e15e4ce82c3cfc1ed82dffe1079ea97a006ec8f7)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.1.3 [`fd3f668`](https://github.com/karmaniverous/jeeves-meta/commit/fd3f668d146a91e4e6095c7fa1dc44a6015ac987)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.1.4 [`864e0f6`](https://github.com/karmaniverous/jeeves-meta/commit/864e0f68f81ac97e356ee212a64e0fc75feb024c)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.1.1 [`cfe1e03`](https://github.com/karmaniverous/jeeves-meta/commit/cfe1e03dbe0d32e2f2f77164ae26166a646574d1)
 - chore: release @karmaniverous/jeeves-meta v0.3.1 [`afba770`](https://github.com/karmaniverous/jeeves-meta/commit/afba7701af15322d5884ed90d3d30cad211ae812)
+- chore: release @karmaniverous/jeeves-meta v0.3.2 [`c0d54b0`](https://github.com/karmaniverous/jeeves-meta/commit/c0d54b0d52d6960d17cbd5415c72a53fcbb33a17)
 - chore: release @karmaniverous/jeeves-meta v0.2.2 [`2d2d181`](https://github.com/karmaniverous/jeeves-meta/commit/2d2d181d5ab63e68f2c7c805229165cf09f3df96)
 - chore: release @karmaniverous/jeeves-meta v0.2.1 [`17bbb31`](https://github.com/karmaniverous/jeeves-meta/commit/17bbb3117b09504d2589cd1f6e785dfe431c219f)
 - fix: correct lib release-it tag from service to lib [`cc9f815`](https://github.com/karmaniverous/jeeves-meta/commit/cc9f81514a8528e684432bf693ab6dca7fbbe02c)
 - change depthWeight default from 1 to 0.5 [`5cf4e3c`](https://github.com/karmaniverous/jeeves-meta/commit/5cf4e3c147f737875e7919538728279f07b20dd8)
+- docs: add path parameter to synth_preview in SKILL.md [`cfc1405`](https://github.com/karmaniverous/jeeves-meta/commit/cfc14056d8c8e7b38e5b3b6620b5646290c9e639)
 - fix: resolve TypeDoc warnings — use README.md links instead of directory links [`353a103`](https://github.com/karmaniverous/jeeves-meta/commit/353a103a4c3d2e67ab9cd869599cd7b7fc928b02)
 - ci: add build step before docs generation [`888b279`](https://github.com/karmaniverous/jeeves-meta/commit/888b279c328782d2f8503e7750f8dd4bf8cdad43)
