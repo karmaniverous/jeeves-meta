@@ -34,16 +34,39 @@ const config: SynthConfig = {
   metaArchiveProperty: { domains: ['meta-archive'] },
 };
 
-function createMockWatcher(files: string[] = []): WatcherClient {
-  const scanResult = {
-    files: files.map((f) => ({
-      file_path: f,
-      modified_at: Math.floor(Date.now() / 1000),
-      content_hash: 'abc',
-    })),
-  };
+/**
+ * Create a mock watcher that handles both discovery and scope scans.
+ *
+ * Discovery scans (with domain filter) return metaJsonPaths.
+ * Scope scans (with pathPrefix) return scopeFiles.
+ */
+function createMockWatcher(
+  scopeFiles: string[] = [],
+  metaJsonPaths?: string[],
+): WatcherClient {
   return {
-    scan: vi.fn().mockResolvedValue(scanResult),
+    scan: vi.fn().mockImplementation((params: Record<string, unknown>) => {
+      // Discovery scan — has a domain filter, no pathPrefix
+      const filter = params.filter as Record<string, unknown> | undefined;
+      if (filter && !params.pathPrefix) {
+        const paths = metaJsonPaths ?? [];
+        return Promise.resolve({
+          files: paths.map((p) => ({
+            file_path: p,
+            modified_at: Math.floor(Date.now() / 1000),
+            content_hash: 'abc',
+          })),
+        });
+      }
+      // Scope/staleness scan — has pathPrefix
+      return Promise.resolve({
+        files: scopeFiles.map((f) => ({
+          file_path: f,
+          modified_at: Math.floor(Date.now() / 1000),
+          content_hash: 'abc',
+        })),
+      });
+    }),
     registerRules: vi.fn().mockResolvedValue(undefined),
     unregisterRules: vi.fn().mockResolvedValue(undefined),
   };
@@ -90,9 +113,14 @@ describe('orchestrate', () => {
   it('runs a full cycle on a fresh meta (first synthesis)', async () => {
     mkdirSync(join(testRoot, 'domain/.meta'), { recursive: true });
     writeFileSync(join(testRoot, 'domain/data.md'), '# Some data');
+    writeFileSync(
+      join(testRoot, 'domain/.meta/meta.json'),
+      JSON.stringify({ _id: '550e8400-e29b-41d4-a716-446655440000' }),
+    );
 
     const scopeFiles = [testRoot.replaceAll('\\', '/') + '/domain/data.md'];
-    const watcher = createMockWatcher(scopeFiles);
+    const metaJsonPath = testRoot.replaceAll('\\', '/') + '/domain/.meta/meta.json';
+    const watcher = createMockWatcher(scopeFiles, [metaJsonPath]);
     const executor = createMockExecutor();
     const spawnSpy = vi.spyOn(executor, 'spawn');
 
@@ -141,7 +169,8 @@ describe('orchestrate', () => {
     );
 
     // Need at least one file so isStale returns true (full paths for filterInScope)
-    const watcher = createMockWatcher([fullFilePath]);
+    const metaJsonPath = testRoot.replaceAll('\\', '/') + '/domain/.meta/meta.json';
+    const watcher = createMockWatcher([fullFilePath], [metaJsonPath]);
     const executor = createMockExecutor();
     const spawnSpy = vi.spyOn(executor, 'spawn');
 
@@ -154,8 +183,13 @@ describe('orchestrate', () => {
 
   it('handles builder failure gracefully', async () => {
     mkdirSync(join(testRoot, 'domain/.meta'), { recursive: true });
+    writeFileSync(
+      join(testRoot, 'domain/.meta/meta.json'),
+      JSON.stringify({ _id: '550e8400-e29b-41d4-a716-446655440001' }),
+    );
 
-    const watcher = createMockWatcher(['test-file.md']);
+    const metaJsonPath = testRoot.replaceAll('\\', '/') + '/domain/.meta/meta.json';
+    const watcher = createMockWatcher(['test-file.md'], [metaJsonPath]);
     const executor: SynthExecutor = {
       spawn: vi.fn().mockImplementation((task: string) => {
         if (task.includes('TASK BRIEF')) {
@@ -185,7 +219,8 @@ describe('orchestrate', () => {
       JSON.stringify({ pid: 99999, startedAt: new Date().toISOString() }),
     );
 
-    const watcher = createMockWatcher();
+    const metaJsonPath = testRoot.replaceAll('\\', '/') + '/domain/.meta/meta.json';
+    const watcher = createMockWatcher([], [metaJsonPath]);
     const executor = createMockExecutor();
     const results = await orchestrate(config, executor, watcher);
     expect(results[0]?.synthesized ?? false).toBe(false);

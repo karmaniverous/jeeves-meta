@@ -15,11 +15,8 @@ import {
   pruneArchive,
   readLatestArchive,
 } from '../archive/index.js';
-import {
-  buildOwnershipTree,
-  ensureMetaJson,
-  globMetas,
-} from '../discovery/index.js';
+import { buildOwnershipTree } from '../discovery/index.js';
+import { discoverMetas } from '../discovery/discoverMetas.js';
 import { filterInScope, getScopePrefix } from '../discovery/scope.js';
 import { toSynthError } from '../errors.js';
 import type { SynthExecutor, WatcherClient } from '../interfaces/index.js';
@@ -112,14 +109,20 @@ async function orchestrateOnce(
   executor: SynthExecutor,
   watcher: WatcherClient,
 ): Promise<OrchestrateResult> {
-  // Step 1: Discover
-  const metaPaths = globMetas(config.watchPaths);
+  // Step 1: Discover via watcher scan
+  const metaPaths = await discoverMetas(config, watcher);
   if (metaPaths.length === 0) return { synthesized: false };
 
-  // Ensure all meta.json files exist
+  // Read meta.json for each discovered meta
   const metas = new Map<string, MetaJson>();
   for (const mp of metaPaths) {
-    metas.set(normalizePath(mp), ensureMetaJson(mp));
+    const metaFilePath = join(mp, 'meta.json');
+    try {
+      metas.set(normalizePath(mp), JSON.parse(readFileSync(metaFilePath, 'utf8')) as MetaJson);
+    } catch {
+      // Skip metas with unreadable meta.json
+      continue;
+    }
   }
 
   const tree = buildOwnershipTree(metaPaths);
