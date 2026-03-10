@@ -16,7 +16,6 @@ import { resolve } from 'node:path';
 import { loadSynthConfig, resolveConfigPath } from './configLoader.js';
 import {
   actualStaleness,
-  buildOwnershipTree,
   computeEffectiveStaleness,
   discoverMetas,
   findNode,
@@ -24,10 +23,11 @@ import {
   hasSteerChanged,
   HttpWatcherClient,
   isArchitectTriggered,
-  isLocked,
+  listMetas,
   type MetaJson,
   normalizePath,
   orchestrate,
+  selectCandidate,
   type SynthConfig,
 } from './index.js';
 
@@ -76,87 +76,38 @@ function output(data: unknown): void {
 
 async function runStatus(config: SynthConfig): Promise<void> {
   const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
-  const metaPaths = await discoverMetas(config, watcher);
-  const tree = buildOwnershipTree(metaPaths);
-
-  let stale = 0;
-  let errors = 0;
-  let locked = 0;
-  let neverSynth = 0;
-  let archTokens = 0;
-  let buildTokens = 0;
-  let critTokens = 0;
-
-  for (const node of tree.nodes.values()) {
-    let meta: MetaJson;
-    try {
-      meta = readMeta(node.metaPath);
-    } catch {
-      continue;
-    }
-    const s = actualStaleness(meta);
-    if (s > 0) stale++;
-    if (meta._error) errors++;
-    if (isLocked(normalizePath(node.metaPath))) locked++;
-    if (!meta._generatedAt) neverSynth++;
-    if (meta._architectTokens) archTokens += meta._architectTokens;
-    if (meta._builderTokens) buildTokens += meta._builderTokens;
-    if (meta._criticTokens) critTokens += meta._criticTokens;
-  }
-
-  output({
-    total: tree.nodes.size,
-    stale,
-    errors,
-    locked,
-    neverSynthesized: neverSynth,
-    tokens: { architect: archTokens, builder: buildTokens, critic: critTokens },
-  });
+  const result = await listMetas(config, watcher);
+  output(result.summary);
 }
 
 async function runList(config: SynthConfig): Promise<void> {
   const prefix = getArg('--prefix');
   const filter = getArg('--filter');
   const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
-  const metaPaths = await discoverMetas(config, watcher);
-  const tree = buildOwnershipTree(metaPaths);
+  const result = await listMetas(config, watcher);
 
-  interface Row {
-    path: string;
-    depth: number;
-    staleness: string;
-    hasError: boolean;
-    locked: boolean;
-    children: number;
+  let entries = result.entries;
+  if (prefix) {
+    entries = entries.filter((e) => e.path.includes(prefix));
   }
+  if (filter === 'hasError') entries = entries.filter((e) => e.hasError);
+  if (filter === 'stale')
+    entries = entries.filter((e) => e.stalenessSeconds > 0);
+  if (filter === 'locked') entries = entries.filter((e) => e.locked);
+  if (filter === 'never')
+    entries = entries.filter((e) => e.stalenessSeconds === Infinity);
 
-  const rows: Row[] = [];
-  for (const node of tree.nodes.values()) {
-    if (prefix && !node.metaPath.includes(prefix)) continue;
-    let meta: MetaJson;
-    try {
-      meta = readMeta(node.metaPath);
-    } catch {
-      continue;
-    }
-    const s = actualStaleness(meta);
-    const hasError = Boolean(meta._error);
-    const isLockedNow = isLocked(normalizePath(node.metaPath));
-
-    if (filter === 'hasError' && !hasError) continue;
-    if (filter === 'stale' && s <= 0) continue;
-    if (filter === 'locked' && !isLockedNow) continue;
-    if (filter === 'never' && meta._generatedAt) continue;
-
-    rows.push({
-      path: node.metaPath,
-      depth: meta._depth ?? node.treeDepth,
-      staleness: s === Infinity ? 'never' : String(Math.round(s)) + 's',
-      hasError,
-      locked: isLockedNow,
-      children: node.children.length,
-    });
-  }
+  const rows = entries.map((e) => ({
+    path: e.path,
+    depth: e.depth,
+    staleness:
+      e.stalenessSeconds === Infinity
+        ? 'never'
+        : String(Math.round(e.stalenessSeconds)) + 's',
+    hasError: e.hasError,
+    locked: e.locked,
+    children: e.children,
+  }));
 
   output({ total: rows.length, items: rows });
 }
@@ -170,11 +121,10 @@ async function runDetail(config: SynthConfig): Promise<void> {
 
   const archiveArg = getArg('--archive');
   const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
-  const metaPaths = await discoverMetas(config, watcher);
-  const tree = buildOwnershipTree(metaPaths);
+  const metaResult = await listMetas(config, watcher);
   const normalized = normalizePath(targetPath);
 
-  const node = findNode(tree, normalized);
+  const node = findNode(metaResult.tree, normalized);
   if (!node) {
     console.error('Meta not found: ' + targetPath);
     process.exit(1);
@@ -204,33 +154,27 @@ async function runPreview(config: SynthConfig): Promise<void> {
     paginatedScan,
     readLatestArchive,
     computeStructureHash,
-    selectCandidate,
   } = await import('./index.js');
 
   const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
-  const metaPaths = await discoverMetas(config, watcher);
-  const tree = buildOwnershipTree(metaPaths);
+  const metaResult = await listMetas(config, watcher);
 
   let targetNode;
   if (targetPath) {
     const normalized = normalizePath(targetPath);
-    targetNode = findNode(tree, normalized);
+    targetNode = findNode(metaResult.tree, normalized);
     if (!targetNode) {
       console.error('Meta not found: ' + targetPath);
       process.exit(1);
     }
   } else {
-    const candidates = [];
-    for (const node of tree.nodes.values()) {
-      let meta: MetaJson;
-      try {
-        meta = readMeta(node.metaPath);
-      } catch {
-        continue;
-      }
-      const s = actualStaleness(meta);
-      if (s > 0) candidates.push({ node, meta, actualStaleness: s });
-    }
+    const candidates = metaResult.entries
+      .filter((e) => e.stalenessSeconds > 0)
+      .map((e) => ({
+        node: e.node,
+        meta: e.meta,
+        actualStaleness: e.stalenessSeconds,
+      }));
     const weighted = computeEffectiveStaleness(candidates, config.depthWeight);
     const winner = selectCandidate(weighted);
     if (!winner) {

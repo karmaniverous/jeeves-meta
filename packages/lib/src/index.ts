@@ -18,6 +18,10 @@ export {
   filterInScope,
   findNode,
   getScopePrefix,
+  listMetas,
+  type MetaEntry,
+  type MetaListResult,
+  type MetaListSummary,
   type MetaNode,
   type OwnershipTree,
 } from './discovery/index.js';

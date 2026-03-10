@@ -10,7 +10,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-import { buildMetaFilter, type SynthConfig } from '@karmaniverous/jeeves-meta';
+import { type SynthConfig } from '@karmaniverous/jeeves-meta';
 
 import type { PluginApi } from './helpers.js';
 import { generateMetaMenu } from './promptInjection.js';
@@ -101,10 +101,7 @@ async function refreshToolsMd(
   api: PluginApi,
   config: SynthConfig,
 ): Promise<boolean> {
-  const menu = await generateMetaMenu(
-    config.watcherUrl,
-    buildMetaFilter(config),
-  );
+  const menu = await generateMetaMenu(config);
 
   if (menu === lastWrittenMenu) {
     return false;

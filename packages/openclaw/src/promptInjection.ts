@@ -9,8 +9,8 @@
 
 import {
   HttpWatcherClient,
-  paginatedScan,
-  type ScanFile,
+  listMetas,
+  type SynthConfig,
 } from '@karmaniverous/jeeves-meta';
 
 /**
@@ -21,52 +21,29 @@ import {
  * 2. No entities found - ACTION REQUIRED with setup guidance
  * 3. Healthy - entity stats + tool listing + skill reference
  *
- * @param watcherUrl - Watcher API base URL.
+ * @param config - Full synth config (for listMetas and watcherUrl).
  * @returns Markdown string for the Meta section.
  */
-export async function generateMetaMenu(
-  watcherUrl: string,
-  metaFilter: Record<string, unknown>,
-): Promise<string> {
-  let entities: ScanFile[] = [];
+export async function generateMetaMenu(config: SynthConfig): Promise<string> {
+  let result;
 
   try {
-    const watcher = new HttpWatcherClient({ baseUrl: watcherUrl });
-    entities = await paginatedScan(watcher, {
-      filter: metaFilter,
-      fields: [
-        'synth_depth',
-        'synth_emphasis',
-        'synth_synthesis_count',
-        'synth_architect_tokens',
-        'synth_builder_tokens',
-        'synth_critic_tokens',
-        'synth_error_step',
-        'generated_at_unix',
-        'has_error',
-      ],
-    });
+    const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+    result = await listMetas(config, watcher);
   } catch {
     return [
       '> **ACTION REQUIRED: jeeves-watcher is unreachable.**',
       '> The jeeves-meta synthesis engine requires a running jeeves-watcher service.',
-      `> The watcher API at ${watcherUrl} is down or not configured.`,
+      '> The watcher API at ' +
+        config.watcherUrl +
+        ' is down or not configured.',
       '>',
       "> **Read the `jeeves-meta` skill's Bootstrap section immediately**",
       '> for setup instructions. Do not attempt synthesis until watcher is available.',
     ].join('\n');
   }
 
-  // Deduplicate by file_path (watcher chunks files into multiple points)
-  const seenPaths = new Set<string>();
-  entities = entities.filter((e) => {
-    const fp = e.file_path;
-    if (seenPaths.has(fp)) return false;
-    seenPaths.add(fp);
-    return true;
-  });
-
-  if (entities.length === 0) {
+  if (result.entries.length === 0) {
     return [
       '> **ACTION REQUIRED: No synthesis entities found.**',
       '> The watcher is running but no `.meta/` directories were discovered',
@@ -77,53 +54,7 @@ export async function generateMetaMenu(
     ].join('\n');
   }
 
-  // Compute stats
-  const now = Math.floor(Date.now() / 1000);
-  let staleCount = 0;
-  let errorCount = 0;
-  let neverSynthesized = 0;
-  let totalArchTokens = 0;
-  let totalBuilderTokens = 0;
-  let totalCriticTokens = 0;
-  let stalestPath = '';
-  let stalestAge = 0;
-  let lastSynthPath = '';
-  let lastSynthUnix = 0;
-
-  for (const e of entities) {
-    const generatedAt = e['generated_at_unix'] as number | undefined;
-    const hasError = e['has_error'] as boolean | undefined;
-    const archTokens = e['synth_architect_tokens'] as number | undefined;
-    const builderTokens = e['synth_builder_tokens'] as number | undefined;
-    const criticTokens = e['synth_critic_tokens'] as number | undefined;
-
-    if (!generatedAt) {
-      neverSynthesized++;
-      staleCount++;
-      if (!isFinite(stalestAge)) {
-        // Already have an infinitely stale entity
-      } else {
-        stalestAge = Infinity;
-        stalestPath = e.file_path;
-      }
-    } else {
-      const age = now - generatedAt;
-      if (age > 0) staleCount++;
-      if (age > stalestAge && isFinite(age)) {
-        stalestAge = age;
-        stalestPath = e.file_path;
-      }
-      if (generatedAt > lastSynthUnix) {
-        lastSynthUnix = generatedAt;
-        lastSynthPath = e.file_path;
-      }
-    }
-
-    if (hasError) errorCount++;
-    if (archTokens) totalArchTokens += archTokens;
-    if (builderTokens) totalBuilderTokens += builderTokens;
-    if (criticTokens) totalCriticTokens += criticTokens;
-  }
+  const { summary, entries } = result;
 
   const formatAge = (seconds: number): string => {
     if (!isFinite(seconds)) return 'never synthesized';
@@ -132,25 +63,43 @@ export async function generateMetaMenu(
     return Math.round(seconds / 86400).toString() + 'd';
   };
 
+  // Find stalest age for display
+  let stalestAge = 0;
+  for (const e of entries) {
+    if (e.stalenessSeconds > stalestAge) stalestAge = e.stalenessSeconds;
+  }
+
+  const stalestDisplay = summary.stalestPath
+    ? summary.stalestPath + ' (' + formatAge(stalestAge) + ')'
+    : 'n/a';
+  const lastSynthDisplay = summary.lastSynthesizedAt
+    ? (summary.lastSynthesizedPath ?? '') +
+      ' (' +
+      summary.lastSynthesizedAt +
+      ')'
+    : 'n/a';
+
   const lines: string[] = [
-    `The jeeves-meta synthesis engine manages ${entities.length.toString()} meta entities.`,
+    'The jeeves-meta synthesis engine manages ' +
+      entries.length.toString() +
+      ' meta entities.',
     '',
     '### Entity Summary',
     '| Metric | Value |',
     '|--------|-------|',
-    `| Total | ${entities.length.toString()} |`,
-    `| Stale | ${staleCount.toString()} |`,
-    `| Errors | ${errorCount.toString()} |`,
-    `| Never synthesized | ${neverSynthesized.toString()} |`,
-    `| Stalest | ${stalestPath ? stalestPath + ' (' + formatAge(stalestAge) + ')' : 'n/a'} |`,
-    `| Last synthesized | ${lastSynthPath ? lastSynthPath + ' (' + new Date(lastSynthUnix * 1000).toISOString() + ')' : 'n/a'} |`,
+    '| Total | ' + summary.total.toString() + ' |',
+    '| Stale | ' + summary.stale.toString() + ' |',
+    '| Errors | ' + summary.errors.toString() + ' |',
+    '| Never synthesized | ' + summary.neverSynthesized.toString() + ' |',
+    '| Stalest | ' + stalestDisplay + ' |',
+    '| Last synthesized | ' + lastSynthDisplay + ' |',
     '',
     '### Token Usage (cumulative)',
     '| Step | Tokens |',
     '|------|--------|',
-    `| Architect | ${totalArchTokens.toLocaleString()} |`,
-    `| Builder | ${totalBuilderTokens.toLocaleString()} |`,
-    `| Critic | ${totalCriticTokens.toLocaleString()} |`,
+    '| Architect | ' + summary.tokens.architect.toLocaleString() + ' |',
+    '| Builder | ' + summary.tokens.builder.toLocaleString() + ' |',
+    '| Critic | ' + summary.tokens.critic.toLocaleString() + ' |',
     '',
     '### Tools',
     '| Tool | Description |',
