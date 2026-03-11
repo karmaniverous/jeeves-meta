@@ -45,9 +45,12 @@ export function upsertMetaSection(existing: string, metaMenu: string): string {
   const section = '## Meta\n\n' + metaMenu;
 
   // Replace existing Meta section (match from ## Meta to next ## or # or EOF)
-  const re = /^## Meta\n[\s\S]*?(?=\n## |\n# |$(?![\s\S]))/m;
-  if (re.test(existing)) {
-    return existing.replace(re, section);
+  // Remove ALL existing ## Meta sections (handles duplicates from prior bugs)
+  const re = /^## Meta\n[\s\S]*?(?=\n## |\n# |$(?![\s\S]))/gm;
+  const cleaned = existing.replace(re, '').replace(/\n{3,}/g, '\n\n');
+  if (cleaned !== existing) {
+    // Had at least one section — re-insert at correct position
+    return upsertMetaSection(cleaned.trim() + '\n', metaMenu);
   }
 
   // No existing section. Insert in correct order.

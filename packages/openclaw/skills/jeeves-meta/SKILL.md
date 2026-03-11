@@ -278,7 +278,13 @@ jeeves-meta start --config J:\config\jeeves-meta.config.json
 npx @karmaniverous/jeeves-meta-openclaw install
 ```
 
-3. Configure the plugin with the service URL (in OpenClaw config):
+For non-default OpenClaw installations, set `OPENCLAW_CONFIG` (path to
+`openclaw.json`) or `OPENCLAW_HOME` (path to `.openclaw` directory).
+
+To uninstall: `npx @karmaniverous/jeeves-meta-openclaw uninstall`
+
+3. (Optional) Configure the plugin with the service URL — only needed if the
+   service runs on a non-default port or host:
 
 ```json
 {
