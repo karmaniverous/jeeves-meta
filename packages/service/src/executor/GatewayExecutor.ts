@@ -152,7 +152,7 @@ export class GatewayExecutor implements MetaExecutor {
           [];
         const msgArray = messages as Array<{
           role: string;
-          content?: string;
+          content?: string | Array<{ type: string; text?: string }>;
           stopReason?: string;
           usage?: { totalTokens?: number };
         }>;
@@ -177,8 +177,19 @@ export class GatewayExecutor implements MetaExecutor {
 
             // Find the last assistant message with content
             for (let i = msgArray.length - 1; i >= 0; i--) {
-              if (msgArray[i].role === 'assistant' && msgArray[i].content) {
-                return { output: msgArray[i].content!, tokens };
+              const msg = msgArray[i];
+              if (msg.role === 'assistant' && msg.content) {
+                // Content may be a string or array of content blocks
+                const text =
+                  typeof msg.content === 'string'
+                    ? msg.content
+                    : Array.isArray(msg.content)
+                      ? msg.content
+                          .filter((b) => b.type === 'text' && b.text)
+                          .map((b) => b.text!)
+                          .join('\n')
+                      : '';
+                if (text) return { output: text, tokens };
               }
             }
             return { output: '', tokens };

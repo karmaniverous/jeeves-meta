@@ -20,6 +20,7 @@ import { sleep } from '../sleep.js';
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_BACKOFF_BASE_MS = 1000;
 const DEFAULT_BACKOFF_FACTOR = 4;
+const DEFAULT_TIMEOUT_MS = 10_000;
 
 /** Options for creating an HttpWatcherClient. */
 export interface HttpWatcherClientOptions {
@@ -31,6 +32,8 @@ export interface HttpWatcherClientOptions {
   backoffBaseMs?: number;
   /** Multiplier for backoff. Default: 4 (1s, 4s, 16s). */
   backoffFactor?: number;
+  /** Per-request timeout in ms. Default: 10000. */
+  timeoutMs?: number;
 }
 
 /** Check if an error is transient (worth retrying). */
@@ -46,12 +49,14 @@ export class HttpWatcherClient implements WatcherClient {
   private readonly maxRetries: number;
   private readonly backoffBaseMs: number;
   private readonly backoffFactor: number;
+  private readonly timeoutMs: number;
 
   constructor(options: HttpWatcherClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '');
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.backoffBaseMs = options.backoffBaseMs ?? DEFAULT_BACKOFF_BASE_MS;
     this.backoffFactor = options.backoffFactor ?? DEFAULT_BACKOFF_FACTOR;
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
   /** POST JSON with retry. */
@@ -63,6 +68,7 @@ export class HttpWatcherClient implements WatcherClient {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(this.timeoutMs),
       });
 
       if (res.ok) {
