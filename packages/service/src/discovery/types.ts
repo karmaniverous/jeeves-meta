@@ -1,7 +1,7 @@
 /**
  * Types for meta discovery and ownership tree.
  *
- * Module: discovery/types
+ * @module discovery/types
  */
 
 /** A discovered meta node in the ownership tree. */

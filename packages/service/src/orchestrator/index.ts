@@ -1,7 +1,7 @@
 /**
  * Orchestrator module — the main synthesis cycle.
  *
- * Module: orchestrator
+ * @module orchestrator
  */
 
 export {

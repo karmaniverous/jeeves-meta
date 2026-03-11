@@ -6,7 +6,7 @@
  * 2. synth-meta-archive — indexes archived snapshots
  * 3. synth-config — indexes the meta config file
  *
- * Module: rules
+ * @module rules
  */
 
 import type { MetaConfig } from '@karmaniverous/jeeves-meta';

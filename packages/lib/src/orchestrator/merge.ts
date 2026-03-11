@@ -5,7 +5,7 @@
  * Writes engine fields (_generatedAt, _structureHash, etc.).
  * Validates against schema before writing.
  *
- * Module: orchestrator/merge
+ * @module orchestrator/merge
  */
 
 import { writeFileSync } from 'node:fs';

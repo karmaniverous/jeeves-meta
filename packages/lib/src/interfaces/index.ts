@@ -1,7 +1,7 @@
 /**
  * Re-exports for all interface modules.
  *
- * Module: interfaces
+ * @module interfaces
  */
 
 export type { MetaContext } from './MetaContext.js';

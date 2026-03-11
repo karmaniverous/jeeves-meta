@@ -6,7 +6,7 @@
  *
  * Config resolution: --config <path> or JEEVES_META_CONFIG env var.
  *
- * Module: cli
+ * @module cli
  */
 
 import { readFileSync } from 'node:fs';

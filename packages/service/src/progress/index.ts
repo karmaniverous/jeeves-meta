@@ -1,7 +1,7 @@
 /**
  * Progress reporting via OpenClaw gateway `/tools/invoke` → `message` tool.
  *
- * Module: progress
+ * @module progress
  */
 
 import type { Logger } from 'pino';

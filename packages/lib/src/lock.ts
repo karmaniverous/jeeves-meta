@@ -4,7 +4,7 @@
  * Lock file: .meta/.lock containing PID + timestamp.
  * Stale timeout: 30 minutes.
  *
- * Module: lock
+ * @module lock
  */
 
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';

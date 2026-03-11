@@ -1,7 +1,7 @@
 /**
  * Pluggable executor interface for LLM subprocess invocation.
  *
- * Module: interfaces/MetaExecutor
+ * @module interfaces/MetaExecutor
  */
 
 /** Options for spawning a synthesis subprocess. */

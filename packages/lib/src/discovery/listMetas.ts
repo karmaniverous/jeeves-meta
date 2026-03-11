@@ -5,7 +5,7 @@
  * with enriched metadata. Replaces duplicated scan+dedup logic in
  * plugin tools, CLI, and prompt injection.
  *
- * Module: discovery/listMetas
+ * @module discovery/listMetas
  */
 
 import { readFileSync } from 'node:fs';

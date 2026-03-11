@@ -4,7 +4,7 @@
  * Upserts a `## Meta` section under the shared `# Jeeves Platform Tools`
  * header. The gateway reads TOOLS.md fresh from disk on each new session.
  *
- * Module: toolsWriter
+ * @module toolsWriter
  */
 
 import { readFile, writeFile } from 'node:fs/promises';

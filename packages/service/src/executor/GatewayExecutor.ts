@@ -5,7 +5,7 @@
  * Spawns sub-agent sessions via the gateway's `/tools/invoke` endpoint,
  * polls for completion, and extracts output text.
  *
- * Module: executor/GatewayExecutor
+ * @module executor/GatewayExecutor
  */
 
 import type {

@@ -4,7 +4,7 @@
  * Wires together discovery, scheduling, archiving, executor calls,
  * and merge/write-back.
  *
- * Module: orchestrator/orchestrate
+ * @module orchestrator/orchestrate
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';

@@ -1,7 +1,7 @@
 /**
  * Build task prompts for each synthesis step.
  *
- * Module: orchestrator/buildTask
+ * @module orchestrator/buildTask
  */
 
 import type { MetaContext } from '../interfaces/index.js';

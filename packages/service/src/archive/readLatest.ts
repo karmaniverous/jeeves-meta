@@ -1,7 +1,7 @@
 /**
  * Read the latest archive snapshot for steer change detection.
  *
- * Module: archive/readLatest
+ * @module archive/readLatest
  */
 
 import { readFileSync } from 'node:fs';

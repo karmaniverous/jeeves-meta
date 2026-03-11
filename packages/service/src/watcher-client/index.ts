@@ -1,7 +1,7 @@
 /**
  * WatcherClient implementations.
  *
- * Module: watcher-client
+ * @module watcher-client
  */
 
 export {

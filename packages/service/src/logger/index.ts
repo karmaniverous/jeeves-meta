@@ -1,7 +1,7 @@
 /**
  * Pino logger factory.
  *
- * Module: logger
+ * @module logger
  */
 
 import pino from 'pino';

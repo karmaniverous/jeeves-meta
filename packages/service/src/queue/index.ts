@@ -5,7 +5,7 @@
  * synthesis requests get priority (inserted at front). A path appears at
  * most once in the queue; re-triggering returns the current position.
  *
- * Module: queue
+ * @module queue
  */
 
 import type { Logger } from 'pino';

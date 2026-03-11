@@ -4,7 +4,7 @@
  * Used to detect when directory structure changes, triggering
  * an architect re-run.
  *
- * Module: structureHash
+ * @module structureHash
  */
 
 import { createHash } from 'node:crypto';

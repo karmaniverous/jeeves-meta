@@ -1,7 +1,7 @@
 /**
  * Exponential moving average helper for token tracking.
  *
- * Module: ema
+ * @module ema
  */
 
 const DEFAULT_DECAY = 0.3;

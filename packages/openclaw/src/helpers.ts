@@ -1,7 +1,7 @@
 /**
  * Shared types and utilities for the OpenClaw plugin.
  *
- * Module: helpers
+ * @module helpers
  */
 
 /** Minimal OpenClaw plugin API surface. */

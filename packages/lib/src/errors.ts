@@ -1,7 +1,7 @@
 /**
  * Shared error utilities.
  *
- * Module: errors
+ * @module errors
  */
 
 import type { MetaError } from './schema/index.js';

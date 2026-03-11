@@ -1,7 +1,7 @@
 /**
  * POST /unlock — remove .lock from a .meta/ directory.
  *
- * Module: routes/unlock
+ * @module routes/unlock
  */
 
 import { existsSync, unlinkSync } from 'node:fs';

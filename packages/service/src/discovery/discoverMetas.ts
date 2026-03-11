@@ -4,7 +4,7 @@
  * Replaces filesystem-based globMetas() with a watcher query
  * that returns indexed .meta/meta.json points, filtered by domain.
  *
- * Module: discovery/discoverMetas
+ * @module discovery/discoverMetas
  */
 
 import type { WatcherClient } from '../interfaces/index.js';

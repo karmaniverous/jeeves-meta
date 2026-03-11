@@ -1,7 +1,7 @@
 /**
  * Commander CLI for jeeves-meta service.
  *
- * Module: cli
+ * @module cli
  */
 
 import { Command } from 'commander';

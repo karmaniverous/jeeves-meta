@@ -1,7 +1,7 @@
 /**
  * Load and resolve jeeves-meta config with \@file: indirection.
  *
- * Module: configLoader
+ * @module configLoader
  */
 
 import { readFileSync } from 'node:fs';

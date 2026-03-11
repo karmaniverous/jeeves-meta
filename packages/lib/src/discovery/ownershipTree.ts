@@ -5,7 +5,7 @@
  * except subtrees that contain their own .meta/. For those subtrees,
  * the parent meta consumes the child meta's synthesis output.
  *
- * Module: discovery/ownershipTree
+ * @module discovery/ownershipTree
  */
 
 import { dirname, relative } from 'node:path';

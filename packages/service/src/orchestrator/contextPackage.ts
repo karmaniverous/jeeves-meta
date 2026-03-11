@@ -4,7 +4,7 @@
  * Computes shared inputs once: scope files, delta files, child meta outputs,
  * previous content/feedback, steer, and archive paths.
  *
- * Module: orchestrator/contextPackage
+ * @module orchestrator/contextPackage
  */
 
 import { readFileSync } from 'node:fs';

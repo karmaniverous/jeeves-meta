@@ -3,7 +3,7 @@
  *
  * A meta is stale when any file in its scope was modified after _generatedAt.
  *
- * Module: scheduling/staleness
+ * @module scheduling/staleness
  */
 
 import type { WatcherClient } from '../interfaces/index.js';

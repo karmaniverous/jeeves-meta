@@ -4,7 +4,7 @@
  * Copies current meta.json to archive/\{ISO-timestamp\}.json with
  * _archived: true and _archivedAt added.
  *
- * Module: archive/snapshot
+ * @module archive/snapshot
  */
 
 import { mkdirSync, writeFileSync } from 'node:fs';

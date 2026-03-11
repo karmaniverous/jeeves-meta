@@ -1,7 +1,7 @@
 /**
  * Minimal Fastify HTTP server for jeeves-meta service.
  *
- * Module: server
+ * @module server
  */
 
 import Fastify, { type FastifyInstance } from 'fastify';

@@ -1,7 +1,7 @@
 /**
  * List archive snapshot files in chronological order.
  *
- * Module: archive/listArchive
+ * @module archive/listArchive
  */
 
 import { readdirSync } from 'node:fs';

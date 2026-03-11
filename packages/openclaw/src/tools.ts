@@ -1,7 +1,7 @@
 /**
  * Meta tool registrations for OpenClaw.
  *
- * Module: tools
+ * @module tools
  */
 
 import {

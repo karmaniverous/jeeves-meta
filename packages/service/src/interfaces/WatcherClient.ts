@@ -5,7 +5,7 @@
  * and virtual rule registration. Subprocesses use watcher_search
  * directly via tools.
  *
- * Module: interfaces/WatcherClient
+ * @module interfaces/WatcherClient
  */
 
 /** A file returned from a scan query. */
