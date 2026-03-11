@@ -234,15 +234,8 @@ export async function startService(
     process.exit(1);
   }
 
-  // Progress reporter
-  const progress = new ProgressReporter(
-    {
-      gatewayUrl: config.gatewayUrl,
-      gatewayApiKey: config.gatewayApiKey,
-      reportChannel: config.reportChannel,
-    },
-    logger,
-  );
+  // Progress reporter — uses shared config reference so hot-reload propagates
+  const progress = new ProgressReporter(config, logger);
 
   // Wire queue processing — synthesize one meta per dequeue
   const synthesizeFn = async (path: string): Promise<void> => {
