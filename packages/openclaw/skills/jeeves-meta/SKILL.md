@@ -167,11 +167,30 @@ referenced via `@file:` in the config:
 **Per-meta overrides:** Set `_architect` or `_critic` directly in a `meta.json`
 to override the defaults for that specific entity.
 
+### Minimal Config Example
+
+A minimum viable config file requires only `watcherUrl`, `defaultArchitect`,
+and `defaultCritic`:
+
+```json
+{
+  "watcherUrl": "http://localhost:1936",
+  "gatewayUrl": "http://127.0.0.1:18789",
+  "gatewayApiKey": "your-api-key",
+  "defaultArchitect": "@file:prompts/architect.md",
+  "defaultCritic": "@file:prompts/critic.md"
+}
+```
+
+All other fields use sensible defaults (port 1938, schedule every 30 min,
+depth weight 0.5, etc). Add `reportChannel`, `metaProperty`, `logging`,
+etc. as needed.
+
 ### Adding New Metas
 
 1. Create the `.meta/` directory under the domain path
 2. Seed it: `jeeves-meta seed <path>` — creates `meta.json`
-   with a UUID and default fields
+   with a UUID (`_id`). All other fields are populated on first synthesis
 3. Optionally edit `meta.json` to set `_steer`, `_depth`, and `_emphasis`
 4. Wait for the watcher to index the new `meta.json` (typically seconds via
    chokidar file watching)
@@ -222,22 +241,26 @@ discovery of configuration issues.
 
 Before the synthesis engine can operate:
 
-1. **jeeves-watcher** must be running and indexing data
+1. **OpenClaw gateway** must be running (the service spawns LLM sessions
+   through it via `gatewayUrl`)
+   - Verify: `openclaw gateway status` or check the URL in config
+
+2. **jeeves-watcher** must be running and indexing data
    - Verify: `watcher_status` tool or `curl http://localhost:1936/status`
    - The watcher provides both semantic search and structured scan
 
-2. **Qdrant** must be running
+3. **Qdrant** must be running
    - Verify: `curl http://localhost:6333/healthz`
 
-3. **Config file** must exist at the path specified by `JEEVES_META_CONFIG`
+4. **Config file** must exist at the path specified by `JEEVES_META_CONFIG`
    - Must contain valid `watcherUrl`
    - Must contain `defaultArchitect` and `defaultCritic` (or `@file:` refs)
 
-4. **Prompt files** must exist if using `@file:` references
+5. **Prompt files** must exist if using `@file:` references
    - e.g. `J:\config\jeeves-meta\prompts\architect.md`
    - e.g. `J:\config\jeeves-meta\prompts\critic.md`
 
-5. **`.meta/` directories** must exist and be within paths the watcher indexes
+6. **`.meta/` directories** must exist and be within paths the watcher indexes
    - Seed new metas: `jeeves-meta seed <path>`
 
 ### Installation
@@ -298,12 +321,12 @@ This prints OS-specific instructions:
 - **macOS:** launchd plist
 - **Linux:** systemd unit
 
-Management commands (these print the OS-specific equivalents):
+Management commands (print OS-specific equivalents):
 ```bash
-jeeves-meta service start
-jeeves-meta service stop
-jeeves-meta service status
-jeeves-meta service remove
+jeeves-meta service start     # print start instructions
+jeeves-meta service stop      # print stop instructions
+jeeves-meta service status    # query running service via HTTP API
+jeeves-meta service remove    # print removal instructions
 ```
 
 ### HTTP API
@@ -339,6 +362,21 @@ Config resolution: `--config` flag → `JEEVES_META_CONFIG` env var → error.
 All client commands support `-p, --port` to specify the service port (default: 1938).
 The `start` command uses `--config`/`-c` instead (port is read from the config file).
 
+## Operational Monitoring
+
+Recommended periodic checks:
+- **Errors:** `meta_list` with `filter: { hasError: true }` — investigate
+  and retry with `meta_trigger`
+- **Stuck locks:** `meta_list` with `filter: { locked: true }` — locks
+  older than 30 minutes indicate a crashed synthesis; use `jeeves-meta unlock`
+- **Stale knowledge:** `meta_list` with `filter: { staleHours: 48 }` — check
+  if the scheduler is running and the watcher is up
+- **Service health:** `/status` endpoint (via `meta_list` summary or direct
+  HTTP) includes dependency status for watcher and gateway
+
+The TOOLS.md injection surfaces the most critical stats (entity count, errors,
+stalest entity) in the agent's system prompt automatically.
+
 ## Troubleshooting
 
 ### Service unreachable
@@ -369,7 +407,7 @@ The `start` command uses `--config`/`-c` instead (port is read from the config f
    configured `watch` globs)
 3. Check that `metaProperty` in config matches the properties actually set
    on indexed points. If you changed `metaProperty`, run `watcher_reindex`
-   with scope `rules` and restart the gateway.
+   with scope `rules` and restart the meta service.
 4. Seed new metas if needed: `jeeves-meta seed <path>`
 
 ### Synthesis stuck (locked entities)
