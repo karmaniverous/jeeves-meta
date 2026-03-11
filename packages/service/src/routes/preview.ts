@@ -15,6 +15,7 @@ import { normalizePath } from '../normalizePath.js';
 import { paginatedScan } from '../paginatedScan.js';
 import {
   computeEffectiveStaleness,
+  computeStalenessScore,
   hasSteerChanged,
   isArchitectTriggered,
   selectCandidate,
@@ -124,19 +125,16 @@ export function registerPreviewRoute(
       critic: meta._criticTokensAvg ?? meta._criticTokens ?? 0,
     };
 
-    // Compute staleness score (effective staleness normalized)
+    // Compute staleness
     const stalenessSeconds = meta._generatedAt
       ? Math.round((Date.now() - new Date(meta._generatedAt).getTime()) / 1000)
       : null;
-    const depthFactor = Math.pow(1 + config.depthWeight, meta._depth ?? 0);
-    const emphasis = meta._emphasis ?? 1;
-    const stalenessScore =
-      stalenessSeconds !== null
-        ? Math.min(
-            1,
-            (stalenessSeconds * depthFactor * emphasis) / (30 * 86400),
-          )
-        : 1;
+    const stalenessScore = computeStalenessScore(
+      stalenessSeconds,
+      meta._depth ?? 0,
+      meta._emphasis ?? 1,
+      config.depthWeight,
+    );
 
     return {
       path: targetNode.metaPath,

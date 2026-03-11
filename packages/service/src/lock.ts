@@ -19,6 +19,56 @@ interface LockData {
   _lockStartedAt: string;
 }
 
+/** Parsed state of a .lock file. */
+export interface LockState {
+  /** Whether the lock file exists. */
+  exists: boolean;
+  /** Whether the lock contains a staged synthesis result. */
+  staged: boolean;
+  /** Whether the lock is actively held (non-stale PID lock). */
+  active: boolean;
+  /** Raw parsed data, or null if missing/corrupt. */
+  data: Record<string, unknown> | null;
+}
+
+/**
+ * Read and classify the state of a .meta/.lock file.
+ *
+ * @param metaPath - Absolute path to the .meta directory.
+ * @returns Parsed lock state.
+ */
+export function readLockState(metaPath: string): LockState {
+  const lockPath = join(metaPath, LOCK_FILE);
+
+  if (!existsSync(lockPath)) {
+    return { exists: false, staged: false, active: false, data: null };
+  }
+
+  try {
+    const raw = readFileSync(lockPath, 'utf8');
+    const data = JSON.parse(raw) as Record<string, unknown>;
+
+    if ('_id' in data) {
+      return { exists: true, staged: true, active: false, data };
+    }
+
+    const startedAt = data._lockStartedAt as string | undefined;
+    if (startedAt) {
+      const lockAge = Date.now() - new Date(startedAt).getTime();
+      return {
+        exists: true,
+        staged: false,
+        active: lockAge < STALE_TIMEOUT_MS,
+        data,
+      };
+    }
+
+    return { exists: true, staged: false, active: false, data };
+  } catch {
+    return { exists: true, staged: false, active: false, data: null };
+  }
+}
+
 /**
  * Attempt to acquire a lock on a .meta directory.
  *
@@ -26,33 +76,13 @@ interface LockData {
  * @returns True if lock was acquired, false if already locked (non-stale).
  */
 export function acquireLock(metaPath: string): boolean {
+  const state = readLockState(metaPath);
+
+  // Active non-stale lock — cannot acquire
+  if (state.active) return false;
+
+  // Staged, stale, corrupt, or missing — safe to (over)write
   const lockPath = join(metaPath, LOCK_FILE);
-
-  if (existsSync(lockPath)) {
-    try {
-      const raw = readFileSync(lockPath, 'utf8');
-      const data = JSON.parse(raw) as Record<string, unknown>;
-
-      // Check for staged synthesis result (has _id key = completed synthesis)
-      if ('_id' in data) {
-        // Synthesis completed but finalization was interrupted — safe to overwrite
-        return true;
-      }
-
-      // Normal lock data
-      const startedAt = data._lockStartedAt as string | undefined;
-      if (startedAt) {
-        const lockAge = Date.now() - new Date(startedAt).getTime();
-        if (lockAge < STALE_TIMEOUT_MS) {
-          return false; // Lock is active
-        }
-      }
-      // Stale or corrupt lock — fall through to overwrite
-    } catch {
-      // Corrupt lock file — overwrite
-    }
-  }
-
   const lock: LockData = {
     _lockPid: process.pid,
     _lockStartedAt: new Date().toISOString(),
@@ -82,25 +112,7 @@ export function releaseLock(metaPath: string): void {
  * @returns True if locked and not stale.
  */
 export function isLocked(metaPath: string): boolean {
-  const lockPath = join(metaPath, LOCK_FILE);
-
-  if (!existsSync(lockPath)) return false;
-
-  try {
-    const raw = readFileSync(lockPath, 'utf8');
-    const data = JSON.parse(raw) as Record<string, unknown>;
-
-    // Staged result = not "locked" in the active-synthesis sense
-    if ('_id' in data) return false;
-
-    const startedAt = data._lockStartedAt as string | undefined;
-    if (!startedAt) return false;
-
-    const lockAge = Date.now() - new Date(startedAt).getTime();
-    return lockAge < STALE_TIMEOUT_MS;
-  } catch {
-    return false; // Corrupt lock = not locked
-  }
+  return readLockState(metaPath).active;
 }
 
 /**
@@ -118,33 +130,26 @@ export function cleanupStaleLocks(
   logger?: { warn: (obj: Record<string, unknown>, msg: string) => void },
 ): void {
   for (const metaPath of metaPaths) {
+    const state = readLockState(metaPath);
+    if (!state.exists) continue;
+
     const lockPath = join(metaPath, LOCK_FILE);
-    if (!existsSync(lockPath)) continue;
+    if (state.staged) {
+      logger?.warn(
+        { metaPath },
+        'Found staged synthesis result in lock file from previous crash — deleting (conservative: not auto-finalizing)',
+      );
+    } else {
+      logger?.warn(
+        { metaPath },
+        'Found stale lock file from previous crash — deleting',
+      );
+    }
 
     try {
-      const raw = readFileSync(lockPath, 'utf8');
-      const data = JSON.parse(raw) as Record<string, unknown>;
-
-      if ('_id' in data) {
-        logger?.warn(
-          { metaPath },
-          'Found staged synthesis result in lock file from previous crash — deleting (conservative: not auto-finalizing)',
-        );
-      } else {
-        logger?.warn(
-          { metaPath },
-          'Found stale lock file from previous crash — deleting',
-        );
-      }
-
       unlinkSync(lockPath);
     } catch {
-      // Corrupt — just delete
-      try {
-        unlinkSync(lockPath);
-      } catch {
-        // Already gone
-      }
+      // Already gone
     }
   }
 }

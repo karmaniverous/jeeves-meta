@@ -339,9 +339,8 @@ service.addCommand(
     .option('-p, --port <port>', 'Service port', '1938')
     .action(async (opts: { port: string }) => {
       try {
-        const res = await fetch(`http://127.0.0.1:${opts.port}/status`);
-        if (!res.ok) throw new Error(`${String(res.status)} ${res.statusText}`);
-        console.log(JSON.stringify(await res.json(), null, 2));
+        const data = await apiGet(parseInt(opts.port, 10), '/status');
+        console.log(JSON.stringify(data, null, 2));
       } catch (err) {
         console.error('Service unreachable:', (err as Error).message);
         process.exit(1);

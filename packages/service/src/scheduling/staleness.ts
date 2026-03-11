@@ -88,3 +88,29 @@ export function hasSteerChanged(
   if (!hasArchive) return Boolean(currentSteer);
   return currentSteer !== archiveSteer;
 }
+
+/**
+ * Compute a normalized staleness score (0–1) for display purposes.
+ *
+ * Uses the same depth/emphasis weighting as candidate selection,
+ * normalized to a 30-day window.
+ *
+ * @param stalenessSeconds - Raw staleness in seconds (null = never synthesized).
+ * @param depth - Meta tree depth.
+ * @param emphasis - Scheduling emphasis multiplier.
+ * @param depthWeight - Depth weighting exponent from config.
+ * @returns Normalized score between 0 and 1.
+ */
+export function computeStalenessScore(
+  stalenessSeconds: number | null,
+  depth: number,
+  emphasis: number,
+  depthWeight: number,
+): number {
+  if (stalenessSeconds === null) return 1;
+  const depthFactor = Math.pow(1 + depthWeight, depth);
+  return Math.min(
+    1,
+    (stalenessSeconds * depthFactor * emphasis) / (30 * 86400),
+  );
+}

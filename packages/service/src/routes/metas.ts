@@ -16,6 +16,7 @@ import { filterInScope } from '../discovery/index.js';
 import { findNode, listMetas } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
 import { paginatedScan } from '../paginatedScan.js';
+import { computeStalenessScore } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
 const metasQuerySchema = z.object({
@@ -242,15 +243,12 @@ export function registerMetasRoutes(
             (Date.now() - new Date(metaTyped._generatedAt).getTime()) / 1000,
           )
         : null;
-      const depthFactor = Math.pow(
-        1 + config.depthWeight,
+      const score = computeStalenessScore(
+        staleSeconds,
         metaTyped._depth ?? 0,
+        metaTyped._emphasis ?? 1,
+        config.depthWeight,
       );
-      const emphasis = metaTyped._emphasis ?? 1;
-      const score =
-        staleSeconds !== null
-          ? Math.min(1, (staleSeconds * depthFactor * emphasis) / (30 * 86400))
-          : 1;
 
       const response: Record<string, unknown> = {
         path: targetNode.metaPath,

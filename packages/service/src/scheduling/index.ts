@@ -7,6 +7,7 @@
 export { selectCandidate } from './selectCandidate.js';
 export {
   actualStaleness,
+  computeStalenessScore,
   hasSteerChanged,
   isArchitectTriggered,
   isStale,

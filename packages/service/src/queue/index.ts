@@ -43,6 +43,7 @@ export class SynthesisQueue {
   private currentItem: QueueItem | null = null;
   private processing = false;
   private logger: Logger;
+  private onEnqueueCallback: (() => void) | null = null;
 
   /**
    * Create a new SynthesisQueue.
@@ -51,6 +52,13 @@ export class SynthesisQueue {
    */
   constructor(logger: Logger) {
     this.logger = logger;
+  }
+
+  /**
+   * Set a callback to invoke when a new (non-duplicate) item is enqueued.
+   */
+  onEnqueue(callback: () => void): void {
+    this.onEnqueueCallback = callback;
   }
 
   /**
@@ -92,6 +100,7 @@ export class SynthesisQueue {
     }
 
     const position = this.queue.findIndex((i) => i.path === path);
+    this.onEnqueueCallback?.();
     return { position, alreadyQueued: false };
   }
 

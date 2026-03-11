@@ -38,6 +38,8 @@ export {
   acquireLock,
   cleanupStaleLocks,
   isLocked,
+  type LockState,
+  readLockState,
   releaseLock,
 } from './lock.js';
 export { normalizePath } from './normalizePath.js';
@@ -298,15 +300,10 @@ export async function startService(
     }
   };
 
-  // Start queue processor when items are enqueued
-  const originalEnqueue = queue.enqueue.bind(queue);
-  queue.enqueue = (path: string, priority) => {
-    const result = originalEnqueue(path, priority);
-    if (!result.alreadyQueued) {
-      void queue.processQueue(synthesizeFn);
-    }
-    return result;
-  };
+  // Auto-process queue when new items arrive
+  queue.onEnqueue(() => {
+    void queue.processQueue(synthesizeFn);
+  });
 
   // Startup: clean stale locks (gap #16)
   try {
