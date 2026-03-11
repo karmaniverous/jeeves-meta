@@ -64,7 +64,8 @@ function resolveFileRef(value: string, baseDir: string): string {
  * @throws If no config path found.
  */
 export function resolveConfigPath(args: string[]): string {
-  const configIdx = args.indexOf('--config');
+  let configIdx = args.indexOf('--config');
+  if (configIdx === -1) configIdx = args.indexOf('-c');
   if (configIdx !== -1 && args[configIdx + 1]) {
     return args[configIdx + 1];
   }
