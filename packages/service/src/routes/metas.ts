@@ -12,10 +12,9 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { listArchiveFiles } from '../archive/index.js';
-import { filterInScope } from '../discovery/index.js';
+import { getScopeFiles } from '../discovery/index.js';
 import { findNode, listMetas } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
-import { paginatedScan } from '../paginatedScan.js';
 import { computeStalenessScore } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
@@ -234,11 +233,7 @@ export function registerMetasRoutes(
       };
 
       // Compute scope
-      const allScanFiles = await paginatedScan(watcher, {
-        pathPrefix: targetNode.ownerPath,
-      });
-      const allFiles = allScanFiles.map((f) => f.file_path);
-      const scopeFiles = filterInScope(targetNode, allFiles);
+      const { scopeFiles, allFiles } = await getScopeFiles(targetNode, watcher);
 
       // Compute staleness
       const metaTyped = meta as Record<string, unknown> & {

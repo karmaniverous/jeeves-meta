@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { resolveMetaDir } from '../lock.js';
 import type { RouteDeps } from './index.js';
 
 const unlockBodySchema = z.object({
@@ -22,9 +23,7 @@ export function registerUnlockRoute(
 ): void {
   app.post('/unlock', (request, reply) => {
     const body = unlockBodySchema.parse(request.body);
-    const metaDir = body.path.endsWith('.meta')
-      ? body.path
-      : join(body.path, '.meta');
+    const metaDir = resolveMetaDir(body.path);
     const lockPath = join(metaDir, '.lock');
 
     if (!existsSync(lockPath)) {

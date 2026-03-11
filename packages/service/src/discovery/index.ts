@@ -12,5 +12,11 @@ export {
   type MetaListSummary,
 } from './listMetas.js';
 export { buildOwnershipTree, findNode } from './ownershipTree.js';
-export { filterInScope, getScopePrefix } from './scope.js';
+export {
+  filterInScope,
+  getDeltaFiles,
+  getScopeFiles,
+  getScopePrefix,
+  type ScopeFilesResult,
+} from './scope.js';
 export type { MetaNode, OwnershipTree } from './types.js';

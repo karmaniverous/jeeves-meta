@@ -11,6 +11,7 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { resolveMetaDir } from '../lock.js';
 import type { RouteDeps } from './index.js';
 
 const seedBodySchema = z.object({
@@ -20,9 +21,7 @@ const seedBodySchema = z.object({
 export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
   app.post('/seed', (request, reply) => {
     const body = seedBodySchema.parse(request.body);
-    const metaDir = body.path.endsWith('.meta')
-      ? body.path
-      : join(body.path, '.meta');
+    const metaDir = resolveMetaDir(body.path);
 
     if (existsSync(metaDir)) {
       return reply.status(409).send({

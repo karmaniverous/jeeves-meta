@@ -11,9 +11,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { listArchiveFiles } from '../archive/index.js';
-import { filterInScope, type MetaNode } from '../discovery/index.js';
+import {
+  getDeltaFiles,
+  getScopeFiles,
+  type MetaNode,
+} from '../discovery/index.js';
 import type { MetaContext, WatcherClient } from '../interfaces/index.js';
-import { paginatedScan } from '../paginatedScan.js';
 import type { MetaJson } from '../schema/index.js';
 
 /**
@@ -59,32 +62,14 @@ export async function buildContextPackage(
   meta: MetaJson,
   watcher: WatcherClient,
 ): Promise<MetaContext> {
-  // Scope files via watcher scan, excluding child subtrees
-  const allScanFiles = await paginatedScan(watcher, {
-    pathPrefix: node.ownerPath,
-  });
-  const scopeFiles = filterInScope(
+  // Scope and delta files via watcher scan
+  const { scopeFiles } = await getScopeFiles(node, watcher);
+  const deltaFiles = await getDeltaFiles(
     node,
-    allScanFiles.map((f) => f.file_path),
+    watcher,
+    meta._generatedAt,
+    scopeFiles,
   );
-
-  // Delta files: modified since _generatedAt
-  let deltaFiles: string[];
-  if (meta._generatedAt) {
-    const modifiedAfter = Math.floor(
-      new Date(meta._generatedAt).getTime() / 1000,
-    );
-    const deltaScanFiles = await paginatedScan(watcher, {
-      pathPrefix: node.ownerPath,
-      modifiedAfter,
-    });
-    deltaFiles = filterInScope(
-      node,
-      deltaScanFiles.map((f) => f.file_path),
-    );
-  } else {
-    deltaFiles = scopeFiles; // First run: all files are delta
-  }
 
   // Child meta outputs
   const childMetas: Record<string, unknown> = {};

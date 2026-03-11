@@ -12,6 +12,19 @@ import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const LOCK_FILE = '.lock';
+
+/**
+ * Resolve a path to a .meta directory.
+ *
+ * If the path already ends with '.meta', returns it as-is.
+ * Otherwise, appends '.meta' as a subdirectory.
+ *
+ * @param inputPath - Path that may or may not end with '.meta'.
+ * @returns The resolved .meta directory path.
+ */
+export function resolveMetaDir(inputPath: string): string {
+  return inputPath.endsWith('.meta') ? inputPath : join(inputPath, '.meta');
+}
 const STALE_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 
 interface LockData {

@@ -10,9 +10,13 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 
 import { readLatestArchive } from '../archive/index.js';
-import { filterInScope, findNode, listMetas } from '../discovery/index.js';
+import {
+  findNode,
+  getDeltaFiles,
+  getScopeFiles,
+  listMetas,
+} from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
-import { paginatedScan } from '../paginatedScan.js';
 import {
   computeStalenessScore,
   discoverStalestPath,
@@ -72,11 +76,7 @@ export function registerPreviewRoute(
     ) as MetaJson;
 
     // Scope files
-    const allScanFiles = await paginatedScan(watcher, {
-      pathPrefix: targetNode.ownerPath,
-    });
-    const allFiles = allScanFiles.map((f) => f.file_path);
-    const scopeFiles = filterInScope(targetNode, allFiles);
+    const { scopeFiles } = await getScopeFiles(targetNode, watcher);
 
     const structureHash = computeStructureHash(scopeFiles);
     const structureChanged = structureHash !== meta._structureHash;
@@ -96,22 +96,12 @@ export function registerPreviewRoute(
     );
 
     // Delta files
-    let deltaFiles: string[] = [];
-    if (meta._generatedAt) {
-      const modifiedAfter = Math.floor(
-        new Date(meta._generatedAt).getTime() / 1000,
-      );
-      const deltaScanFiles = await paginatedScan(watcher, {
-        pathPrefix: targetNode.ownerPath,
-        modifiedAfter,
-      });
-      deltaFiles = filterInScope(
-        targetNode,
-        deltaScanFiles.map((f) => f.file_path),
-      );
-    } else {
-      deltaFiles = scopeFiles;
-    }
+    const deltaFiles = await getDeltaFiles(
+      targetNode,
+      watcher,
+      meta._generatedAt,
+      scopeFiles,
+    );
 
     // EMA token estimates
     const estimatedTokens = {

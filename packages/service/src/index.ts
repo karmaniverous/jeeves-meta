@@ -41,6 +41,7 @@ export {
   type LockState,
   readLockState,
   releaseLock,
+  resolveMetaDir,
 } from './lock.js';
 export { normalizePath } from './normalizePath.js';
 export { paginatedScan } from './paginatedScan.js';

@@ -7,6 +7,8 @@
  * @module discovery/scope
  */
 
+import type { WatcherClient } from '../interfaces/index.js';
+import { paginatedScan } from '../paginatedScan.js';
 import type { MetaNode } from './types.js';
 
 /**
@@ -56,4 +58,66 @@ export function filterInScope(node: MetaNode, files: string[]): string[] {
 
     return true;
   });
+}
+
+/** Result of getScopeFiles, including both filtered and unfiltered file lists. */
+export interface ScopeFilesResult {
+  /** Files directly owned by this meta (excluding child subtrees). */
+  scopeFiles: string[];
+  /** All files under the owner path (including child subtrees). */
+  allFiles: string[];
+}
+
+/**
+ * Get all files in scope for a meta node via watcher scan.
+ *
+ * Scans the owner path prefix and filters out child meta subtrees,
+ * keeping only files directly owned by this meta.
+ *
+ * @param node - The meta node.
+ * @param watcher - WatcherClient for scan queries.
+ * @returns Array of in-scope file paths.
+ */
+export async function getScopeFiles(
+  node: MetaNode,
+  watcher: WatcherClient,
+): Promise<ScopeFilesResult> {
+  const allScanFiles = await paginatedScan(watcher, {
+    pathPrefix: node.ownerPath,
+  });
+  const allFiles = allScanFiles.map((f) => f.file_path);
+  return {
+    scopeFiles: filterInScope(node, allFiles),
+    allFiles,
+  };
+}
+
+/**
+ * Get files modified since a given timestamp within a meta node's scope.
+ *
+ * If no generatedAt is provided (first run), returns all scope files.
+ *
+ * @param node - The meta node.
+ * @param watcher - WatcherClient for scan queries.
+ * @param generatedAt - ISO timestamp of last synthesis, or null/undefined for first run.
+ * @param scopeFiles - Pre-computed scope files (used as fallback for first run).
+ * @returns Array of modified in-scope file paths.
+ */
+export async function getDeltaFiles(
+  node: MetaNode,
+  watcher: WatcherClient,
+  generatedAt: string | undefined,
+  scopeFiles: string[],
+): Promise<string[]> {
+  if (!generatedAt) return scopeFiles;
+
+  const modifiedAfter = Math.floor(new Date(generatedAt).getTime() / 1000);
+  const deltaScanFiles = await paginatedScan(watcher, {
+    pathPrefix: node.ownerPath,
+    modifiedAfter,
+  });
+  return filterInScope(
+    node,
+    deltaScanFiles.map((f) => f.file_path),
+  );
 }
