@@ -214,8 +214,9 @@ async function orchestrateOnce(
   if (!winner && !targetNode) return { synthesized: false };
   const node = targetNode ?? winner!.node;
 
-  // For targeted path, acquire lock now (candidate selection already locked for stalest)
-  if (targetNode && !acquireLock(node.metaPath)) {
+  // For targeted path, acquire lock now (unless candidate selection already locked it)
+  const alreadyLocked = winner && node.metaPath === winner.node.metaPath;
+  if (targetNode && !alreadyLocked && !acquireLock(node.metaPath)) {
     return { synthesized: false };
   }
 
