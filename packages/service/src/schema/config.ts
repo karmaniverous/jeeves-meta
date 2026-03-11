@@ -85,3 +85,12 @@ export const serviceConfigSchema = z.object({
 
 /** Inferred type for service configuration. */
 export type ServiceConfig = z.infer<typeof serviceConfigSchema>;
+
+/**
+ * Alias for ServiceConfig — satisfies lib modules that reference MetaConfig.
+ * ServiceConfig is a strict superset of the original MetaConfig.
+ */
+export type MetaConfig = ServiceConfig;
+
+/** Alias for serviceConfigSchema — satisfies lib modules that reference metaConfigSchema. */
+export const metaConfigSchema = serviceConfigSchema;
