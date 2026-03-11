@@ -174,23 +174,24 @@ program
   .command('validate')
   .description('Validate current or candidate config')
   .option('-p, --port <port>', 'Service port', '1938')
-  .option('-c, --config <path>', 'Candidate config file to validate')
+  .option('-c, --config <path>', 'Validate a candidate config file locally')
   .action(async (opts: { port: string; config?: string }) => {
     try {
-      let body: Record<string, unknown> = {};
       if (opts.config) {
-        const { readFileSync } = await import('node:fs');
-        body = JSON.parse(readFileSync(opts.config, 'utf-8')) as Record<
-          string,
-          unknown
-        >;
+        // Local validation — parse candidate file through Zod schema
+        const { loadServiceConfig } = await import('./configLoader.js');
+        const configPath = opts.config;
+        const config = loadServiceConfig(configPath);
+        const sanitized = {
+          ...config,
+          gatewayApiKey: config.gatewayApiKey ? '[REDACTED]' : undefined,
+        };
+        console.log(JSON.stringify(sanitized, null, 2));
+      } else {
+        // Remote — query running service
+        const data = await apiGet(parseInt(opts.port, 10), '/config/validate');
+        console.log(JSON.stringify(data, null, 2));
       }
-      const data = await apiPost(
-        parseInt(opts.port, 10),
-        '/config/validate',
-        body,
-      );
-      console.log(JSON.stringify(data, null, 2));
     } catch (err) {
       console.error('Error:', (err as Error).message);
       process.exit(1);
