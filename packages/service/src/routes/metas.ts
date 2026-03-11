@@ -41,7 +41,6 @@ const metaDetailQuerySchema = z.object({
 });
 
 export function registerMetasRoutes(app: FastifyInstance): void {
-  void deps;
   app.get('/metas', (request) => {
     metasQuerySchema.parse(request.query);
 

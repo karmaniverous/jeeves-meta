@@ -1,5 +1,5 @@
 /**
- * POST /synthesize — trigger synthesis for a specific path or stalest candidate.
+ * POST /synthesize route handler.
  *
  * @module routes/synthesize
  */
@@ -7,19 +7,28 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import type { RouteDeps } from './index.js';
+
 const synthesizeBodySchema = z.object({
   path: z.string().optional(),
 });
 
-export function registerSynthesizeRoute(app: FastifyInstance): void {
-  void deps;
+/** Register the POST /synthesize route. */
+export function registerSynthesizeRoute(
+  app: FastifyInstance,
+  deps: RouteDeps,
+): void {
   app.post('/synthesize', (request, reply) => {
     const body = synthesizeBodySchema.parse(request.body);
+    const path = body.path ?? 'stalest';
 
-    return reply.status(202).send({
+    const result = deps.queue.enqueue(path, body.path !== undefined);
+
+    return reply.code(202).send({
       status: 'accepted',
-      path: body.path ?? 'stalest',
-      queuePosition: 0,
+      path,
+      queuePosition: result.position,
+      alreadyQueued: result.alreadyQueued,
     });
   });
 }

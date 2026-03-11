@@ -101,6 +101,14 @@ export {
   serviceConfigSchema,
 } from './schema/index.js';
 
+// ── Queue ──
+export {
+  type EnqueueResult,
+  type QueueItem,
+  type QueueState,
+  SynthesisQueue,
+} from './queue/index.js';
+
 // ── Routes ──
 export { registerRoutes, type RouteDeps } from './routes/index.js';
 
@@ -116,6 +124,7 @@ export {
 
 // ── Service Bootstrap ──
 import { createLogger } from './logger/index.js';
+import { SynthesisQueue } from './queue/index.js';
 import { type ServiceConfig } from './schema/config.js';
 import { createServer } from './server.js';
 
@@ -130,7 +139,8 @@ export async function startService(config: ServiceConfig): Promise<void> {
     file: config.logging.file,
   });
 
-  const server = createServer({ logger, config });
+  const queue = new SynthesisQueue(logger);
+  const server = createServer({ logger, config, queue });
 
   try {
     await server.listen({ port: config.port, host: '0.0.0.0' });

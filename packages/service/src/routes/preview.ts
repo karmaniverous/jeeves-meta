@@ -7,7 +7,6 @@
 import type { FastifyInstance } from 'fastify';
 
 export function registerPreviewRoute(app: FastifyInstance): void {
-  void deps;
   app.get('/preview', () => {
     return {
       path: null as string | null,

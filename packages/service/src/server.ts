@@ -7,6 +7,7 @@
 import Fastify, { type FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
+import type { SynthesisQueue } from './queue/index.js';
 import { registerRoutes } from './routes/index.js';
 import type { ServiceConfig } from './schema/config.js';
 
@@ -14,6 +15,8 @@ import type { ServiceConfig } from './schema/config.js';
 export interface ServerOptions {
   /** Pino logger instance. */
   logger: Logger;
+  /** Synthesis queue instance. */
+  queue: SynthesisQueue;
   /** Validated service configuration. */
   config: ServiceConfig;
 }
@@ -30,6 +33,7 @@ export function createServer(options: ServerOptions): FastifyInstance {
   registerRoutes(app, {
     config: options.config,
     logger: options.logger,
+    queue: options.queue,
   });
 
   return app;

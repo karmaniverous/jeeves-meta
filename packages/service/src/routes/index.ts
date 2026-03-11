@@ -7,6 +7,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
+import type { SynthesisQueue } from '../queue/index.js';
 import type { ServiceConfig } from '../schema/config.js';
 import { registerConfigValidateRoute } from './configValidate.js';
 import { registerMetasRoutes } from './metas.js';
@@ -20,13 +21,14 @@ import { registerUnlockRoute } from './unlock.js';
 export interface RouteDeps {
   config: ServiceConfig;
   logger: Logger;
+  queue: SynthesisQueue;
 }
 
 /** Register all HTTP routes on the Fastify instance. */
 export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
   registerStatusRoute(app, deps);
   registerMetasRoutes(app);
-  registerSynthesizeRoute(app);
+  registerSynthesizeRoute(app, deps);
   registerPreviewRoute(app);
   registerSeedRoute(app, deps);
   registerUnlockRoute(app, deps);
