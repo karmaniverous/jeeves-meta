@@ -8,7 +8,6 @@
 
 import type { FastifyInstance } from 'fastify';
 
-import { listMetas } from '../discovery/index.js';
 import type { RouteDeps } from './index.js';
 
 interface DepHealth {
@@ -34,7 +33,7 @@ export function registerStatusRoute(
   deps: RouteDeps,
 ): void {
   app.get('/status', async () => {
-    const { config, queue, scheduler, stats, watcher } = deps;
+    const { config, queue, scheduler, stats } = deps;
 
     // On-demand dependency checks
     const [watcherHealth, gatewayHealth] = await Promise.all([
@@ -57,19 +56,8 @@ export function registerStatusRoute(
       status = 'idle';
     }
 
-    // Metas summary from listMetas (already computed)
-    let metasSummary = { total: 0, stale: 0, errors: 0, neverSynthesized: 0 };
-    try {
-      const result = await listMetas(config, watcher);
-      metasSummary = {
-        total: result.summary.total,
-        stale: result.summary.stale,
-        errors: result.summary.errors,
-        neverSynthesized: result.summary.neverSynthesized,
-      };
-    } catch {
-      // Watcher unreachable — leave zeros
-    }
+    // Metas summary is expensive (paginated watcher scan + disk reads).
+    // Use GET /metas for full inventory; status is a lightweight health check.
 
     return {
       service: 'jeeves-meta',
@@ -93,7 +81,6 @@ export function registerStatusRoute(
         watcher: watcherHealth,
         gateway: gatewayHealth,
       },
-      metas: metasSummary,
     };
   });
 }
