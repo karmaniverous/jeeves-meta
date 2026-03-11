@@ -38,8 +38,10 @@ will happen.
   previews the stalest candidate.
 
 ### meta_trigger
-Manually trigger a full synthesis cycle (architect → builder → critic) for
-a specific meta or the next-stalest candidate.
+Enqueue a synthesis cycle for a specific meta or the next-stalest candidate.
+The synthesis runs asynchronously in the service queue; the tool returns
+immediately with the queue position. The full cycle (architect → builder →
+critic) runs in the background.
 
 **Parameters:**
 - `path` (optional): Specific `.meta/` or owner directory path. If omitted,
@@ -92,6 +94,7 @@ Key settings:
 | `builderTimeout` | 600s | Builder subprocess timeout |
 | `criticTimeout` | 300s | Critic subprocess timeout |
 | `skipUnchanged` | true | Skip candidates with no changes since last synthesis |
+| `thinking` | `low` | Thinking level for spawned LLM sessions |
 | `port` | 1938 | HTTP API listen port |
 | `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
 | `reportChannel` | (optional) | Gateway channel target for progress messages (e.g. Slack channel ID) |
@@ -198,7 +201,8 @@ restart.
 
 When `reportChannel` is set, the service sends real-time progress messages
 to that channel via the OpenClaw gateway. Events include: synthesis started,
-architect/builder/critic completed, errors, and queue status. This uses
+phase started/completed (architect, builder, critic), synthesis completed,
+and errors. This uses
 `/tools/invoke` → `message` tool — zero LLM token cost.
 
 ### TOOLS.md Bootstrapping Prompts
@@ -332,18 +336,28 @@ Commands: `start`, `status`, `list`, `detail`, `preview`, `synthesize`,
 `seed`, `unlock`, `validate`, `service install|start|stop|status|remove`.
 
 Config resolution: `--config` flag → `JEEVES_META_CONFIG` env var → error.
-All commands support `-p, --port` to specify the service port (default: 1938).
+All client commands support `-p, --port` to specify the service port (default: 1938).
+The `start` command uses `--config`/`-c` instead (port is read from the config file).
 
 ## Troubleshooting
 
+### Service unreachable
+
+**Symptom:** TOOLS.md shows "ACTION REQUIRED: jeeves-meta service is unreachable"
+**Cause:** Meta service not running or wrong `serviceUrl` in plugin config
+**Fix:**
+1. Check if the service is running: `jeeves-meta service status` or `curl http://localhost:1938/status`
+2. If down, start it: `jeeves-meta service start` or `jeeves-meta start --config <path>`
+3. If running on a different port, update `serviceUrl` in plugin config
+
 ### Watcher unreachable
 
-**Symptom:** TOOLS.md shows "ACTION REQUIRED: jeeves-watcher is unreachable"
-**Cause:** Watcher service not running or wrong URL in config
+**Symptom:** TOOLS.md shows a ⚠️ **Watcher** dependency warning in the entity summary
+**Cause:** Watcher service not running or wrong URL in meta service config
 **Fix:**
-1. Check watcher status: `watcher_status` tool
+1. Check watcher status: `watcher_status` tool or `curl http://localhost:1936/status`
 2. If down, start the watcher service
-3. If running on a different port, update `watcherUrl` in config
+3. If running on a different port, update `watcherUrl` in meta service config and restart the service
 
 ### No entities discovered
 
@@ -397,7 +411,7 @@ All commands support `-p, --port` to specify the service port (default: 1938).
 **Cause:** Virtual rules not re-registered after config change, or watcher
 not yet indexed new files
 **Fix:**
-1. If `metaProperty` changed: restart gateway + `watcher_reindex` (scope: rules)
+1. If `metaProperty` changed: restart meta service + `watcher_reindex` (scope: rules)
 2. If new `.meta/` directory: wait for chokidar detection (seconds) or
    trigger `watcher_reindex` (scope: full)
 3. Verify with `watcher_scan`: query for the expected properties to confirm
