@@ -1,60 +1,71 @@
 /**
  * Generate the Meta menu content for TOOLS.md injection.
  *
- * Queries the watcher API for synthesis entity stats and produces
+ * Queries the jeeves-meta service for entity stats and produces
  * a Markdown section suitable for agent system prompt injection.
  *
  * @module promptInjection
  */
 
-import {
-  HttpWatcherClient,
-  listMetas,
-  type MetaConfig,
-} from '@karmaniverous/jeeves-meta';
+import type { MetaServiceClient } from './serviceClient.js';
+
+interface StatusResponse {
+  uptime: number;
+  queue: { length: number; current: unknown };
+}
+
+interface MetasResponse {
+  summary: {
+    total: number;
+    stale: number;
+    errors: number;
+    neverSynthesized: number;
+    stalestPath: string | null;
+    lastSynthesizedPath: string | null;
+    lastSynthesizedAt: string | null;
+    tokens: { architect: number; builder: number; critic: number };
+  };
+  items: Array<{ stalenessSeconds: number | string }>;
+}
 
 /**
  * Generate the Meta menu Markdown for TOOLS.md.
  *
- * Three output modes:
- * 1. Watcher unreachable - ACTION REQUIRED with diagnostic
- * 2. No entities found - ACTION REQUIRED with setup guidance
- * 3. Healthy - entity stats + tool listing + skill reference
- *
- * @param config - Full meta config (for listMetas and watcherUrl).
+ * @param client - MetaServiceClient instance.
  * @returns Markdown string for the Meta section.
  */
-export async function generateMetaMenu(config: MetaConfig): Promise<string> {
-  let result;
+export async function generateMetaMenu(
+  client: MetaServiceClient,
+): Promise<string> {
+  let status: StatusResponse;
+  let metas: MetasResponse;
 
   try {
-    const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
-    result = await listMetas(config, watcher);
+    status = (await client.status()) as StatusResponse;
+    metas = (await client.listMetas()) as MetasResponse;
   } catch {
     return [
-      '> **ACTION REQUIRED: jeeves-watcher is unreachable.**',
-      '> The jeeves-meta synthesis engine requires a running jeeves-watcher service.',
-      '> The watcher API at ' +
-        config.watcherUrl +
-        ' is down or not configured.',
+      '> **ACTION REQUIRED: jeeves-meta service is unreachable.**',
+      '> The service API is down or not configured.',
       '>',
-      "> **Read the `jeeves-meta` skill's Bootstrap section immediately**",
-      '> for setup instructions. Do not attempt synthesis until watcher is available.',
+      '> **Troubleshooting:**',
+      '> - Check if the JeevesMeta service is running',
+      '> - Verify the serviceUrl in plugins.entries.jeeves-meta-openclaw.config',
+      '> - Try: `jeeves-meta service start`',
     ].join('\n');
   }
 
-  if (result.entries.length === 0) {
+  if (metas.summary.total === 0) {
     return [
       '> **ACTION REQUIRED: No synthesis entities found.**',
-      '> The watcher is running but no `.meta/` directories were discovered',
-      '> in the configured watch paths.',
+      '> The service is running but no `.meta/` directories were discovered.',
       '>',
       "> **Read the `jeeves-meta` skill's Bootstrap section** for guidance",
-      '> on creating `.meta/` directories and configuring watch paths.',
+      '> on creating `.meta/` directories.',
     ].join('\n');
   }
 
-  const { summary, entries } = result;
+  const { summary } = metas;
 
   const formatAge = (seconds: number): string => {
     if (!isFinite(seconds)) return 'never synthesized';
@@ -63,10 +74,14 @@ export async function generateMetaMenu(config: MetaConfig): Promise<string> {
     return Math.round(seconds / 86400).toString() + 'd';
   };
 
-  // Find stalest age for display
+  // Find stalest age
   let stalestAge = 0;
-  for (const e of entries) {
-    if (e.stalenessSeconds > stalestAge) stalestAge = e.stalenessSeconds;
+  for (const item of metas.items) {
+    const s =
+      typeof item.stalenessSeconds === 'number'
+        ? item.stalenessSeconds
+        : Infinity;
+    if (s > stalestAge) stalestAge = s;
   }
 
   const stalestDisplay = summary.stalestPath
@@ -79,9 +94,11 @@ export async function generateMetaMenu(config: MetaConfig): Promise<string> {
       ')'
     : 'n/a';
 
-  const lines: string[] = [
+  void status; // used for future queue display
+
+  return [
     'The jeeves-meta synthesis engine manages ' +
-      entries.length.toString() +
+      summary.total.toString() +
       ' meta entities.',
     '',
     '### Entity Summary',
@@ -110,7 +127,5 @@ export async function generateMetaMenu(config: MetaConfig): Promise<string> {
     '| `meta_preview` | Dry-run: show what inputs would be gathered without running LLM |',
     '',
     'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
-  ];
-
-  return lines.join('\n');
+  ].join('\n');
 }
