@@ -104,13 +104,13 @@ describe('ProgressReporter', () => {
         }
         const body = JSON.parse(rawBody) as {
           tool: string;
-          parameters: { action: string; target: string; message: string };
+          args: { action: string; target: string; message: string };
         };
 
         expect(body.tool).toBe('message');
-        expect(body.parameters.action).toBe('send');
-        expect(body.parameters.target).toBe('C123');
-        expect(body.parameters.message).toContain('Started meta synthesis');
+        expect(body.args.action).toBe('send');
+        expect(body.args.target).toBe('C123');
+        expect(body.args.message).toContain('Started meta synthesis');
 
         return Promise.resolve(new Response('', { status: 200 }));
       });

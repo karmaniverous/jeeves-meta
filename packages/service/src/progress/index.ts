@@ -83,7 +83,7 @@ export function formatProgressEvent(event: ProgressEvent): string {
 
 type GatewayInvokeRequest = {
   tool: 'message';
-  parameters: {
+  args: {
     action: 'send';
     target: string;
     message: string;
@@ -108,7 +108,7 @@ export class ProgressReporter {
 
     const payload: GatewayInvokeRequest = {
       tool: 'message',
-      parameters: {
+      args: {
         action: 'send',
         target,
         message,
