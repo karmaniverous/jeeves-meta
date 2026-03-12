@@ -7,11 +7,12 @@
 import { Command } from 'commander';
 
 import { loadServiceConfig, resolveConfigPath } from './configLoader.js';
+import { DEFAULT_PORT_STR, SERVICE_NAME } from './constants.js';
 import { startService } from './index.js';
 
 const program = new Command();
 
-program.name('jeeves-meta').description('Jeeves Meta synthesis service');
+program.name(SERVICE_NAME).description('Jeeves Meta synthesis service');
 
 // ─── start ──────────────────────────────────────────────────────────
 program
@@ -59,7 +60,7 @@ async function apiPost(
 program
   .command('status')
   .description('Show service status')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .action(async (opts: { port: string }) => {
     try {
       const data = await apiGet(parseInt(opts.port, 10), '/status');
@@ -74,7 +75,7 @@ program
 program
   .command('list')
   .description('List all discovered meta entities')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .action(async (opts: { port: string }) => {
     try {
       const data = await apiGet(parseInt(opts.port, 10), '/metas');
@@ -89,7 +90,7 @@ program
 program
   .command('detail <path>')
   .description('Show full detail for a single meta entity')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .action(async (metaPath: string, opts: { port: string }) => {
     try {
       const encoded = encodeURIComponent(metaPath);
@@ -105,7 +106,7 @@ program
 program
   .command('preview')
   .description('Dry-run: preview inputs for next synthesis cycle')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .option('--path <path>', 'Specific meta path to preview')
   .action(async (opts: { port: string; path?: string }) => {
     try {
@@ -122,7 +123,7 @@ program
 program
   .command('synthesize')
   .description('Trigger synthesis (enqueues work)')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .option('--path <path>', 'Specific meta path to synthesize')
   .action(async (opts: { port: string; path?: string }) => {
     try {
@@ -139,7 +140,7 @@ program
 program
   .command('seed <path>')
   .description('Create .meta/ directory + meta.json for a path')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .action(async (metaPath: string, opts: { port: string }) => {
     try {
       const data = await apiPost(parseInt(opts.port, 10), '/seed', {
@@ -156,7 +157,7 @@ program
 program
   .command('unlock <path>')
   .description('Remove .lock file from a meta entity')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .action(async (metaPath: string, opts: { port: string }) => {
     try {
       const data = await apiPost(parseInt(opts.port, 10), '/unlock', {
@@ -173,7 +174,7 @@ program
 program
   .command('validate')
   .description('Validate current or candidate config')
-  .option('-p, --port <port>', 'Service port', '1938')
+  .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .option('-c, --config <path>', 'Validate a candidate config file locally')
   .action(async (opts: { port: string; config?: string }) => {
     try {
@@ -337,7 +338,7 @@ service.addCommand(
 service.addCommand(
   new Command('status')
     .description('Show service status via HTTP API')
-    .option('-p, --port <port>', 'Service port', '1938')
+    .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (opts: { port: string }) => {
       try {
         const data = await apiGet(parseInt(opts.port, 10), '/status');
