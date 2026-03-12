@@ -6,7 +6,6 @@
  * @module shutdown
  */
 
-
 import type { Logger } from 'pino';
 
 import { releaseLock } from '../lock.js';

@@ -37,7 +37,9 @@ export interface ServerOptions {
  */
 export function createServer(options: ServerOptions) {
   // Fastify 5 requires `loggerInstance` for external pino loggers
-  const app = Fastify({ loggerInstance: options.logger as unknown as FastifyBaseLogger });
+  const app = Fastify({
+    loggerInstance: options.logger as unknown as FastifyBaseLogger,
+  });
 
   registerRoutes(app, {
     config: options.config,

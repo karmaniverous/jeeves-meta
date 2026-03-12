@@ -46,6 +46,7 @@ export {
 export { normalizePath } from './normalizePath.js';
 export { paginatedScan } from './paginatedScan.js';
 export { computeStructureHash } from './structureHash.js';
+export { walkFiles } from './walkFiles.js';
 
 // ── Executor ──
 export {

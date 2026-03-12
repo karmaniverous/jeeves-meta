@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,6 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaExecutor } from '../interfaces/index.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
+import { computeStructureHash } from '../structureHash.js';
+import { walkFiles } from '../walkFiles.js';
 import { orchestrate } from './orchestrate.js';
 
 const testRoot = join(
@@ -145,33 +146,50 @@ describe('orchestrate', () => {
   it('skips architect when builder is cached and structure unchanged', async () => {
     mkdirSync(join(testRoot, 'domain/.meta/archive'), { recursive: true });
 
-    // Hash must match scope-filtered file list from mock watcher
-    const fullFilePath =
-      testRoot.replaceAll('\\', '/') + '/domain/test-file.md';
-    const fileHash = createHash('sha256').update(fullFilePath).digest('hex');
+    // Create a content file so filesystem walk finds it
+    writeFileSync(join(testRoot, 'domain/test-file.md'), '# Test data');
 
-    const metaJson: MetaJson = {
+    // Write placeholder meta.json first
+    const baseMeta: MetaJson = {
       _id: '550e8400-e29b-41d4-a716-446655440000',
       _builder: 'Cached builder brief',
       _content: '# Old content',
       _generatedAt: new Date(Date.now() - 60000).toISOString(),
-      _structureHash: fileHash,
+      _structureHash: '',
       _synthesisCount: 1,
     };
     writeFileSync(
       join(testRoot, 'domain/.meta/meta.json'),
+      JSON.stringify(baseMeta),
+    );
+    writeFileSync(
+      join(testRoot, 'domain/.meta/archive/2026-01-01.json'),
+      JSON.stringify(baseMeta),
+    );
+
+    // Compute structure hash from actual filesystem scope.
+    // filterInScope excludes own .meta/ subtree, so scope = [test-file.md]
+    const domainDir = testRoot.replaceAll('\\', '/') + '/domain';
+    const scopeFiles = walkFiles(domainDir).filter(
+      (f) => !f.includes('/.meta/'),
+    );
+    const fileHash = computeStructureHash(scopeFiles);
+
+    // Rewrite with correct hash
+    const metaJson: MetaJson = { ...baseMeta, _structureHash: fileHash };
+    writeFileSync(
+      join(testRoot, 'domain/.meta/meta.json'),
       JSON.stringify(metaJson),
     );
-    // Archive with same _steer (no steer change)
     writeFileSync(
       join(testRoot, 'domain/.meta/archive/2026-01-01.json'),
       JSON.stringify(metaJson),
     );
 
-    // Need at least one file so isStale returns true (full paths for filterInScope)
+    // Watcher mock only needed for discovery (finding .meta/meta.json)
     const metaJsonPath =
       testRoot.replaceAll('\\', '/') + '/domain/.meta/meta.json';
-    const watcher = createMockWatcher([fullFilePath], [metaJsonPath]);
+    const watcher = createMockWatcher([], [metaJsonPath]);
     const executor = createMockExecutor();
     const spawnSpy = vi.spyOn(executor, 'spawn');
 

@@ -6,8 +6,8 @@
  * @module scheduling/staleness
  */
 
-import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaJson } from '../schema/index.js';
+import { walkFiles } from '../walkFiles.js';
 
 /**
  * Check if a meta is stale by querying the watcher for modified files.
@@ -17,24 +17,18 @@ import type { MetaJson } from '../schema/index.js';
  * @param watcher - WatcherClient instance.
  * @returns True if any file in scope was modified after _generatedAt.
  */
-export async function isStale(
-  scopePrefix: string,
-  meta: MetaJson,
-  watcher: WatcherClient,
-): Promise<boolean> {
+export function isStale(scopePrefix: string, meta: MetaJson): boolean {
   if (!meta._generatedAt) return true; // Never synthesized = stale
 
   const generatedAtUnix = Math.floor(
     new Date(meta._generatedAt).getTime() / 1000,
   );
 
-  const result = await watcher.scan({
-    pathPrefix: scopePrefix,
+  const modified = walkFiles(scopePrefix, {
     modifiedAfter: generatedAtUnix,
-    limit: 1,
+    maxDepth: 1,
   });
-
-  return result.files.length > 0;
+  return modified.length > 0;
 }
 
 /** Maximum staleness for never-synthesized metas (1 year in seconds). */

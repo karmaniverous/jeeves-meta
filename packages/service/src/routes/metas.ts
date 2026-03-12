@@ -233,7 +233,7 @@ export function registerMetasRoutes(
       };
 
       // Compute scope
-      const { scopeFiles, allFiles } = await getScopeFiles(targetNode, watcher);
+      const { scopeFiles, allFiles } = getScopeFiles(targetNode);
 
       // Compute staleness
       const metaTyped = meta as Record<string, unknown> & {

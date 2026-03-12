@@ -213,7 +213,7 @@ async function synthesizeNode(
   );
 
   // Step 7: Compute context (includes scope files and delta files)
-  const ctx = await buildContextPackage(node, currentMeta, watcher);
+  const ctx = buildContextPackage(node, currentMeta);
 
   // Step 5 (deferred): Structure hash from context scope files
   const newStructureHash = computeStructureHash(ctx.scopeFiles);
@@ -458,10 +458,9 @@ async function orchestrateOnce(
   for (const candidate of ranked) {
     if (!acquireLock(candidate.node.metaPath)) continue;
 
-    const verifiedStale = await isStale(
+    const verifiedStale = isStale(
       getScopePrefix(candidate.node),
       candidate.meta,
-      watcher,
     );
 
     if (!verifiedStale && candidate.meta._generatedAt) {

@@ -1,24 +1,20 @@
 /**
  * Compute the file scope owned by a meta node.
  *
- * A meta owns: parent dir + all descendants, minus child .meta/ subtrees.
- * For child subtrees, it consumes the child's .meta/meta.json as a rollup input.
+ * A meta owns: parent dir + all descendants, minus:
+ * - Its own .meta/ subtree (outputs, not inputs)
+ * - Child meta ownerPath subtrees (except their .meta/meta.json for rollups)
+ *
+ * Uses filesystem walks instead of watcher scans for performance.
  *
  * @module discovery/scope
  */
 
-import type { WatcherClient } from '../interfaces/index.js';
-import { paginatedScan } from '../paginatedScan.js';
+import { walkFiles } from '../walkFiles.js';
 import type { MetaNode } from './types.js';
 
 /**
  * Get the scope path prefix for a meta node.
- *
- * This is the ownerPath — all files under this path are in scope,
- * except subtrees owned by child metas.
- *
- * @param node - The meta node to compute scope for.
- * @returns The scope path prefix.
  */
 export function getScopePrefix(node: MetaNode): string {
   return node.ownerPath;
@@ -27,32 +23,32 @@ export function getScopePrefix(node: MetaNode): string {
 /**
  * Filter a list of file paths to only those in scope for a meta node.
  *
- * Includes files under ownerPath, excludes files under child meta ownerPaths,
- * but includes child .meta/meta.json files as rollup inputs.
+ * Excludes:
+ * - The node's own .meta/ subtree (synthesis outputs are not scope inputs)
+ * - Child meta ownerPath subtrees (except child .meta/meta.json for rollups)
  *
- * @param node - The meta node.
- * @param files - Array of file paths to filter.
- * @returns Filtered array of in-scope file paths.
+ * walkFiles already returns normalized forward-slash paths.
  */
 export function filterInScope(node: MetaNode, files: string[]): string[] {
   const prefix = node.ownerPath + '/';
+  const ownMetaPrefix = node.metaPath + '/';
   const exclusions = node.children.map((c) => c.ownerPath + '/');
   const childMetaJsons = new Set(
     node.children.map((c) => c.metaPath + '/meta.json'),
   );
 
   return files.filter((f) => {
-    const normalized = f.split('\\').join('/');
-
     // Must be under ownerPath
-    if (!normalized.startsWith(prefix) && normalized !== node.ownerPath)
-      return false;
+    if (!f.startsWith(prefix) && f !== node.ownerPath) return false;
+
+    // Exclude own .meta/ subtree (outputs are not inputs)
+    if (f.startsWith(ownMetaPrefix)) return false;
 
     // Check if under a child meta's subtree
     for (const excl of exclusions) {
-      if (normalized.startsWith(excl)) {
+      if (f.startsWith(excl)) {
         // Exception: child meta.json files are included as rollup inputs
-        return childMetaJsons.has(normalized);
+        return childMetaJsons.has(f);
       }
     }
 
@@ -60,32 +56,19 @@ export function filterInScope(node: MetaNode, files: string[]): string[] {
   });
 }
 
-/** Result of getScopeFiles, including both filtered and unfiltered file lists. */
+/** Result of getScopeFiles. */
 export interface ScopeFilesResult {
-  /** Files directly owned by this meta (excluding child subtrees). */
+  /** Files directly owned by this meta (excluding child subtrees and own .meta/). */
   scopeFiles: string[];
   /** All files under the owner path (including child subtrees). */
   allFiles: string[];
 }
 
 /**
- * Get all files in scope for a meta node via watcher scan.
- *
- * Scans the owner path prefix and filters out child meta subtrees,
- * keeping only files directly owned by this meta.
- *
- * @param node - The meta node.
- * @param watcher - WatcherClient for scan queries.
- * @returns Array of in-scope file paths.
+ * Get all files in scope for a meta node via filesystem walk.
  */
-export async function getScopeFiles(
-  node: MetaNode,
-  watcher: WatcherClient,
-): Promise<ScopeFilesResult> {
-  const allScanFiles = await paginatedScan(watcher, {
-    pathPrefix: node.ownerPath,
-  });
-  const allFiles = allScanFiles.map((f) => f.file_path);
+export function getScopeFiles(node: MetaNode): ScopeFilesResult {
+  const allFiles = walkFiles(node.ownerPath);
   return {
     scopeFiles: filterInScope(node, allFiles),
     allFiles,
@@ -96,28 +79,15 @@ export async function getScopeFiles(
  * Get files modified since a given timestamp within a meta node's scope.
  *
  * If no generatedAt is provided (first run), returns all scope files.
- *
- * @param node - The meta node.
- * @param watcher - WatcherClient for scan queries.
- * @param generatedAt - ISO timestamp of last synthesis, or null/undefined for first run.
- * @param scopeFiles - Pre-computed scope files (used as fallback for first run).
- * @returns Array of modified in-scope file paths.
  */
-export async function getDeltaFiles(
+export function getDeltaFiles(
   node: MetaNode,
-  watcher: WatcherClient,
   generatedAt: string | undefined,
   scopeFiles: string[],
-): Promise<string[]> {
+): string[] {
   if (!generatedAt) return scopeFiles;
 
   const modifiedAfter = Math.floor(new Date(generatedAt).getTime() / 1000);
-  const deltaScanFiles = await paginatedScan(watcher, {
-    pathPrefix: node.ownerPath,
-    modifiedAfter,
-  });
-  return filterInScope(
-    node,
-    deltaScanFiles.map((f) => f.file_path),
-  );
+  const deltaFiles = walkFiles(node.ownerPath, { modifiedAfter });
+  return filterInScope(node, deltaFiles);
 }
