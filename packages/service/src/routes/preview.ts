@@ -37,7 +37,7 @@ export function registerPreviewRoute(
 
     let result;
     try {
-      result = await listMetas(config, watcher);
+      result = await listMetas(config, watcher, request.log);
     } catch {
       return reply.status(503).send({
         error: 'SERVICE_UNAVAILABLE',
@@ -76,7 +76,7 @@ export function registerPreviewRoute(
     ) as MetaJson;
 
     // Scope files
-    const { scopeFiles } = await getScopeFiles(targetNode, watcher);
+    const { scopeFiles } = getScopeFiles(targetNode);
 
     const structureHash = computeStructureHash(scopeFiles);
     const structureChanged = structureHash !== meta._structureHash;
@@ -96,12 +96,7 @@ export function registerPreviewRoute(
     );
 
     // Delta files
-    const deltaFiles = await getDeltaFiles(
-      targetNode,
-      watcher,
-      meta._generatedAt,
-      scopeFiles,
-    );
+    const deltaFiles = getDeltaFiles(targetNode, meta._generatedAt, scopeFiles);
 
     // EMA token estimates
     const estimatedTokens = {

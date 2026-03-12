@@ -7,8 +7,14 @@
  * @module orchestrator/orchestrate
  */
 
-import { copyFileSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import {
+  copyFileSync,
+  existsSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
+import { dirname, join } from 'node:path';
 
 import {
   createSnapshot,
@@ -16,12 +22,13 @@ import {
   readLatestArchive,
 } from '../archive/index.js';
 import { discoverMetas } from '../discovery/discoverMetas.js';
-import { buildOwnershipTree, findNode } from '../discovery/index.js';
+import { buildOwnershipTree } from '../discovery/index.js';
 import { getScopePrefix } from '../discovery/scope.js';
 import type { MetaNode } from '../discovery/types.js';
 import { toMetaError } from '../errors.js';
 import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
+import type { MinimalLogger } from '../logger/index.js';
 import { normalizePath } from '../normalizePath.js';
 import type { ProgressEvent } from '../progress/index.js';
 import {
@@ -123,15 +130,294 @@ function finalizeCycle(opts: FinalizeCycleOptions): MetaJson {
  * @param watcher - Watcher HTTP client.
  * @returns Result indicating whether synthesis occurred.
  */
+
+/**
+ * Build a minimal MetaNode from the filesystem for a known meta path.
+ * Discovers immediate child .meta/ dirs without a full watcher scan.
+ */
+function buildMinimalNode(metaPath: string): MetaNode {
+  const normalized = normalizePath(metaPath);
+  const ownerPath = normalizePath(dirname(metaPath));
+
+  // Find child .meta/ directories by scanning the owner directory
+  const children: MetaNode[] = [];
+  function findChildMetas(dir: string, depth: number): void {
+    if (depth > 10) return; // Safety limit
+    try {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const fullPath = normalizePath(join(dir, entry.name));
+        if (entry.name === '.meta' && fullPath !== normalized) {
+          // Found a child .meta — check it has meta.json
+          if (existsSync(join(fullPath, 'meta.json'))) {
+            children.push({
+              metaPath: fullPath,
+              ownerPath: normalizePath(dirname(fullPath)),
+              treeDepth: 1, // Relative to target
+              children: [],
+              parent: null, // Set below
+            });
+          }
+          // Don't recurse into .meta dirs
+          return;
+        }
+        if (
+          entry.name === 'node_modules' ||
+          entry.name === '.git' ||
+          entry.name === 'archive'
+        )
+          continue;
+        findChildMetas(fullPath, depth + 1);
+      }
+    } catch {
+      // Permission errors, etc — skip
+    }
+  }
+
+  findChildMetas(ownerPath, 0);
+
+  const node: MetaNode = {
+    metaPath: normalized,
+    ownerPath,
+    treeDepth: 0,
+    children,
+    parent: null,
+  };
+
+  // Wire parent references
+  for (const child of children) {
+    child.parent = node;
+  }
+
+  return node;
+}
+
+/** Run the architect/builder/critic pipeline on a single node. */
+async function synthesizeNode(
+  node: MetaNode,
+  currentMeta: MetaJson,
+  config: MetaConfig,
+  executor: MetaExecutor,
+  watcher: WatcherClient,
+  onProgress?: ProgressCallback,
+): Promise<OrchestrateResult> {
+  const architectPrompt = currentMeta._architect ?? config.defaultArchitect;
+  const criticPrompt = currentMeta._critic ?? config.defaultCritic;
+
+  // Step 5-6: Steer change detection
+  const latestArchive = readLatestArchive(node.metaPath);
+  const steerChanged = hasSteerChanged(
+    currentMeta._steer,
+    latestArchive?._steer,
+    Boolean(latestArchive),
+  );
+
+  // Step 7: Compute context (includes scope files and delta files)
+  const ctx = buildContextPackage(node, currentMeta);
+
+  // Step 5 (deferred): Structure hash from context scope files
+  const newStructureHash = computeStructureHash(ctx.scopeFiles);
+  const structureChanged = newStructureHash !== currentMeta._structureHash;
+
+  // Step 8: Architect (conditional)
+  const architectTriggered = isArchitectTriggered(
+    currentMeta,
+    structureChanged,
+    steerChanged,
+    config.architectEvery,
+  );
+
+  let builderBrief = currentMeta._builder ?? '';
+  let synthesisCount = currentMeta._synthesisCount ?? 0;
+  let stepError: MetaError | null = null;
+  let architectTokens: number | undefined;
+  let builderTokens: number | undefined;
+  let criticTokens: number | undefined;
+
+  if (architectTriggered) {
+    try {
+      await onProgress?.({
+        type: 'phase_start',
+        path: node.ownerPath,
+        phase: 'architect',
+      });
+      const phaseStart = Date.now();
+      const architectTask = buildArchitectTask(ctx, currentMeta, config);
+      const architectResult = await executor.spawn(architectTask, {
+        thinking: config.thinking,
+        timeout: config.architectTimeout,
+      });
+      builderBrief = parseArchitectOutput(architectResult.output);
+      architectTokens = architectResult.tokens;
+      synthesisCount = 0;
+      await onProgress?.({
+        type: 'phase_complete',
+        path: node.ownerPath,
+        phase: 'architect',
+        tokens: architectTokens,
+        durationMs: Date.now() - phaseStart,
+      });
+    } catch (err) {
+      stepError = toMetaError('architect', err);
+
+      if (!currentMeta._builder) {
+        // No cached builder — cycle fails
+        finalizeCycle({
+          metaPath: node.metaPath,
+          current: currentMeta,
+          config,
+          architect: architectPrompt,
+          builder: '',
+          critic: criticPrompt,
+          builderOutput: null,
+          feedback: null,
+          structureHash: newStructureHash,
+          synthesisCount,
+          error: stepError,
+          architectTokens,
+        });
+        return {
+          synthesized: true,
+          metaPath: node.metaPath,
+          error: stepError,
+        };
+      }
+      // Has cached builder — continue with existing
+    }
+  }
+
+  // Step 9: Builder
+  const metaForBuilder: MetaJson = { ...currentMeta, _builder: builderBrief };
+  let builderOutput: BuilderOutput | null = null;
+  try {
+    await onProgress?.({
+      type: 'phase_start',
+      path: node.ownerPath,
+      phase: 'builder',
+    });
+    const builderStart = Date.now();
+    const builderTask = buildBuilderTask(ctx, metaForBuilder, config);
+    const builderResult = await executor.spawn(builderTask, {
+      thinking: config.thinking,
+      timeout: config.builderTimeout,
+    });
+    builderOutput = parseBuilderOutput(builderResult.output);
+    builderTokens = builderResult.tokens;
+    synthesisCount++;
+    await onProgress?.({
+      type: 'phase_complete',
+      path: node.ownerPath,
+      phase: 'builder',
+      tokens: builderTokens,
+      durationMs: Date.now() - builderStart,
+    });
+  } catch (err) {
+    stepError = toMetaError('builder', err);
+    return { synthesized: true, metaPath: node.metaPath, error: stepError };
+  }
+
+  // Step 10: Critic
+  const metaForCritic: MetaJson = {
+    ...currentMeta,
+    _content: builderOutput.content,
+  };
+  let feedback: string | null = null;
+  try {
+    await onProgress?.({
+      type: 'phase_start',
+      path: node.ownerPath,
+      phase: 'critic',
+    });
+    const criticStart = Date.now();
+    const criticTask = buildCriticTask(ctx, metaForCritic, config);
+    const criticResult = await executor.spawn(criticTask, {
+      thinking: config.thinking,
+      timeout: config.criticTimeout,
+    });
+    feedback = parseCriticOutput(criticResult.output);
+    criticTokens = criticResult.tokens;
+    stepError = null; // Clear any architect error on full success
+    await onProgress?.({
+      type: 'phase_complete',
+      path: node.ownerPath,
+      phase: 'critic',
+      tokens: criticTokens,
+      durationMs: Date.now() - criticStart,
+    });
+  } catch (err) {
+    stepError = stepError ?? toMetaError('critic', err);
+  }
+
+  // Steps 11-12: Merge, archive, prune
+  finalizeCycle({
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    architect: architectPrompt,
+    builder: builderBrief,
+    critic: criticPrompt,
+    builderOutput,
+    feedback,
+    structureHash: newStructureHash,
+    synthesisCount,
+    error: stepError,
+    architectTokens,
+    builderTokens,
+    criticTokens,
+  });
+
+  return {
+    synthesized: true,
+    metaPath: node.metaPath,
+    error: stepError ?? undefined,
+  };
+}
+
 async function orchestrateOnce(
   config: MetaConfig,
   executor: MetaExecutor,
   watcher: WatcherClient,
   targetPath?: string,
   onProgress?: ProgressCallback,
+  logger?: MinimalLogger,
 ): Promise<OrchestrateResult> {
+  // When targetPath is provided, skip the expensive full discovery scan.
+  // Build a minimal node from the filesystem instead.
+  if (targetPath) {
+    const normalizedTarget = normalizePath(targetPath);
+    const targetMetaJson = join(normalizedTarget, 'meta.json');
+    if (!existsSync(targetMetaJson)) return { synthesized: false };
+
+    const node = buildMinimalNode(normalizedTarget);
+    if (!acquireLock(node.metaPath)) return { synthesized: false };
+
+    try {
+      const currentMeta = JSON.parse(
+        readFileSync(targetMetaJson, 'utf8'),
+      ) as MetaJson;
+
+      return await synthesizeNode(
+        node,
+        currentMeta,
+        config,
+        executor,
+        watcher,
+        onProgress,
+      );
+    } finally {
+      releaseLock(node.metaPath);
+    }
+  }
+
+  // Full discovery path (scheduler-driven, no specific target)
   // Step 1: Discover via watcher scan
-  const metaPaths = await discoverMetas(config, watcher);
+  const discoveryStart = Date.now();
+  const metaPaths = await discoverMetas(config, watcher, logger);
+  logger?.debug(
+    { paths: metaPaths.length, durationMs: Date.now() - discoveryStart },
+    'discovery complete',
+  );
   if (metaPaths.length === 0) return { synthesized: false };
 
   // Read meta.json for each discovered meta
@@ -155,22 +441,14 @@ async function orchestrateOnce(
 
   const tree = buildOwnershipTree(validPaths);
 
-  // If targetPath specified, skip candidate selection — go directly to that meta
-  let targetNode: MetaNode | undefined;
-  if (targetPath) {
-    const normalized = normalizePath(targetPath);
-    targetNode = findNode(tree, normalized) ?? undefined;
-    if (!targetNode) return { synthesized: false };
-  }
-
   // Steps 3-4: Staleness check + candidate selection
   const candidates = [];
-  for (const node of tree.nodes.values()) {
-    const meta = metas.get(node.metaPath);
-    if (!meta) continue; // Node not in metas map (e.g. unreadable meta.json)
+  for (const treeNode of tree.nodes.values()) {
+    const meta = metas.get(treeNode.metaPath);
+    if (!meta) continue;
     const staleness = actualStaleness(meta);
     if (staleness > 0) {
-      candidates.push({ node, meta, actualStaleness: staleness });
+      candidates.push({ node: treeNode, meta, actualStaleness: staleness });
     }
   }
 
@@ -187,10 +465,9 @@ async function orchestrateOnce(
   for (const candidate of ranked) {
     if (!acquireLock(candidate.node.metaPath)) continue;
 
-    const verifiedStale = await isStale(
+    const verifiedStale = isStale(
       getScopePrefix(candidate.node),
       candidate.meta,
-      watcher,
     );
 
     if (!verifiedStale && candidate.meta._generatedAt) {
@@ -211,190 +488,22 @@ async function orchestrateOnce(
     break;
   }
 
-  if (!winner && !targetNode) return { synthesized: false };
-  const node = targetNode ?? winner!.node;
-
-  // For targeted path, acquire lock now (candidate selection already locked for stalest)
-  if (targetNode && !acquireLock(node.metaPath)) {
-    return { synthesized: false };
-  }
+  if (!winner) return { synthesized: false };
+  const node = winner.node;
 
   try {
-    // Re-read meta after lock (may have changed)
     const currentMeta = JSON.parse(
       readFileSync(join(node.metaPath, 'meta.json'), 'utf8'),
     ) as MetaJson;
 
-    const architectPrompt = currentMeta._architect ?? config.defaultArchitect;
-    const criticPrompt = currentMeta._critic ?? config.defaultCritic;
-
-    // Step 5-6: Steer change detection
-    const latestArchive = readLatestArchive(node.metaPath);
-    const steerChanged = hasSteerChanged(
-      currentMeta._steer,
-      latestArchive?._steer,
-      Boolean(latestArchive),
-    );
-
-    // Step 7: Compute context (includes scope files and delta files)
-    const ctx = await buildContextPackage(node, currentMeta, watcher);
-
-    // Step 5 (deferred): Structure hash from context scope files
-    const newStructureHash = computeStructureHash(ctx.scopeFiles);
-    const structureChanged = newStructureHash !== currentMeta._structureHash;
-
-    // Step 8: Architect (conditional)
-    const architectTriggered = isArchitectTriggered(
+    return await synthesizeNode(
+      node,
       currentMeta,
-      structureChanged,
-      steerChanged,
-      config.architectEvery,
-    );
-
-    let builderBrief = currentMeta._builder ?? '';
-    let synthesisCount = currentMeta._synthesisCount ?? 0;
-    let stepError: MetaError | null = null;
-    let architectTokens: number | undefined;
-    let builderTokens: number | undefined;
-    let criticTokens: number | undefined;
-
-    if (architectTriggered) {
-      try {
-        await onProgress?.({
-          type: 'phase_start',
-          metaPath: node.metaPath,
-          phase: 'architect',
-        });
-        const phaseStart = Date.now();
-        const architectTask = buildArchitectTask(ctx, currentMeta, config);
-        const architectResult = await executor.spawn(architectTask, {
-          thinking: config.thinking,
-          timeout: config.architectTimeout,
-        });
-        builderBrief = parseArchitectOutput(architectResult.output);
-        architectTokens = architectResult.tokens;
-        synthesisCount = 0;
-        await onProgress?.({
-          type: 'phase_complete',
-          metaPath: node.metaPath,
-          phase: 'architect',
-          tokens: architectTokens,
-          durationMs: Date.now() - phaseStart,
-        });
-      } catch (err) {
-        stepError = toMetaError('architect', err);
-
-        if (!currentMeta._builder) {
-          // No cached builder — cycle fails
-          finalizeCycle({
-            metaPath: node.metaPath,
-            current: currentMeta,
-            config,
-            architect: architectPrompt,
-            builder: '',
-            critic: criticPrompt,
-            builderOutput: null,
-            feedback: null,
-            structureHash: newStructureHash,
-            synthesisCount,
-            error: stepError,
-            architectTokens,
-          });
-          return {
-            synthesized: true,
-            metaPath: node.metaPath,
-            error: stepError,
-          };
-        }
-        // Has cached builder — continue with existing
-      }
-    }
-
-    // Step 9: Builder
-    const metaForBuilder: MetaJson = { ...currentMeta, _builder: builderBrief };
-    let builderOutput: BuilderOutput | null = null;
-    try {
-      await onProgress?.({
-        type: 'phase_start',
-        metaPath: node.metaPath,
-        phase: 'builder',
-      });
-      const builderStart = Date.now();
-      const builderTask = buildBuilderTask(ctx, metaForBuilder, config);
-      const builderResult = await executor.spawn(builderTask, {
-        thinking: config.thinking,
-        timeout: config.builderTimeout,
-      });
-      builderOutput = parseBuilderOutput(builderResult.output);
-      builderTokens = builderResult.tokens;
-      synthesisCount++;
-      await onProgress?.({
-        type: 'phase_complete',
-        metaPath: node.metaPath,
-        phase: 'builder',
-        tokens: builderTokens,
-        durationMs: Date.now() - builderStart,
-      });
-    } catch (err) {
-      stepError = toMetaError('builder', err);
-      return { synthesized: true, metaPath: node.metaPath, error: stepError };
-    }
-
-    // Step 10: Critic
-    const metaForCritic: MetaJson = {
-      ...currentMeta,
-      _content: builderOutput.content,
-    };
-    let feedback: string | null = null;
-    try {
-      await onProgress?.({
-        type: 'phase_start',
-        metaPath: node.metaPath,
-        phase: 'critic',
-      });
-      const criticStart = Date.now();
-      const criticTask = buildCriticTask(ctx, metaForCritic, config);
-      const criticResult = await executor.spawn(criticTask, {
-        thinking: config.thinking,
-        timeout: config.criticTimeout,
-      });
-      feedback = parseCriticOutput(criticResult.output);
-      criticTokens = criticResult.tokens;
-      stepError = null; // Clear any architect error on full success
-      await onProgress?.({
-        type: 'phase_complete',
-        metaPath: node.metaPath,
-        phase: 'critic',
-        tokens: criticTokens,
-        durationMs: Date.now() - criticStart,
-      });
-    } catch (err) {
-      stepError = stepError ?? toMetaError('critic', err);
-    }
-
-    // Steps 11-12: Merge, archive, prune
-    finalizeCycle({
-      metaPath: node.metaPath,
-      current: currentMeta,
       config,
-      architect: architectPrompt,
-      builder: builderBrief,
-      critic: criticPrompt,
-      builderOutput,
-      feedback,
-      structureHash: newStructureHash,
-      synthesisCount,
-      error: stepError,
-      architectTokens,
-      builderTokens,
-      criticTokens,
-    });
-
-    return {
-      synthesized: true,
-      metaPath: node.metaPath,
-      error: stepError ?? undefined,
-    };
+      executor,
+      watcher,
+      onProgress,
+    );
   } finally {
     // Step 13: Release lock
     releaseLock(node.metaPath);
@@ -418,6 +527,7 @@ export async function orchestrate(
   watcher: WatcherClient,
   targetPath?: string,
   onProgress?: ProgressCallback,
+  logger?: MinimalLogger,
 ): Promise<OrchestrateResult[]> {
   const result = await orchestrateOnce(
     config,
@@ -425,6 +535,7 @@ export async function orchestrate(
     watcher,
     targetPath,
     onProgress,
+    logger,
   );
   return [result];
 }

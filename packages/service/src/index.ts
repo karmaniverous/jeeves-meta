@@ -46,6 +46,7 @@ export {
 export { normalizePath } from './normalizePath.js';
 export { paginatedScan } from './paginatedScan.js';
 export { computeStructureHash } from './structureHash.js';
+export { walkFiles } from './walkFiles.js';
 
 // ── Executor ──
 export {
@@ -68,7 +69,7 @@ export type {
 
 // ── Logger ──
 export type { LoggerConfig } from './logger/index.js';
-export { createLogger } from './logger/index.js';
+export { createLogger, type MinimalLogger } from './logger/index.js';
 
 // ── Orchestrator ──
 export {
@@ -247,9 +248,11 @@ export async function startService(
   const synthesizeFn = async (path: string): Promise<void> => {
     const startMs = Date.now();
     let cycleTokens = 0;
+    // Strip .meta suffix for human-readable progress reporting
+    const ownerPath = path.replace(/\/?\.meta\/?$/, '');
     await progress.report({
       type: 'synthesis_start',
-      metaPath: path,
+      path: ownerPath,
     });
 
     try {
@@ -280,14 +283,14 @@ export async function startService(
         stats.totalErrors++;
         await progress.report({
           type: 'error',
-          metaPath: path,
+          path: ownerPath,
           error: result.error.message,
         });
       } else {
         scheduler.resetBackoff();
         await progress.report({
           type: 'synthesis_complete',
-          metaPath: path,
+          path: ownerPath,
           tokens: cycleTokens,
           durationMs,
         });
@@ -297,7 +300,7 @@ export async function startService(
       const message = err instanceof Error ? err.message : String(err);
       await progress.report({
         type: 'error',
-        metaPath: path,
+        path: ownerPath,
         error: message,
       });
       throw err;

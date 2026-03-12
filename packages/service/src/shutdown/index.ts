@@ -6,7 +6,6 @@
  * @module shutdown
  */
 
-import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
 import { releaseLock } from '../lock.js';
@@ -15,7 +14,7 @@ import type { RouteDeps } from '../routes/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 
 export interface ShutdownDeps {
-  server: FastifyInstance;
+  server: { close: () => Promise<void> };
   scheduler: Scheduler | null;
   queue: SynthesisQueue;
   logger: Logger;

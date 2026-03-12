@@ -16,7 +16,7 @@ import {
   getScopeFiles,
   type MetaNode,
 } from '../discovery/index.js';
-import type { MetaContext, WatcherClient } from '../interfaces/index.js';
+import type { MetaContext } from '../interfaces/index.js';
 import type { MetaJson } from '../schema/index.js';
 
 /**
@@ -57,19 +57,13 @@ export function condenseScopeFiles(
  * @param watcher - WatcherClient for scope enumeration.
  * @returns The computed context package.
  */
-export async function buildContextPackage(
+export function buildContextPackage(
   node: MetaNode,
   meta: MetaJson,
-  watcher: WatcherClient,
-): Promise<MetaContext> {
+): MetaContext {
   // Scope and delta files via watcher scan
-  const { scopeFiles } = await getScopeFiles(node, watcher);
-  const deltaFiles = await getDeltaFiles(
-    node,
-    watcher,
-    meta._generatedAt,
-    scopeFiles,
-  );
+  const { scopeFiles } = getScopeFiles(node);
+  const deltaFiles = getDeltaFiles(node, meta._generatedAt, scopeFiles);
 
   // Child meta outputs
   const childMetas: Record<string, unknown> = {};

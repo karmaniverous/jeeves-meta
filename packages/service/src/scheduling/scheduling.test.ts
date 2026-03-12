@@ -1,8 +1,9 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import type { MetaNode } from '../discovery/index.js';
 import type { MetaJson } from '../schema/index.js';
 import { selectCandidate } from './selectCandidate.js';
+import { isStale } from './staleness.js';
 import {
   actualStaleness,
   hasSteerChanged,
@@ -28,8 +29,8 @@ function makeMeta(overrides: Partial<MetaJson> = {}): MetaJson {
 }
 
 describe('actualStaleness', () => {
-  it('returns Infinity for never-synthesized meta', () => {
-    expect(actualStaleness(makeMeta())).toBe(Infinity);
+  it('returns MAX_STALENESS_SECONDS for never-synthesized meta', () => {
+    expect(actualStaleness(makeMeta())).toBe(365 * 86_400);
   });
 
   it('returns positive seconds for past _generatedAt', () => {
@@ -177,45 +178,25 @@ describe('selectCandidate', () => {
 
 describe('isStale', () => {
   // Dynamic import to avoid circular issues
-  it('returns true for never-synthesized meta', async () => {
-    const { isStale } = await import('./staleness.js');
-    const watcher = {
-      scan: vi.fn().mockResolvedValue({ files: [] }),
-      registerRules: vi.fn().mockResolvedValue(undefined),
-      unregisterRules: vi.fn().mockResolvedValue(undefined),
-    };
+  it('returns true for never-synthesized meta', () => {
     const meta = makeMeta();
-    const result = await isStale('/test', meta, watcher);
-    expect(result).toBe(true);
-    // Should not call scan since no _generatedAt
-    expect(watcher.scan).not.toHaveBeenCalled();
-  });
-
-  it('returns true when watcher reports modified files', async () => {
-    const { isStale } = await import('./staleness.js');
-    const watcher = {
-      scan: vi.fn().mockResolvedValue({
-        files: [
-          { file_path: '/test/a.md', modified_at: 999999, content_hash: 'x' },
-        ],
-      }),
-      registerRules: vi.fn().mockResolvedValue(undefined),
-      unregisterRules: vi.fn().mockResolvedValue(undefined),
-    };
-    const meta = makeMeta({ _generatedAt: '2026-01-01T00:00:00Z' });
-    const result = await isStale('/test', meta, watcher);
+    const result = isStale('/test', meta);
     expect(result).toBe(true);
   });
 
-  it('returns false when no files modified since _generatedAt', async () => {
-    const { isStale } = await import('./staleness.js');
-    const watcher = {
-      scan: vi.fn().mockResolvedValue({ files: [] }),
-      registerRules: vi.fn().mockResolvedValue(undefined),
-      unregisterRules: vi.fn().mockResolvedValue(undefined),
-    };
-    const meta = makeMeta({ _generatedAt: '2026-01-01T00:00:00Z' });
-    const result = await isStale('/test', meta, watcher);
+  it('returns true when filesystem reports modified files', () => {
+    // walkFiles will find files with mtime > generatedAt in the test tmpdir
+    // For unit test, we just verify the never-synthesized path returns true
+    const meta = makeMeta({ _generatedAt: '2000-01-01T00:00:00Z' });
+    // Any real directory will have files newer than year 2000
+    const result = isStale('.', meta);
+    expect(result).toBe(true);
+  });
+
+  it('returns false when no files modified since _generatedAt', () => {
+    // Future timestamp — nothing can be newer
+    const meta = makeMeta({ _generatedAt: '2099-01-01T00:00:00Z' });
+    const result = isStale('.', meta);
     expect(result).toBe(false);
   });
 });

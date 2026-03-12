@@ -127,9 +127,25 @@ export function buildBuilderTask(
   sections.push(
     '',
     '## OUTPUT FORMAT',
-    'Return a JSON object with:',
-    '- "_content": Markdown narrative synthesis (required)',
-    '- Any additional structured fields as non-underscore keys',
+    '',
+    'Respond with ONLY a JSON object. No explanation, no markdown fences, no text before or after.',
+    '',
+    'Required schema:',
+    '{',
+    '  "type": "object",',
+    '  "required": ["_content"],',
+    '  "properties": {',
+    '    "_content": { "type": "string", "description": "Markdown narrative synthesis" }',
+    '  },',
+    '  "additionalProperties": true',
+    '}',
+    '',
+    'Add any structured fields that capture important facts about this entity',
+    '(e.g. status, risks, dependencies, metrics). Use descriptive key names without underscore prefix.',
+    'The _content field is the only required key — everything else is domain-driven.',
+    '',
+    'DIAGRAMS: When diagrams would aid understanding, use PlantUML in fenced code blocks (```plantuml).',
+    'PlantUML is rendered natively by the serving infrastructure. NEVER use ASCII art diagrams.',
   );
 
   return sections.join('\n');

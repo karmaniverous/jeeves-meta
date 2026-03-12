@@ -37,23 +37,54 @@ export function parseArchitectOutput(output: string): string {
 export function parseBuilderOutput(output: string): BuilderOutput {
   const trimmed = output.trim();
 
-  // Try to extract JSON from the output (may be wrapped in markdown code fences)
-  let jsonStr = trimmed;
-  const fenceMatch = /```(?:json)?\s*([\s\S]*?)```/.exec(trimmed);
-  if (fenceMatch) {
-    jsonStr = fenceMatch[1].trim();
+  // Strategy 1: Try to parse the entire output as JSON directly
+  const direct = tryParseJson(trimmed);
+  if (direct) return direct;
+
+  // Strategy 2: Try all fenced code blocks (last match first — models often narrate then output)
+  const fencePattern = /```(?:json)?\s*([\s\S]*?)```/g;
+  const fenceMatches: string[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = fencePattern.exec(trimmed)) !== null) {
+    fenceMatches.push(match[1].trim());
+  }
+  // Try last fence first (most likely to be the actual output)
+  for (let i = fenceMatches.length - 1; i >= 0; i--) {
+    const result = tryParseJson(fenceMatches[i]);
+    if (result) return result;
   }
 
+  // Strategy 3: Find outermost { ... } braces
+  const firstBrace = trimmed.indexOf('{');
+  const lastBrace = trimmed.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
+    const result = tryParseJson(trimmed.substring(firstBrace, lastBrace + 1));
+    if (result) return result;
+  }
+
+  // Fallback: treat entire output as content
+  return { content: trimmed, fields: {} };
+}
+
+/** Try to parse a string as JSON and extract builder output fields. */
+function tryParseJson(str: string): BuilderOutput | null {
   try {
-    const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
+    const raw: unknown = JSON.parse(str);
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+      return null;
+    }
+
+    const parsed = raw as Record<string, unknown>;
 
     // Extract _content
     const content =
-      typeof parsed._content === 'string'
-        ? parsed._content
-        : typeof parsed.content === 'string'
-          ? parsed.content
-          : trimmed;
+      typeof parsed['_content'] === 'string'
+        ? parsed['_content']
+        : typeof parsed['content'] === 'string'
+          ? parsed['content']
+          : null;
+
+    if (content === null) return null;
 
     // Extract non-underscore fields
     const fields: Record<string, unknown> = {};
@@ -65,8 +96,7 @@ export function parseBuilderOutput(output: string): BuilderOutput {
 
     return { content, fields };
   } catch {
-    // Not valid JSON — treat entire output as content
-    return { content: trimmed, fields: {} };
+    return null;
   }
 }
 
