@@ -143,6 +143,9 @@ export function buildBuilderTask(
     'Add any structured fields that capture important facts about this entity',
     '(e.g. status, risks, dependencies, metrics). Use descriptive key names without underscore prefix.',
     'The _content field is the only required key — everything else is domain-driven.',
+    '',
+    'DIAGRAMS: When diagrams would aid understanding, use PlantUML in fenced code blocks (```plantuml).',
+    'PlantUML is rendered natively by the serving infrastructure. NEVER use ASCII art diagrams.',
   );
 
   return sections.join('\n');
