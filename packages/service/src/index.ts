@@ -12,6 +12,14 @@ export {
   readLatestArchive,
 } from './archive/index.js';
 
+// ── Constants ──
+export {
+  DEFAULT_PORT,
+  DEFAULT_PORT_STR,
+  SERVICE_NAME,
+  SERVICE_VERSION,
+} from './constants.js';
+
 // ── Config ──
 export { loadServiceConfig, resolveConfigPath } from './configLoader.js';
 

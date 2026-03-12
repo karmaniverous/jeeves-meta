@@ -10,6 +10,8 @@
 
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import type {
   MetaExecutor,
@@ -29,7 +31,7 @@ export interface GatewayExecutorOptions {
   apiKey?: string;
   /** Polling interval in ms. Default: 5000. */
   pollIntervalMs?: number;
-  /** Workspace directory for output staging. Default: J:\\jeeves\\jeeves-meta */
+  /** Workspace directory for output staging. Default: OS temp dir + /jeeves-meta. */
   workspaceDir?: string;
 }
 
@@ -75,7 +77,7 @@ export class GatewayExecutor implements MetaExecutor {
     );
     this.apiKey = options.apiKey;
     this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
-    this.workspaceDir = options.workspaceDir ?? 'J:\\jeeves\\jeeves-meta';
+    this.workspaceDir = options.workspaceDir ?? join(tmpdir(), 'jeeves-meta');
   }
 
   /** Invoke a gateway tool via the /tools/invoke HTTP endpoint. */

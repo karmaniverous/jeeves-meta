@@ -8,6 +8,7 @@
 
 import type { FastifyInstance } from 'fastify';
 
+import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
 import type { RouteDeps } from './index.js';
 
 interface DepHealth {
@@ -60,8 +61,8 @@ export function registerStatusRoute(
     // Use GET /metas for full inventory; status is a lightweight health check.
 
     return {
-      service: 'jeeves-meta',
-      version: '0.4.0',
+      service: SERVICE_NAME,
+      version: SERVICE_VERSION,
       uptime: process.uptime(),
       status,
       currentTarget: queue.current?.path ?? null,
