@@ -13,7 +13,6 @@ import { join } from 'node:path';
 
 import type { WatcherClient } from '../interfaces/index.js';
 import { isLocked } from '../lock.js';
-import type { MinimalLogger } from '../logger/index.js';
 
 /** Maximum staleness for never-synthesized metas (1 year in seconds). */
 const MAX_STALENESS_SECONDS = 365 * 86_400;
@@ -91,10 +90,9 @@ export interface MetaListResult {
 export async function listMetas(
   config: MetaConfig,
   watcher: WatcherClient,
-  logger?: MinimalLogger,
 ): Promise<MetaListResult> {
   // Step 1: Discover deduplicated meta paths via watcher scan
-  const metaPaths = await discoverMetas(watcher, logger);
+  const metaPaths = await discoverMetas(watcher);
 
   // Step 2: Build ownership tree
   const tree = buildOwnershipTree(metaPaths);

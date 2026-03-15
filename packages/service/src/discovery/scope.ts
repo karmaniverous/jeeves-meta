@@ -11,6 +11,7 @@
  */
 
 import { statSync } from 'node:fs';
+
 import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaNode } from './types.js';
 

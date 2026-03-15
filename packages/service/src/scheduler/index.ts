@@ -174,7 +174,7 @@ export class Scheduler {
    */
   private async discoverStalest(): Promise<string | null> {
     try {
-      const result = await listMetas(this.config, this.watcher, this.logger);
+      const result = await listMetas(this.config, this.watcher);
       const stale = result.entries
         .filter((e) => e.stalenessSeconds > 0)
         .map((e) => ({

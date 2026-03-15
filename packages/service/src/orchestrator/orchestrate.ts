@@ -7,12 +7,7 @@
  * @module orchestrator/orchestrate
  */
 
-import {
-  copyFileSync,
-  existsSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import {
@@ -159,7 +154,9 @@ async function buildMinimalNode(
   const directChildren: Array<{ metaPath: string; ownerPath: string }> = [];
   for (const c of candidates) {
     const nestedUnderExisting = directChildren.some(
-      (d) => c.ownerPath === d.ownerPath || c.ownerPath.startsWith(d.ownerPath + '/'),
+      (d) =>
+        c.ownerPath === d.ownerPath ||
+        c.ownerPath.startsWith(d.ownerPath + '/'),
     );
     if (!nestedUnderExisting) directChildren.push(c);
   }
@@ -405,7 +402,7 @@ async function orchestrateOnce(
   // Full discovery path (scheduler-driven, no specific target)
   // Step 1: Discover via watcher scan
   const discoveryStart = Date.now();
-  const metaPaths = await discoverMetas(watcher, logger);
+  const metaPaths = await discoverMetas(watcher);
   logger?.debug(
     { paths: metaPaths.length, durationMs: Date.now() - discoveryStart },
     'discovery complete',

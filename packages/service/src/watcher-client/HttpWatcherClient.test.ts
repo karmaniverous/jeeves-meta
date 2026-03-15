@@ -57,7 +57,10 @@ describe('HttpWatcherClient.walk', () => {
   it('sends POST /walk with globs and returns paths', async () => {
     const client = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
     const responseData = {
-      paths: ['j:/domains/email/.meta/meta.json', 'j:/domains/github/.meta/meta.json'],
+      paths: [
+        'j:/domains/email/.meta/meta.json',
+        'j:/domains/github/.meta/meta.json',
+      ],
       matchedCount: 2,
       scannedRoots: ['j:/domains'],
     };
@@ -75,7 +78,9 @@ describe('HttpWatcherClient.walk', () => {
 
   it('returns empty array when no paths match', async () => {
     const client = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
-    mockFetch.mockResolvedValueOnce(jsonResponse({ paths: [], matchedCount: 0 }));
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ paths: [], matchedCount: 0 }),
+    );
 
     const result = await client.walk(['**/.nonexistent']);
     expect(result).toEqual([]);

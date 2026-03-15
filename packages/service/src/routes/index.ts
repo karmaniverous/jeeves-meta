@@ -8,9 +8,9 @@ import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
 import type { SynthesisQueue } from '../queue/index.js';
+import type { RuleRegistrar } from '../rules/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 import type { ServiceConfig } from '../schema/config.js';
-import type { RuleRegistrar } from '../rules/index.js';
 import type { HttpWatcherClient } from '../watcher-client/index.js';
 import { registerConfigValidateRoute } from './configValidate.js';
 import { registerMetasRoutes } from './metas.js';

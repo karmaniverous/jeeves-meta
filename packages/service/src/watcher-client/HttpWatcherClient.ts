@@ -7,10 +7,7 @@
  * @module watcher-client/HttpWatcherClient
  */
 
-import type {
-  InferenceRuleSpec,
-  WatcherClient,
-} from '../interfaces/index.js';
+import type { InferenceRuleSpec, WatcherClient } from '../interfaces/index.js';
 import { sleep } from '../sleep.js';
 
 /** Default retry configuration. */
@@ -97,7 +94,10 @@ export class HttpWatcherClient implements WatcherClient {
   }
 
   async walk(globs: string[]): Promise<string[]> {
-    const raw = (await this.post('/walk', { globs })) as Record<string, unknown>;
+    const raw = (await this.post('/walk', { globs })) as Record<
+      string,
+      unknown
+    >;
     return (raw.paths ?? []) as string[];
   }
 }

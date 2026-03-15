@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
-import { statSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import type { WatcherClient } from '../interfaces/index.js';
+import { describe, expect, it, vi } from 'vitest';
+
 import type { MetaNode } from '../discovery/index.js';
+import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaJson } from '../schema/index.js';
 import { selectCandidate } from './selectCandidate.js';
 import { isStale } from './staleness.js';
@@ -195,7 +196,7 @@ describe('isStale', () => {
   it('returns true when filesystem reports modified files', async () => {
     const file = join(tmpdir(), 'stale-test.txt');
     writeFileSync(file, 'test');
-    
+
     // File was just created, so its mtime is "now".
     // If generatedAt is in the past, it should be stale.
     const meta = makeMeta({ _generatedAt: '2000-01-01T00:00:00Z' });

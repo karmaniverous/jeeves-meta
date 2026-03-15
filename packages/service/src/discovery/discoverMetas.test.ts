@@ -10,12 +10,13 @@ import type { WatcherClient } from '../interfaces/index.js';
 import { discoverMetas } from './discoverMetas.js';
 
 function mockWatcher(filePaths: string[]) {
+  const walkFn = vi.fn().mockResolvedValue(filePaths);
   const watcher: WatcherClient = {
     registerRules: vi.fn().mockResolvedValue(undefined),
-    walk: vi.fn().mockResolvedValue(filePaths),
+    walk: walkFn,
   };
 
-  return { watcher, walk: watcher.walk as unknown as ReturnType<typeof vi.fn> };
+  return { watcher, walk: walkFn };
 }
 
 describe('discoverMetas', () => {
@@ -32,7 +33,10 @@ describe('discoverMetas', () => {
     ]);
 
     const result = await discoverMetas(watcher);
-    expect(result).toEqual(['j:/domains/email/.meta', 'j:/domains/github/.meta']);
+    expect(result).toEqual([
+      'j:/domains/email/.meta',
+      'j:/domains/github/.meta',
+    ]);
   });
 
   it('deduplicates duplicate meta.json paths', async () => {

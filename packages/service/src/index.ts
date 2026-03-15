@@ -384,7 +384,9 @@ export async function startService(
     queue,
     logger,
     routeDeps,
-    onShutdown: () => healthCheck.stop(),
+    onShutdown: () => {
+      healthCheck.stop();
+    },
   });
 
   logger.info('Service fully initialized');

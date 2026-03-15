@@ -49,7 +49,7 @@ function createMockWatcher(
       if (globs[0] === '**/.meta/meta.json') {
         return Promise.resolve(metaJsonPaths ?? []);
       }
-      
+
       // Child discovery - absolute child meta.json glob
       if (globs[0]?.endsWith('/**/.meta/meta.json')) {
         return Promise.resolve(metaJsonPaths ?? []);

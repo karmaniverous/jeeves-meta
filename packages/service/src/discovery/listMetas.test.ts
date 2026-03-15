@@ -35,10 +35,8 @@ function makeConfig(overrides: Partial<MetaConfig> = {}): MetaConfig {
 /** Create a mock watcher that returns the given meta paths (simulating watcher walk results). */
 function mockWatcher(metaPaths: string[]): WatcherClient {
   return {
-    walk: (globs: string[]): Promise<string[]> => {
-      // Return one point per meta path
-      return Promise.resolve(metaPaths.map((mp) => mp + '/meta.json'));
-    },
+    walk: (): Promise<string[]> =>
+      Promise.resolve(metaPaths.map((mp) => mp + '/meta.json')),
     registerRules: () => Promise.resolve(),
   };
 }
@@ -49,12 +47,12 @@ function mockWatcherWithChunks(
   chunksPerFile: number,
 ): WatcherClient {
   return {
-    walk: (globs: string[]): Promise<string[]> => {
-      const paths = metaPaths.flatMap((mp) =>
-        Array.from({ length: chunksPerFile }, () => mp + '/meta.json'),
-      );
-      return Promise.resolve(paths);
-    },
+    walk: (): Promise<string[]> =>
+      Promise.resolve(
+        metaPaths.flatMap((mp) =>
+          Array.from({ length: chunksPerFile }, () => mp + '/meta.json'),
+        ),
+      ),
     registerRules: () => Promise.resolve(),
   };
 }
