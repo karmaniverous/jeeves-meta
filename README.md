@@ -19,8 +19,6 @@ Results are written to `.meta/meta.json` files with full archive history, enabli
 | [`@karmaniverous/jeeves-meta`](packages/service/README.md) | HTTP service — Fastify API, built-in scheduler, synthesis queue, CLI |
 | [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw/README.md) | OpenClaw plugin — thin HTTP client, interactive tools, TOOLS.md injection |
 
-> **Note:** `packages/lib` contains the legacy library (pre-service). It is being retired and will be removed in a future release.
-
 ## Architecture
 
 ```
