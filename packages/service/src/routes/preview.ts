@@ -4,9 +4,6 @@
  * @module routes/preview
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import type { FastifyInstance } from 'fastify';
 
 import { readLatestArchive } from '../archive/index.js';
@@ -17,13 +14,13 @@ import {
   listMetas,
 } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
+import { readMetaJson } from '../readMetaJson.js';
 import {
   computeStalenessScore,
   discoverStalestPath,
   hasSteerChanged,
   isArchitectTriggered,
 } from '../scheduling/index.js';
-import type { MetaJson } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
 import type { RouteDeps } from './index.js';
 
@@ -71,9 +68,7 @@ export function registerPreviewRoute(
       targetNode = findNode(result.tree, stalestPath)!;
     }
 
-    const meta: MetaJson = JSON.parse(
-      readFileSync(join(targetNode.metaPath, 'meta.json'), 'utf8'),
-    ) as MetaJson;
+    const meta = readMetaJson(targetNode.metaPath);
 
     // Scope files
     const { scopeFiles } = await getScopeFiles(targetNode, watcher);

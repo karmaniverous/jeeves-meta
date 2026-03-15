@@ -7,7 +7,7 @@
  * @module orchestrator/orchestrate
  */
 
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -25,6 +25,7 @@ import { acquireLock, releaseLock } from '../lock.js';
 import type { MinimalLogger } from '../logger/index.js';
 import { normalizePath } from '../normalizePath.js';
 import type { ProgressEvent } from '../progress/index.js';
+import { readMetaJson } from '../readMetaJson.js';
 import {
   actualStaleness,
   computeEffectiveStaleness,
@@ -322,9 +323,7 @@ async function orchestrateOnce(
     if (!acquireLock(node.metaPath)) return { synthesized: false };
 
     try {
-      const currentMeta = JSON.parse(
-        readFileSync(targetMetaJson, 'utf8'),
-      ) as MetaJson;
+      const currentMeta = readMetaJson(normalizedTarget);
 
       return await synthesizeNode(
         node,
@@ -352,12 +351,8 @@ async function orchestrateOnce(
   // Read meta.json for each discovered meta
   const metas = new Map<string, MetaJson>();
   for (const mp of metaPaths) {
-    const metaFilePath = join(mp, 'meta.json');
     try {
-      metas.set(
-        normalizePath(mp),
-        JSON.parse(readFileSync(metaFilePath, 'utf8')) as MetaJson,
-      );
+      metas.set(normalizePath(mp), readMetaJson(mp));
     } catch {
       // Skip metas with unreadable meta.json
       continue;
@@ -402,12 +397,12 @@ async function orchestrateOnce(
 
     if (!verifiedStale && candidate.meta._generatedAt) {
       // Bump _generatedAt so it doesn't win next cycle
-      const metaFilePath = join(candidate.node.metaPath, 'meta.json');
-      const freshMeta = JSON.parse(
-        readFileSync(metaFilePath, 'utf8'),
-      ) as MetaJson;
+      const freshMeta = readMetaJson(candidate.node.metaPath);
       freshMeta._generatedAt = new Date().toISOString();
-      writeFileSync(metaFilePath, JSON.stringify(freshMeta, null, 2));
+      writeFileSync(
+        join(candidate.node.metaPath, 'meta.json'),
+        JSON.stringify(freshMeta, null, 2),
+      );
       releaseLock(candidate.node.metaPath);
 
       if (config.skipUnchanged) continue;
@@ -422,9 +417,7 @@ async function orchestrateOnce(
   const node = winner.node;
 
   try {
-    const currentMeta = JSON.parse(
-      readFileSync(join(node.metaPath, 'meta.json'), 'utf8'),
-    ) as MetaJson;
+    const currentMeta = readMetaJson(node.metaPath);
 
     return await synthesizeNode(
       node,
