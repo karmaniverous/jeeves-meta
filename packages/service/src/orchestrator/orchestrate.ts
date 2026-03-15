@@ -8,17 +8,17 @@
  */
 
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 
 import {
   createSnapshot,
   pruneArchive,
   readLatestArchive,
 } from '../archive/index.js';
+import { buildMinimalNode } from '../discovery/buildMinimalNode.js';
 import { discoverMetas } from '../discovery/discoverMetas.js';
-import { buildOwnershipTree } from '../discovery/index.js';
+import { buildOwnershipTree, type MetaNode } from '../discovery/index.js';
 import { getScopePrefix } from '../discovery/scope.js';
-import type { MetaNode } from '../discovery/types.js';
 import { toMetaError } from '../errors.js';
 import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
@@ -124,66 +124,6 @@ function finalizeCycle(opts: FinalizeCycleOptions): MetaJson {
  * @param watcher - Watcher HTTP client.
  * @returns Result indicating whether synthesis occurred.
  */
-
-/**
- * Build a minimal MetaNode from watcher walk for a known meta path.
- * Discovers immediate child .meta/ dirs via watcher walk.
- */
-async function buildMinimalNode(
-  metaPath: string,
-  watcher: WatcherClient,
-): Promise<MetaNode> {
-  const normalized = normalizePath(metaPath);
-  const ownerPath = normalizePath(dirname(metaPath));
-
-  // Find child metas using watcher walk.
-  // We include only *direct* children (nearest descendants in the ownership tree)
-  // to match the ownership semantics used elsewhere.
-  const rawMetaJsonPaths = await watcher.walk([
-    `${ownerPath}/**/.meta/meta.json`,
-  ]);
-
-  const candidateMetaPaths = [
-    ...new Set(rawMetaJsonPaths.map((p) => normalizePath(dirname(p)))),
-  ].filter((p) => p !== normalized);
-
-  const candidates = candidateMetaPaths
-    .map((mp) => ({ metaPath: mp, ownerPath: normalizePath(dirname(mp)) }))
-    .sort((a, b) => a.ownerPath.length - b.ownerPath.length);
-
-  const directChildren: Array<{ metaPath: string; ownerPath: string }> = [];
-  for (const c of candidates) {
-    const nestedUnderExisting = directChildren.some(
-      (d) =>
-        c.ownerPath === d.ownerPath ||
-        c.ownerPath.startsWith(d.ownerPath + '/'),
-    );
-    if (!nestedUnderExisting) directChildren.push(c);
-  }
-
-  const children: MetaNode[] = directChildren.map((c) => ({
-    metaPath: c.metaPath,
-    ownerPath: c.ownerPath,
-    treeDepth: 1, // Relative to target
-    children: [],
-    parent: null, // Set below
-  }));
-
-  const node: MetaNode = {
-    metaPath: normalized,
-    ownerPath,
-    treeDepth: 0,
-    children,
-    parent: null,
-  };
-
-  // Wire parent references
-  for (const child of children) {
-    child.parent = node;
-  }
-
-  return node;
-}
 
 /** Run the architect/builder/critic pipeline on a single node. */
 async function synthesizeNode(
