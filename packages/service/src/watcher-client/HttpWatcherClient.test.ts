@@ -1,158 +1,108 @@
+/**
+ * Tests for HttpWatcherClient.
+ *
+ * @module watcher-client/HttpWatcherClient.test
+ */
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HttpWatcherClient } from './HttpWatcherClient.js';
 
 // Mock global fetch
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
 
-function jsonResponse(data: unknown, status = 200): Response {
+function jsonResponse(data: unknown, status = 200) {
   return {
     ok: status >= 200 && status < 300,
     status,
+    statusText: status === 200 ? 'OK' : 'Error',
     json: () => Promise.resolve(data),
     text: () => Promise.resolve(JSON.stringify(data)),
-  } as unknown as Response;
+  };
 }
-
-const client = new HttpWatcherClient({
-  baseUrl: 'http://localhost:1936',
-  maxRetries: 2,
-  backoffBaseMs: 10, // Fast for tests
-  backoffFactor: 2,
-});
 
 beforeEach(() => {
   mockFetch.mockReset();
+  vi.stubGlobal('fetch', mockFetch);
 });
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('HttpWatcherClient.scan', () => {
-  it('sends POST /scan with pathPrefix and returns files', async () => {
-    const responseData = {
-      files: [
-        { file_path: '/test/a.md', modified_at: 1000, content_hash: 'abc' },
-      ],
-    };
-    mockFetch.mockResolvedValueOnce(jsonResponse(responseData));
-
-    const result = await client.scan({ pathPrefix: '/test' });
-
-    expect(mockFetch).toHaveBeenCalledOnce();
-    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://localhost:1936/scan');
-    expect(JSON.parse(init.body as string)).toEqual({
-      filter: {
-        must: [{ key: 'file_path', match: { text: '/test' } }],
-      },
-    });
-    expect(result.files).toHaveLength(1);
-    expect(result.files[0].file_path).toBe('/test/a.md');
-  });
-
-  it('includes optional parameters when provided', async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({ files: [] }));
-
-    await client.scan({
-      pathPrefix: '/test',
-      modifiedAfter: 500,
-      fields: ['file_path'],
-      limit: 10,
-      cursor: 'abc',
-    });
-
-    const body = JSON.parse(
-      (mockFetch.mock.calls[0] as [string, RequestInit])[1].body as string,
-    ) as Record<string, unknown>;
-    expect(body).toEqual({
-      filter: {
-        must: [
-          { key: 'file_path', match: { text: '/test' } },
-          { key: 'modified_at', range: { gt: 500 } },
-        ],
-      },
-      fields: ['file_path'],
-      limit: 10,
-      cursor: 'abc',
-    });
-  });
-
-  it('retries on 500 with exponential backoff', async () => {
-    mockFetch
-      .mockResolvedValueOnce(jsonResponse({ error: 'Internal' }, 500))
-      .mockResolvedValueOnce(jsonResponse({ files: [] }));
-
-    const result = await client.scan({ pathPrefix: '/test' });
-
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(result.files).toHaveLength(0);
-  });
-
-  it('throws after exhausting retries', async () => {
-    mockFetch.mockResolvedValue(jsonResponse({ error: 'Internal' }, 500));
-
-    await expect(client.scan({ pathPrefix: '/test' })).rejects.toThrow(
-      'HTTP 500',
-    );
-
-    // Initial + 2 retries = 3
-    expect(mockFetch).toHaveBeenCalledTimes(3);
-  });
-
-  it('throws immediately on 400 (non-transient)', async () => {
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({ error: 'Bad Request' }, 400),
-    );
-
-    await expect(client.scan({ pathPrefix: '/test' })).rejects.toThrow(
-      'HTTP 400',
-    );
-    expect(mockFetch).toHaveBeenCalledOnce();
-  });
-
-  it('retries on 429 (rate limited)', async () => {
-    mockFetch
-      .mockResolvedValueOnce(jsonResponse({}, 429))
-      .mockResolvedValueOnce(jsonResponse({ files: [] }));
-
-    const result = await client.scan({ pathPrefix: '/test' });
-    expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(result.files).toHaveLength(0);
-  });
-});
-
 describe('HttpWatcherClient.registerRules', () => {
   it('sends POST /rules/register', async () => {
+    const client = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
     mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true }));
 
     await client.registerRules('jeeves-meta', [
       {
-        name: 'test-rule',
-        description: 'A test rule',
-        match: { type: { value: 'test' } },
-        schema: [],
+        name: 'meta-current',
+        description: 'test',
+        match: {},
+        schema: ['base'],
       },
     ]);
 
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe('http://localhost:1936/rules/register');
+    expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
     expect(body.source).toBe('jeeves-meta');
+    expect(body.rules).toHaveLength(1);
   });
 });
 
-describe('HttpWatcherClient.unregisterRules', () => {
-  it('sends POST /rules/unregister', async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true }));
+describe('HttpWatcherClient.walk', () => {
+  it('sends POST /walk with globs and returns paths', async () => {
+    const client = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
+    const responseData = {
+      paths: ['j:/domains/email/.meta/meta.json', 'j:/domains/github/.meta/meta.json'],
+      matchedCount: 2,
+      scannedRoots: ['j:/domains'],
+    };
+    mockFetch.mockResolvedValueOnce(jsonResponse(responseData));
 
-    await client.unregisterRules('jeeves-meta');
+    const result = await client.walk(['**/.meta/meta.json']);
 
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://localhost:1936/rules/unregister');
+    expect(url).toBe('http://localhost:1936/walk');
+    expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
-    expect(body.source).toBe('jeeves-meta');
+    expect(body.globs).toEqual(['**/.meta/meta.json']);
+    expect(result).toEqual(responseData.paths);
+  });
+
+  it('returns empty array when no paths match', async () => {
+    const client = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
+    mockFetch.mockResolvedValueOnce(jsonResponse({ paths: [], matchedCount: 0 }));
+
+    const result = await client.walk(['**/.nonexistent']);
+    expect(result).toEqual([]);
+  });
+
+  it('retries on 500 with exponential backoff', async () => {
+    const client = new HttpWatcherClient({
+      baseUrl: 'http://localhost:1936',
+      backoffBaseMs: 1,
+      backoffFactor: 1,
+    });
+    mockFetch
+      .mockResolvedValueOnce(jsonResponse({ error: 'Internal' }, 500))
+      .mockResolvedValueOnce(jsonResponse({ paths: [] }));
+
+    const result = await client.walk(['**/*']);
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([]);
+  });
+
+  it('throws immediately on 400 (non-transient)', async () => {
+    const client = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({ error: 'Bad Request' }, 400),
+    );
+
+    await expect(client.walk(['**/*'])).rejects.toThrow('HTTP 400');
+    expect(mockFetch).toHaveBeenCalledTimes(1);
   });
 });

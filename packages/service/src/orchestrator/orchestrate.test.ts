@@ -8,7 +8,6 @@ import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaExecutor } from '../interfaces/index.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
-import { walkFiles } from '../walkFiles.js';
 import { orchestrate } from './orchestrate.js';
 
 const testRoot = join(
@@ -158,12 +157,10 @@ describe('orchestrate', () => {
       JSON.stringify(baseMeta),
     );
 
-    // Compute structure hash from actual filesystem scope.
+    // Compute structure hash from expected scope.
     // filterInScope excludes own .meta/ subtree, so scope = [test-file.md]
     const domainDir = testRoot.replaceAll('\\', '/') + '/domain';
-    const scopeFiles = walkFiles(domainDir).filter(
-      (f) => !f.includes('/.meta/'),
-    );
+    const scopeFiles = [domainDir + '/test-file.md'];
     const fileHash = computeStructureHash(scopeFiles);
 
     // Rewrite with correct hash

@@ -9,9 +9,6 @@
 
 import type {
   InferenceRuleSpec,
-  ScanFile,
-  ScanParams,
-  ScanResponse,
   WatcherClient,
 } from '../interfaces/index.js';
 import { sleep } from '../sleep.js';
@@ -92,75 +89,11 @@ export class HttpWatcherClient implements WatcherClient {
     throw new Error('Retry exhausted');
   }
 
-  async scan(params: ScanParams): Promise<ScanResponse> {
-    // Build Qdrant filter: merge explicit filter with pathPrefix/modifiedAfter
-    const mustClauses: Record<string, unknown>[] = [];
-
-    // Carry over any existing 'must' clauses from the provided filter
-    if (params.filter) {
-      const existing = params.filter.must;
-      if (Array.isArray(existing)) {
-        mustClauses.push(...(existing as Record<string, unknown>[]));
-      }
-    }
-
-    // Translate pathPrefix into a Qdrant text match on file_path
-    if (params.pathPrefix !== undefined) {
-      mustClauses.push({
-        key: 'file_path',
-        match: { text: params.pathPrefix },
-      });
-    }
-
-    // Translate modifiedAfter into a Qdrant range filter on modified_at
-    if (params.modifiedAfter !== undefined) {
-      mustClauses.push({
-        key: 'modified_at',
-        range: { gt: params.modifiedAfter },
-      });
-    }
-
-    const filter: Record<string, unknown> = { must: mustClauses };
-
-    const body: Record<string, unknown> = { filter };
-    if (params.fields !== undefined) {
-      body.fields = params.fields;
-    }
-    if (params.limit !== undefined) {
-      body.limit = params.limit;
-    }
-    if (params.cursor !== undefined) {
-      body.cursor = params.cursor;
-    }
-
-    const raw = (await this.post('/scan', body)) as Record<string, unknown>;
-
-    // jeeves-watcher returns { points, cursor }; map to ScanResponse.
-    const points = (raw.points ?? raw.files ?? []) as Record<string, unknown>[];
-    const next = (raw.cursor ?? raw.next) as string | undefined;
-
-    const files: ScanFile[] = points.map((p) => {
-      const payload = (p.payload ?? p) as Record<string, unknown>;
-      return {
-        file_path: (payload.file_path ?? payload.path ?? '') as string,
-        modified_at: (payload.modified_at ?? payload.mtime ?? 0) as number,
-        content_hash: (payload.content_hash ?? '') as string,
-        ...payload,
-      };
-    });
-
-    return { files, next: next ?? undefined };
-  }
-
   async registerRules(
     source: string,
     rules: InferenceRuleSpec[],
   ): Promise<void> {
     await this.post('/rules/register', { source, rules });
-  }
-
-  async unregisterRules(source: string): Promise<void> {
-    await this.post('/rules/unregister', { source });
   }
 
   async walk(globs: string[]): Promise<string[]> {
