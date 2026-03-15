@@ -4,7 +4,6 @@
  * @module discovery
  */
 
-export { buildMinimalNode } from './buildMinimalNode.js';
 export { discoverMetas } from './discoverMetas.js';
 export {
   listMetas,
