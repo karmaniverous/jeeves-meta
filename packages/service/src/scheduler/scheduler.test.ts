@@ -44,8 +44,8 @@ function createTestConfig() {
 
 function createMockWatcher() {
   return {
-    scan: vi.fn().mockResolvedValue({ points: [], next_page_offset: null }),
     registerRules: vi.fn().mockResolvedValue(undefined),
+    walk: vi.fn().mockResolvedValue([]),
   } as unknown as HttpWatcherClient;
 }
 
