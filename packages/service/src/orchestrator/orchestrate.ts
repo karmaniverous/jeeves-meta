@@ -10,7 +10,6 @@
 import {
   copyFileSync,
   existsSync,
-  readdirSync,
   readFileSync,
   writeFileSync,
 } from 'node:fs';
@@ -132,50 +131,46 @@ function finalizeCycle(opts: FinalizeCycleOptions): MetaJson {
  */
 
 /**
- * Build a minimal MetaNode from the filesystem for a known meta path.
- * Discovers immediate child .meta/ dirs without a full watcher scan.
+ * Build a minimal MetaNode from watcher walk for a known meta path.
+ * Discovers immediate child .meta/ dirs via watcher walk.
  */
-function buildMinimalNode(metaPath: string): MetaNode {
+async function buildMinimalNode(
+  metaPath: string,
+  watcher: WatcherClient,
+): Promise<MetaNode> {
   const normalized = normalizePath(metaPath);
   const ownerPath = normalizePath(dirname(metaPath));
 
-  // Find child .meta/ directories by scanning the owner directory
-  const children: MetaNode[] = [];
-  function findChildMetas(dir: string, depth: number): void {
-    if (depth > 10) return; // Safety limit
-    try {
-      const entries = readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const fullPath = normalizePath(join(dir, entry.name));
-        if (entry.name === '.meta' && fullPath !== normalized) {
-          // Found a child .meta — check it has meta.json
-          if (existsSync(join(fullPath, 'meta.json'))) {
-            children.push({
-              metaPath: fullPath,
-              ownerPath: normalizePath(dirname(fullPath)),
-              treeDepth: 1, // Relative to target
-              children: [],
-              parent: null, // Set below
-            });
-          }
-          // Don't recurse into .meta dirs
-          return;
-        }
-        if (
-          entry.name === 'node_modules' ||
-          entry.name === '.git' ||
-          entry.name === 'archive'
-        )
-          continue;
-        findChildMetas(fullPath, depth + 1);
-      }
-    } catch {
-      // Permission errors, etc — skip
-    }
+  // Find child metas using watcher walk.
+  // We include only *direct* children (nearest descendants in the ownership tree)
+  // to match the ownership semantics used elsewhere.
+  const rawMetaJsonPaths = await watcher.walk([
+    `${ownerPath}/**/.meta/meta.json`,
+  ]);
+
+  const candidateMetaPaths = [
+    ...new Set(rawMetaJsonPaths.map((p) => normalizePath(dirname(p)))),
+  ].filter((p) => p !== normalized);
+
+  const candidates = candidateMetaPaths
+    .map((mp) => ({ metaPath: mp, ownerPath: normalizePath(dirname(mp)) }))
+    .sort((a, b) => a.ownerPath.length - b.ownerPath.length);
+
+  const directChildren: Array<{ metaPath: string; ownerPath: string }> = [];
+  for (const c of candidates) {
+    const nestedUnderExisting = directChildren.some(
+      (d) => c.ownerPath === d.ownerPath || c.ownerPath.startsWith(d.ownerPath + '/'),
+    );
+    if (!nestedUnderExisting) directChildren.push(c);
   }
 
-  findChildMetas(ownerPath, 0);
+  const children: MetaNode[] = directChildren.map((c) => ({
+    metaPath: c.metaPath,
+    ownerPath: c.ownerPath,
+    treeDepth: 1, // Relative to target
+    children: [],
+    parent: null, // Set below
+  }));
 
   const node: MetaNode = {
     metaPath: normalized,
@@ -211,7 +206,7 @@ async function synthesizeNode(
   );
 
   // Step 7: Compute context (includes scope files and delta files)
-  const ctx = buildContextPackage(node, currentMeta);
+  const ctx = await buildContextPackage(node, currentMeta, watcher);
 
   // Step 5 (deferred): Structure hash from context scope files
   const newStructureHash = computeStructureHash(ctx.scopeFiles);
@@ -386,7 +381,7 @@ async function orchestrateOnce(
     const targetMetaJson = join(normalizedTarget, 'meta.json');
     if (!existsSync(targetMetaJson)) return { synthesized: false };
 
-    const node = buildMinimalNode(normalizedTarget);
+    const node = await buildMinimalNode(normalizedTarget, watcher);
     if (!acquireLock(node.metaPath)) return { synthesized: false };
 
     try {
@@ -410,7 +405,7 @@ async function orchestrateOnce(
   // Full discovery path (scheduler-driven, no specific target)
   // Step 1: Discover via watcher scan
   const discoveryStart = Date.now();
-  const metaPaths = await discoverMetas(config, watcher, logger);
+  const metaPaths = await discoverMetas(watcher, logger);
   logger?.debug(
     { paths: metaPaths.length, durationMs: Date.now() - discoveryStart },
     'discovery complete',
@@ -462,9 +457,10 @@ async function orchestrateOnce(
   for (const candidate of ranked) {
     if (!acquireLock(candidate.node.metaPath)) continue;
 
-    const verifiedStale = isStale(
+    const verifiedStale = await isStale(
       getScopePrefix(candidate.node),
       candidate.meta,
+      watcher,
     );
 
     if (!verifiedStale && candidate.meta._generatedAt) {

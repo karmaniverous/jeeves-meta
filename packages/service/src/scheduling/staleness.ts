@@ -1,34 +1,49 @@
 /**
- * Staleness detection via watcher scan.
+ * Staleness detection via watcher walk.
  *
- * A meta is stale when any file in its scope was modified after _generatedAt.
+ * A meta is stale when any watched file in its scope was modified after
+ * `_generatedAt`.
  *
  * @module scheduling/staleness
  */
 
+import { statSync } from 'node:fs';
+
+import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaJson } from '../schema/index.js';
-import { walkFiles } from '../walkFiles.js';
 
 /**
- * Check if a meta is stale by querying the watcher for modified files.
+ * Check if a meta is stale.
+ *
+ * Uses watcher `/walk` to enumerate watched files under the scope prefix,
+ * then applies a local mtime check (fast) to detect any modifications since
+ * `_generatedAt`.
  *
  * @param scopePrefix - Path prefix for this meta's scope.
  * @param meta - Current meta.json content.
  * @param watcher - WatcherClient instance.
- * @returns True if any file in scope was modified after _generatedAt.
+ * @returns True if any file in scope was modified after `_generatedAt`.
  */
-export function isStale(scopePrefix: string, meta: MetaJson): boolean {
+export async function isStale(
+  scopePrefix: string,
+  meta: MetaJson,
+  watcher: WatcherClient,
+): Promise<boolean> {
   if (!meta._generatedAt) return true; // Never synthesized = stale
 
-  const generatedAtUnix = Math.floor(
-    new Date(meta._generatedAt).getTime() / 1000,
-  );
+  const modifiedAfterMs = new Date(meta._generatedAt).getTime();
+  const files = await watcher.walk([`${scopePrefix}/**`]);
 
-  const modified = walkFiles(scopePrefix, {
-    modifiedAfter: generatedAtUnix,
-    maxDepth: 1,
-  });
-  return modified.length > 0;
+  for (const filePath of files) {
+    try {
+      const stat = statSync(filePath);
+      if (stat.mtimeMs > modifiedAfterMs) return true;
+    } catch {
+      // If we can't stat the file, ignore it.
+    }
+  }
+
+  return false;
 }
 
 /** Maximum staleness for never-synthesized metas (1 year in seconds). */

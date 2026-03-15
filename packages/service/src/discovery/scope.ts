@@ -10,7 +10,8 @@
  * @module discovery/scope
  */
 
-import { walkFiles } from '../walkFiles.js';
+import { statSync } from 'node:fs';
+import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaNode } from './types.js';
 
 /**
@@ -65,10 +66,13 @@ export interface ScopeFilesResult {
 }
 
 /**
- * Get all files in scope for a meta node via filesystem walk.
+ * Get all files in scope for a meta node via watcher walk.
  */
-export function getScopeFiles(node: MetaNode): ScopeFilesResult {
-  const allFiles = walkFiles(node.ownerPath);
+export async function getScopeFiles(
+  node: MetaNode,
+  watcher: WatcherClient,
+): Promise<ScopeFilesResult> {
+  const allFiles = await watcher.walk([`${node.ownerPath}/**`]);
   return {
     scopeFiles: filterInScope(node, allFiles),
     allFiles,
@@ -79,6 +83,7 @@ export function getScopeFiles(node: MetaNode): ScopeFilesResult {
  * Get files modified since a given timestamp within a meta node's scope.
  *
  * If no generatedAt is provided (first run), returns all scope files.
+ * Reuses scope files from getScopeFiles() and filters locally by mtime.
  */
 export function getDeltaFiles(
   node: MetaNode,
@@ -87,7 +92,15 @@ export function getDeltaFiles(
 ): string[] {
   if (!generatedAt) return scopeFiles;
 
-  const modifiedAfter = Math.floor(new Date(generatedAt).getTime() / 1000);
-  const deltaFiles = walkFiles(node.ownerPath, { modifiedAfter });
-  return filterInScope(node, deltaFiles);
+  const modifiedAfterMs = new Date(generatedAt).getTime();
+
+  return scopeFiles.filter((filePath) => {
+    try {
+      const stat = statSync(filePath);
+      return stat.mtimeMs > modifiedAfterMs;
+    } catch {
+      // If we can't stat the file, exclude it
+      return false;
+    }
+  });
 }

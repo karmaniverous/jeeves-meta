@@ -36,26 +36,14 @@ function makeConfig(overrides: Partial<MetaConfig> = {}): MetaConfig {
   };
 }
 
-/** Create a mock watcher that returns the given meta paths (simulating watcher scan results). */
+/** Create a mock watcher that returns the given meta paths (simulating watcher walk results). */
 function mockWatcher(metaPaths: string[]): WatcherClient {
   return {
-    scan: (params: ScanParams): Promise<ScanResponse> => {
-      // Only respond to discovery scans (filter contains synth-meta domain match)
-      const filterStr = JSON.stringify(params.filter ?? {});
-      if (filterStr.includes('synth-meta')) {
-        // Return one point per meta path (simulating single-chunk files)
-        return Promise.resolve({
-          files: metaPaths.map((mp) => ({
-            file_path: mp + '/meta.json',
-            modified_at: 1000,
-            content_hash: 'abc',
-          })),
-        });
-      }
-      return Promise.resolve({ files: [] });
+    walk: (globs: string[]): Promise<string[]> => {
+      // Return one point per meta path
+      return Promise.resolve(metaPaths.map((mp) => mp + '/meta.json'));
     },
     registerRules: () => Promise.resolve(),
-    unregisterRules: () => Promise.resolve(),
   };
 }
 
@@ -65,23 +53,13 @@ function mockWatcherWithChunks(
   chunksPerFile: number,
 ): WatcherClient {
   return {
-    scan: (params: ScanParams): Promise<ScanResponse> => {
-      const filterStr = JSON.stringify(params.filter ?? {});
-      if (filterStr.includes('synth-meta')) {
-        const files = metaPaths.flatMap((mp) =>
-          Array.from({ length: chunksPerFile }, (_, i) => ({
-            file_path: mp + '/meta.json',
-            modified_at: 1000,
-            content_hash: 'abc',
-            chunk_index: i,
-          })),
-        );
-        return Promise.resolve({ files });
-      }
-      return Promise.resolve({ files: [] });
+    walk: (globs: string[]): Promise<string[]> => {
+      const paths = metaPaths.flatMap((mp) =>
+        Array.from({ length: chunksPerFile }, () => mp + '/meta.json'),
+      );
+      return Promise.resolve(paths);
     },
     registerRules: () => Promise.resolve(),
-    unregisterRules: () => Promise.resolve(),
   };
 }
 

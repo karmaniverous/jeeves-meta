@@ -76,7 +76,7 @@ export function registerPreviewRoute(
     ) as MetaJson;
 
     // Scope files
-    const { scopeFiles } = getScopeFiles(targetNode);
+    const { scopeFiles } = await getScopeFiles(targetNode, watcher);
 
     const structureHash = computeStructureHash(scopeFiles);
     const structureChanged = structureHash !== meta._structureHash;

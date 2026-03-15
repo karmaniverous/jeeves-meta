@@ -94,7 +94,7 @@ export async function listMetas(
   logger?: MinimalLogger,
 ): Promise<MetaListResult> {
   // Step 1: Discover deduplicated meta paths via watcher scan
-  const metaPaths = await discoverMetas(config, watcher, logger);
+  const metaPaths = await discoverMetas(watcher, logger);
 
   // Step 2: Build ownership tree
   const tree = buildOwnershipTree(metaPaths);

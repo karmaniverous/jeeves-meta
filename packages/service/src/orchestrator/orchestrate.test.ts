@@ -45,30 +45,21 @@ function createMockWatcher(
   metaJsonPaths?: string[],
 ): WatcherClient {
   return {
-    scan: vi.fn().mockImplementation((params: Record<string, unknown>) => {
-      // Discovery scan — has a domain filter, no pathPrefix
-      const filter = params.filter as Record<string, unknown> | undefined;
-      if (filter && !params.pathPrefix) {
-        const paths = metaJsonPaths ?? [];
-        return Promise.resolve({
-          files: paths.map((p) => ({
-            file_path: p,
-            modified_at: Math.floor(Date.now() / 1000),
-            content_hash: 'abc',
-          })),
-        });
+    walk: vi.fn().mockImplementation(async (globs: string[]) => {
+      // Discovery scan — relative glob
+      if (globs[0] === '**/.meta/meta.json') {
+        return Promise.resolve(metaJsonPaths ?? []);
       }
-      // Scope/staleness scan — has pathPrefix
-      return Promise.resolve({
-        files: scopeFiles.map((f) => ({
-          file_path: f,
-          modified_at: Math.floor(Date.now() / 1000),
-          content_hash: 'abc',
-        })),
-      });
+      
+      // Child discovery - absolute child meta.json glob
+      if (globs[0]?.endsWith('/**/.meta/meta.json')) {
+        return Promise.resolve(metaJsonPaths ?? []);
+      }
+
+      // Scope enumeration - absolute path glob
+      return Promise.resolve(scopeFiles);
     }),
     registerRules: vi.fn().mockResolvedValue(undefined),
-    unregisterRules: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -189,7 +180,7 @@ describe('orchestrate', () => {
     // Watcher mock only needed for discovery (finding .meta/meta.json)
     const metaJsonPath =
       testRoot.replaceAll('\\', '/') + '/domain/.meta/meta.json';
-    const watcher = createMockWatcher([], [metaJsonPath]);
+    const watcher = createMockWatcher(scopeFiles, [metaJsonPath]);
     const executor = createMockExecutor();
     const spawnSpy = vi.spyOn(executor, 'spawn');
 
