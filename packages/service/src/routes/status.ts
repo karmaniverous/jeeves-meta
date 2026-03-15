@@ -79,7 +79,10 @@ export function registerStatusRoute(
         nextAt: scheduler?.nextRunAt?.toISOString() ?? null,
       },
       dependencies: {
-        watcher: watcherHealth,
+        watcher: {
+          ...watcherHealth,
+          rulesRegistered: deps.registrar?.isRegistered ?? false,
+        },
         gateway: gatewayHealth,
       },
     };

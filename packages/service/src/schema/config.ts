@@ -84,6 +84,9 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   /** Optional channel identifier for reporting. */
   reportChannel: z.string().optional(),
 
+  /** Interval in ms for periodic watcher health check. 0 = disabled. Default: 60000. */
+  watcherHealthIntervalMs: z.number().int().min(0).default(60_000),
+
   /** Logging configuration. */
   logging: loggingSchema.default(() => loggingSchema.parse({})),
 });

@@ -19,6 +19,8 @@ export interface ShutdownDeps {
   queue: SynthesisQueue;
   logger: Logger;
   routeDeps?: RouteDeps;
+  /** Optional cleanup callback (e.g., stop health check). */
+  onShutdown?: () => void;
 }
 
 /**
@@ -43,6 +45,9 @@ export function registerShutdownHandlers(deps: ShutdownDeps): void {
     if (deps.routeDeps) {
       deps.routeDeps.shuttingDown = true;
     }
+
+    // 0. Run optional cleanup
+    deps.onShutdown?.();
 
     // 1. Stop scheduler
     if (deps.scheduler) {

@@ -10,6 +10,7 @@ import type { Logger } from 'pino';
 import type { SynthesisQueue } from '../queue/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 import type { ServiceConfig } from '../schema/config.js';
+import type { RuleRegistrar } from '../rules/index.js';
 import type { HttpWatcherClient } from '../watcher-client/index.js';
 import { registerConfigValidateRoute } from './configValidate.js';
 import { registerMetasRoutes } from './metas.js';
@@ -36,6 +37,8 @@ export interface RouteDeps {
   watcher: HttpWatcherClient;
   scheduler: Scheduler | null;
   stats: ServiceStats;
+  /** Rule registrar for reporting registration state in /status. */
+  registrar?: RuleRegistrar;
   /** Set to true during graceful shutdown. */
   shuttingDown?: boolean;
 }

@@ -177,6 +177,7 @@ import { orchestrate } from './orchestrator/index.js';
 import { ProgressReporter } from './progress/index.js';
 import { SynthesisQueue } from './queue/index.js';
 import type { ServiceStats } from './routes/index.js';
+import { WatcherHealthCheck } from './rules/healthCheck.js';
 import { RuleRegistrar } from './rules/index.js';
 import { Scheduler } from './scheduler/index.js';
 import { type ServiceConfig } from './schema/config.js';
@@ -335,7 +336,17 @@ export async function startService(
   // Rule registration (fire-and-forget with retries)
   const registrar = new RuleRegistrar(config, logger, watcher);
   scheduler.setRegistrar(registrar);
+  routeDeps.registrar = registrar;
   void registrar.register();
+
+  // Periodic watcher health check (independent of scheduler)
+  const healthCheck = new WatcherHealthCheck({
+    watcherUrl: config.watcherUrl,
+    intervalMs: config.watcherHealthIntervalMs,
+    registrar,
+    logger,
+  });
+  healthCheck.start();
 
   // Config hot-reload (gap #12)
   if (configPath) {
@@ -379,6 +390,7 @@ export async function startService(
     queue,
     logger,
     routeDeps,
+    onShutdown: () => healthCheck.stop(),
   });
 
   logger.info('Service fully initialized');
