@@ -89,7 +89,7 @@ export async function listMetas(
   config: MetaConfig,
   watcher: WatcherClient,
 ): Promise<MetaListResult> {
-  // Step 1: Discover deduplicated meta paths via watcher scan
+  // Step 1: Discover deduplicated meta paths via watcher walk
   const metaPaths = await discoverMetas(watcher);
 
   // Step 2: Build ownership tree

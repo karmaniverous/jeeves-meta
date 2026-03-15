@@ -30,6 +30,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `port` | integer | `1938` | HTTP listen port |
 | `schedule` | string | `*/30 * * * *` | Cron expression for synthesis scheduling |
 | `reportChannel` | string | — | Gateway channel target for progress messages |
+| `watcherHealthIntervalMs` | number | `60000` | Periodic watcher health check interval in ms. 0 = disabled. |
 | `logging.level` | string | `"info"` | Log level (trace/debug/info/warn/error) |
 | `logging.file` | string | — | Log file path |
 
@@ -38,6 +39,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 The following fields are hot-reloadable (no service restart required):
 - `schedule` — cron expression
 - `reportChannel` — progress reporting target
+- `watcherHealthIntervalMs` — watcher health check interval
 - `logging.level` — log verbosity
 
 All other fields require a service restart.

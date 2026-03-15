@@ -2,7 +2,7 @@
 
 The `orchestrate()` function runs a single synthesis cycle in 13 steps:
 
-1. **Discover** — scan watcher for `.meta/meta.json` files matching the configured domain filter
+1. **Discover** — walk watcher filesystem for `.meta/meta.json` files (no Qdrant dependency)
 2. **Read** — parse `meta.json` for each discovered path
 3. **Build tree** — construct the ownership tree from valid paths
 4. **Select candidate** — rank by effective staleness, acquire lock on winner

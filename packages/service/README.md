@@ -8,7 +8,7 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Built-in scheduler** — croner-based cron with adaptive backoff
 - **Synthesis queue** — single-threaded, priority-aware, deduplicated
 - **Three-step orchestration** — architect, builder, critic with conditional re-architecture
-- **Discovery via watcher** — scan-based meta discovery with configurable domain tags
+- **Discovery via watcher** — filesystem-based meta discovery via `/walk` endpoint (no Qdrant dependency)
 - **Ownership tree** — hierarchical scoping with child meta rollup
 - **Archive management** — timestamped snapshots with configurable pruning
 - **Lock staging** — write to `.lock` → copy to `meta.json` → archive (crash-safe)

@@ -339,7 +339,7 @@ async function orchestrateOnce(
   }
 
   // Full discovery path (scheduler-driven, no specific target)
-  // Step 1: Discover via watcher scan
+  // Step 1: Discover via watcher walk
   const discoveryStart = Date.now();
   const metaPaths = await discoverMetas(watcher);
   logger?.debug(

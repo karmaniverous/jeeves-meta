@@ -57,7 +57,7 @@ export function registerStatusRoute(
       status = 'idle';
     }
 
-    // Metas summary is expensive (paginated watcher scan + disk reads).
+    // Metas summary is expensive (watcher walk + disk reads).
     // Use GET /metas for full inventory; status is a lightweight health check.
 
     return {

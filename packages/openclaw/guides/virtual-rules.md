@@ -28,5 +28,5 @@ Indexes the service configuration file with key config fields in frontmatter.
 
 ## Re-registration
 
-Rules are registered at startup with 10-retry exponential backoff. The scheduler also monitors watcher uptime — if the watcher restarts (uptime decreases), rules are automatically re-registered.
+Rules are registered at startup with 10-retry exponential backoff. A periodic health check (configurable via `watcherHealthIntervalMs`, default 60s) monitors watcher uptime independently of the synthesis scheduler. If the watcher restarts (uptime decreases), rules are automatically re-registered. The `/status` endpoint reports `rulesRegistered` in the watcher dependency block.
 

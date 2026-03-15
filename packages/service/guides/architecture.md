@@ -33,7 +33,7 @@ Config (JSON) → loadServiceConfig() → startService()
                     ┌────────────────┤
                     ▼                ▼
               Discovery        GatewayExecutor
-              (watcher scan)   (architect/builder/critic)
+              (watcher walk)   (architect/builder/critic)
                     │                │
                     ▼                ▼
               Lock staging     ProgressReporter
