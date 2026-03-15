@@ -162,4 +162,9 @@ export class HttpWatcherClient implements WatcherClient {
   async unregisterRules(source: string): Promise<void> {
     await this.post('/rules/unregister', { source });
   }
+
+  async walk(globs: string[]): Promise<string[]> {
+    const raw = (await this.post('/walk', { globs })) as Record<string, unknown>;
+    return (raw.paths ?? []) as string[];
+  }
 }

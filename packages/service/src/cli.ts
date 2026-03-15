@@ -208,7 +208,7 @@ service.addCommand(
   new Command('install')
     .description('Print install instructions for a system service')
     .option('-c, --config <path>', 'Path to configuration file')
-    .option('-n, --name <name>', 'Service name', 'JeevesMeta')
+    .option('-n, --name <name>', 'Service name', 'jeeves-meta')
     .action((options: { config?: string; name: string }) => {
       const { name } = options;
       const configFlag = options.config ? ` -c "${options.config}"` : '';
@@ -284,7 +284,7 @@ service.addCommand(
 service.addCommand(
   new Command('start')
     .description('Print start instructions for the installed service')
-    .option('-n, --name <name>', 'Service name', 'JeevesMeta')
+    .option('-n, --name <name>', 'Service name', 'jeeves-meta')
     .action((options: { name: string }) => {
       const { name } = options;
 
@@ -311,7 +311,7 @@ service.addCommand(
 service.addCommand(
   new Command('stop')
     .description('Stop the running service')
-    .option('-n, --name <name>', 'Service name', 'JeevesMeta')
+    .option('-n, --name <name>', 'Service name', 'jeeves-meta')
     .action((options: { name: string }) => {
       const { name } = options;
 
@@ -353,7 +353,7 @@ service.addCommand(
 service.addCommand(
   new Command('remove')
     .description('Print remove instructions for a system service')
-    .option('-n, --name <name>', 'Service name', 'JeevesMeta')
+    .option('-n, --name <name>', 'Service name', 'jeeves-meta')
     .action((options: { name: string }) => {
       const { name } = options;
 

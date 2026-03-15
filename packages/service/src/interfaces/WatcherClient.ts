@@ -88,4 +88,12 @@ export interface WatcherClient {
    * @param source - Source identifier to unregister.
    */
   unregisterRules(source: string): Promise<void>;
+
+  /**
+   * Walk filesystem using glob patterns.
+   *
+   * @param globs - Array of glob patterns to match against.
+   * @returns Promise resolving to array of matching file paths.
+   */
+  walk(globs: string[]): Promise<string[]>;
 }
