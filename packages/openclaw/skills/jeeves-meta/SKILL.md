@@ -3,9 +3,17 @@
 ## Overview
 
 jeeves-meta is the Jeeves platform's knowledge synthesis engine. It discovers
-`.meta/` directories via watcher scan, gathers context from the Qdrant vector
-index, and uses a three-step LLM process (architect, builder, critic) to
-produce structured synthesis artifacts co-located with source content.
+`.meta/` directories via the watcher's filesystem walk endpoint (`POST /walk`),
+gathers context from co-located source files, and uses a three-step LLM process
+(architect, builder, critic) to produce structured synthesis artifacts.
+
+**Requires:** jeeves-watcher ≥ 0.10.0 (provides `POST /walk` and auto
+rules-reindex on registration).
+
+Discovery is filesystem-based (no Qdrant dependency). The service registers
+virtual inference rules with the watcher for rendering and metadata tagging;
+the watcher's `/status` response includes `rulesRegistered` to surface
+registration health.
 
 ## Available Tools
 

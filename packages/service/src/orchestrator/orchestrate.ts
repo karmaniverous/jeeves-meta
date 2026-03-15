@@ -7,30 +7,25 @@
  * @module orchestrator/orchestrate
  */
 
-import {
-  copyFileSync,
-  existsSync,
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-} from 'node:fs';
-import { dirname, join } from 'node:path';
+import { copyFileSync, existsSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import {
   createSnapshot,
   pruneArchive,
   readLatestArchive,
 } from '../archive/index.js';
+import { buildMinimalNode } from '../discovery/buildMinimalNode.js';
 import { discoverMetas } from '../discovery/discoverMetas.js';
-import { buildOwnershipTree } from '../discovery/index.js';
+import { buildOwnershipTree, type MetaNode } from '../discovery/index.js';
 import { getScopePrefix } from '../discovery/scope.js';
-import type { MetaNode } from '../discovery/types.js';
 import { toMetaError } from '../errors.js';
 import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
 import type { MinimalLogger } from '../logger/index.js';
 import { normalizePath } from '../normalizePath.js';
 import type { ProgressEvent } from '../progress/index.js';
+import { readMetaJson } from '../readMetaJson.js';
 import {
   actualStaleness,
   computeEffectiveStaleness,
@@ -131,68 +126,6 @@ function finalizeCycle(opts: FinalizeCycleOptions): MetaJson {
  * @returns Result indicating whether synthesis occurred.
  */
 
-/**
- * Build a minimal MetaNode from the filesystem for a known meta path.
- * Discovers immediate child .meta/ dirs without a full watcher scan.
- */
-function buildMinimalNode(metaPath: string): MetaNode {
-  const normalized = normalizePath(metaPath);
-  const ownerPath = normalizePath(dirname(metaPath));
-
-  // Find child .meta/ directories by scanning the owner directory
-  const children: MetaNode[] = [];
-  function findChildMetas(dir: string, depth: number): void {
-    if (depth > 10) return; // Safety limit
-    try {
-      const entries = readdirSync(dir, { withFileTypes: true });
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const fullPath = normalizePath(join(dir, entry.name));
-        if (entry.name === '.meta' && fullPath !== normalized) {
-          // Found a child .meta — check it has meta.json
-          if (existsSync(join(fullPath, 'meta.json'))) {
-            children.push({
-              metaPath: fullPath,
-              ownerPath: normalizePath(dirname(fullPath)),
-              treeDepth: 1, // Relative to target
-              children: [],
-              parent: null, // Set below
-            });
-          }
-          // Don't recurse into .meta dirs
-          return;
-        }
-        if (
-          entry.name === 'node_modules' ||
-          entry.name === '.git' ||
-          entry.name === 'archive'
-        )
-          continue;
-        findChildMetas(fullPath, depth + 1);
-      }
-    } catch {
-      // Permission errors, etc — skip
-    }
-  }
-
-  findChildMetas(ownerPath, 0);
-
-  const node: MetaNode = {
-    metaPath: normalized,
-    ownerPath,
-    treeDepth: 0,
-    children,
-    parent: null,
-  };
-
-  // Wire parent references
-  for (const child of children) {
-    child.parent = node;
-  }
-
-  return node;
-}
-
 /** Run the architect/builder/critic pipeline on a single node. */
 async function synthesizeNode(
   node: MetaNode,
@@ -202,9 +135,6 @@ async function synthesizeNode(
   watcher: WatcherClient,
   onProgress?: ProgressCallback,
 ): Promise<OrchestrateResult> {
-  const architectPrompt = currentMeta._architect ?? config.defaultArchitect;
-  const criticPrompt = currentMeta._critic ?? config.defaultCritic;
-
   // Step 5-6: Steer change detection
   const latestArchive = readLatestArchive(node.metaPath);
   const steerChanged = hasSteerChanged(
@@ -214,7 +144,7 @@ async function synthesizeNode(
   );
 
   // Step 7: Compute context (includes scope files and delta files)
-  const ctx = buildContextPackage(node, currentMeta);
+  const ctx = await buildContextPackage(node, currentMeta, watcher);
 
   // Step 5 (deferred): Structure hash from context scope files
   const newStructureHash = computeStructureHash(ctx.scopeFiles);
@@ -389,13 +319,11 @@ async function orchestrateOnce(
     const targetMetaJson = join(normalizedTarget, 'meta.json');
     if (!existsSync(targetMetaJson)) return { synthesized: false };
 
-    const node = buildMinimalNode(normalizedTarget);
+    const node = await buildMinimalNode(normalizedTarget, watcher);
     if (!acquireLock(node.metaPath)) return { synthesized: false };
 
     try {
-      const currentMeta = JSON.parse(
-        readFileSync(targetMetaJson, 'utf8'),
-      ) as MetaJson;
+      const currentMeta = readMetaJson(normalizedTarget);
 
       return await synthesizeNode(
         node,
@@ -411,9 +339,9 @@ async function orchestrateOnce(
   }
 
   // Full discovery path (scheduler-driven, no specific target)
-  // Step 1: Discover via watcher scan
+  // Step 1: Discover via watcher walk
   const discoveryStart = Date.now();
-  const metaPaths = await discoverMetas(config, watcher, logger);
+  const metaPaths = await discoverMetas(watcher);
   logger?.debug(
     { paths: metaPaths.length, durationMs: Date.now() - discoveryStart },
     'discovery complete',
@@ -423,12 +351,8 @@ async function orchestrateOnce(
   // Read meta.json for each discovered meta
   const metas = new Map<string, MetaJson>();
   for (const mp of metaPaths) {
-    const metaFilePath = join(mp, 'meta.json');
     try {
-      metas.set(
-        normalizePath(mp),
-        JSON.parse(readFileSync(metaFilePath, 'utf8')) as MetaJson,
-      );
+      metas.set(normalizePath(mp), readMetaJson(mp));
     } catch {
       // Skip metas with unreadable meta.json
       continue;
@@ -465,19 +389,20 @@ async function orchestrateOnce(
   for (const candidate of ranked) {
     if (!acquireLock(candidate.node.metaPath)) continue;
 
-    const verifiedStale = isStale(
+    const verifiedStale = await isStale(
       getScopePrefix(candidate.node),
       candidate.meta,
+      watcher,
     );
 
     if (!verifiedStale && candidate.meta._generatedAt) {
       // Bump _generatedAt so it doesn't win next cycle
-      const metaFilePath = join(candidate.node.metaPath, 'meta.json');
-      const freshMeta = JSON.parse(
-        readFileSync(metaFilePath, 'utf8'),
-      ) as MetaJson;
+      const freshMeta = readMetaJson(candidate.node.metaPath);
       freshMeta._generatedAt = new Date().toISOString();
-      writeFileSync(metaFilePath, JSON.stringify(freshMeta, null, 2));
+      writeFileSync(
+        join(candidate.node.metaPath, 'meta.json'),
+        JSON.stringify(freshMeta, null, 2),
+      );
       releaseLock(candidate.node.metaPath);
 
       if (config.skipUnchanged) continue;
@@ -492,9 +417,7 @@ async function orchestrateOnce(
   const node = winner.node;
 
   try {
-    const currentMeta = JSON.parse(
-      readFileSync(join(node.metaPath, 'meta.json'), 'utf8'),
-    ) as MetaJson;
+    const currentMeta = readMetaJson(node.metaPath);
 
     return await synthesizeNode(
       node,

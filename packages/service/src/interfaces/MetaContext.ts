@@ -11,7 +11,7 @@
  * Context package for a single synthesis cycle.
  *
  * The orchestrator computes this once per cycle from the meta path,
- * ownership tree, watcher scan results, and filesystem reads.
+ * ownership tree, watcher walk results, and filesystem reads.
  */
 export interface MetaContext {
   /** Absolute path to the .meta directory. */

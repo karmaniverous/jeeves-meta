@@ -117,7 +117,7 @@ export function registerMetasRoutes(
     const query = metasQuerySchema.parse(request.query);
     const { config, watcher } = deps;
 
-    const result = await listMetas(config, watcher, request.log);
+    const result = await listMetas(config, watcher);
     let entries = result.entries;
 
     // Apply filters
@@ -193,7 +193,7 @@ export function registerMetasRoutes(
       const { config, watcher } = deps;
 
       const targetPath = normalizePath(decodeURIComponent(request.params.path));
-      const result = await listMetas(config, watcher, request.log);
+      const result = await listMetas(config, watcher);
       const targetNode = findNode(result.tree, targetPath);
 
       if (!targetNode) {
@@ -233,7 +233,7 @@ export function registerMetasRoutes(
       };
 
       // Compute scope
-      const { scopeFiles, allFiles } = getScopeFiles(targetNode);
+      const { scopeFiles, allFiles } = await getScopeFiles(targetNode, watcher);
 
       // Compute staleness
       const metaTyped = meta as Record<string, unknown> & {

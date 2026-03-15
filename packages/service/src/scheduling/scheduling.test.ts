@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { describe, expect, it, vi } from 'vitest';
 
 import type { MetaNode } from '../discovery/index.js';
+import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaJson } from '../schema/index.js';
 import { selectCandidate } from './selectCandidate.js';
 import { isStale } from './staleness.js';
@@ -177,26 +182,35 @@ describe('selectCandidate', () => {
 });
 
 describe('isStale', () => {
-  // Dynamic import to avoid circular issues
-  it('returns true for never-synthesized meta', () => {
+  const mockWatcher = (paths: string[]): WatcherClient => ({
+    registerRules: vi.fn(),
+    walk: vi.fn().mockResolvedValue(paths),
+  });
+
+  it('returns true for never-synthesized meta', async () => {
     const meta = makeMeta();
-    const result = isStale('/test', meta);
+    const result = await isStale('/test', meta, mockWatcher([]));
     expect(result).toBe(true);
   });
 
-  it('returns true when filesystem reports modified files', () => {
-    // walkFiles will find files with mtime > generatedAt in the test tmpdir
-    // For unit test, we just verify the never-synthesized path returns true
+  it('returns true when filesystem reports modified files', async () => {
+    const file = join(tmpdir(), 'stale-test.txt');
+    writeFileSync(file, 'test');
+
+    // File was just created, so its mtime is "now".
+    // If generatedAt is in the past, it should be stale.
     const meta = makeMeta({ _generatedAt: '2000-01-01T00:00:00Z' });
-    // Any real directory will have files newer than year 2000
-    const result = isStale('.', meta);
+    const result = await isStale('.', meta, mockWatcher([file]));
     expect(result).toBe(true);
   });
 
-  it('returns false when no files modified since _generatedAt', () => {
-    // Future timestamp — nothing can be newer
+  it('returns false when no files modified since _generatedAt', async () => {
+    const file = join(tmpdir(), 'fresh-test.txt');
+    writeFileSync(file, 'test');
+
+    // Future timestamp - nothing can be newer
     const meta = makeMeta({ _generatedAt: '2099-01-01T00:00:00Z' });
-    const result = isStale('.', meta);
+    const result = await isStale('.', meta, mockWatcher([file]));
     expect(result).toBe(false);
   });
 });

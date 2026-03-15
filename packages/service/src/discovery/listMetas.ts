@@ -8,16 +8,13 @@
  * @module discovery/listMetas
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import type { WatcherClient } from '../interfaces/index.js';
 import { isLocked } from '../lock.js';
-import type { MinimalLogger } from '../logger/index.js';
 
 /** Maximum staleness for never-synthesized metas (1 year in seconds). */
 const MAX_STALENESS_SECONDS = 365 * 86_400;
 import { normalizePath } from '../normalizePath.js';
+import { readMetaJson } from '../readMetaJson.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
 import { discoverMetas } from './discoverMetas.js';
 import { buildOwnershipTree } from './ownershipTree.js';
@@ -91,10 +88,9 @@ export interface MetaListResult {
 export async function listMetas(
   config: MetaConfig,
   watcher: WatcherClient,
-  logger?: MinimalLogger,
 ): Promise<MetaListResult> {
-  // Step 1: Discover deduplicated meta paths via watcher scan
-  const metaPaths = await discoverMetas(config, watcher, logger);
+  // Step 1: Discover deduplicated meta paths via watcher walk
+  const metaPaths = await discoverMetas(watcher);
 
   // Step 2: Build ownership tree
   const tree = buildOwnershipTree(metaPaths);
@@ -116,9 +112,7 @@ export async function listMetas(
   for (const node of tree.nodes.values()) {
     let meta: MetaJson;
     try {
-      meta = JSON.parse(
-        readFileSync(join(node.metaPath, 'meta.json'), 'utf8'),
-      ) as MetaJson;
+      meta = readMetaJson(node.metaPath);
     } catch {
       // Skip unreadable metas
       continue;

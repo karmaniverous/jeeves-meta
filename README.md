@@ -4,7 +4,7 @@ Knowledge synthesis engine for the Jeeves platform. Transforms raw data archives
 
 ## Overview
 
-jeeves-meta is an HTTP service that discovers `.meta/` directories via the jeeves-watcher index, builds an ownership tree, and schedules synthesis cycles based on weighted staleness. Each cycle:
+jeeves-meta is an HTTP service that discovers `.meta/` directories via the jeeves-watcher filesystem walk endpoint (`POST /walk`), builds an ownership tree, and schedules synthesis cycles based on weighted staleness. Each cycle:
 
 1. **Architect** — analyzes data shape and crafts a task brief with search strategies
 2. **Builder** — executes the brief, queries the semantic index, and produces a synthesis
@@ -18,8 +18,6 @@ Results are written to `.meta/meta.json` files with full archive history, enabli
 |---------|-------------|
 | [`@karmaniverous/jeeves-meta`](packages/service/README.md) | HTTP service — Fastify API, built-in scheduler, synthesis queue, CLI |
 | [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw/README.md) | OpenClaw plugin — thin HTTP client, interactive tools, TOOLS.md injection |
-
-> **Note:** `packages/lib` contains the legacy library (pre-service). It is being retired and will be removed in a future release.
 
 ## Architecture
 
@@ -45,13 +43,13 @@ Results are written to `.meta/meta.json` files with full archive history, enabli
          ▲                           │
          │                           ▼
    OpenClaw plugin            jeeves-watcher
-   (HTTP client)             (scan / rules)
+   (HTTP client)             (walk / rules)
 ```
 
 - **jeeves-meta service** runs as a standalone HTTP service (NSSM/systemd/launchd)
 - **Built-in scheduler** (croner-based) discovers stale candidates and enqueues them
 - **GatewayExecutor** spawns LLM sessions via the OpenClaw gateway `/tools/invoke` endpoint
-- **jeeves-watcher** provides structured queries (`POST /scan`) and hosts virtual inference rules
+- **jeeves-watcher** provides filesystem enumeration (`POST /walk`) and hosts virtual inference rules
 - **OpenClaw plugin** is a thin HTTP client — all logic lives in the service
 
 ## Quick Start

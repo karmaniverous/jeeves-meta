@@ -37,14 +37,15 @@ function createTestConfig() {
     metaArchiveProperty: { _meta: 'archive' },
     port: 1938,
     schedule: '* * * * *',
+    watcherHealthIntervalMs: 60000,
     logging: { level: 'info' },
   };
 }
 
 function createMockWatcher() {
   return {
-    scan: vi.fn().mockResolvedValue({ points: [], next_page_offset: null }),
     registerRules: vi.fn().mockResolvedValue(undefined),
+    walk: vi.fn().mockResolvedValue([]),
   } as unknown as HttpWatcherClient;
 }
 

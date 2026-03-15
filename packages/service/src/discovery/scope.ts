@@ -5,12 +5,13 @@
  * - Its own .meta/ subtree (outputs, not inputs)
  * - Child meta ownerPath subtrees (except their .meta/meta.json for rollups)
  *
- * Uses filesystem walks instead of watcher scans for performance.
+ * All filesystem enumeration delegated to the watcher's `/walk` endpoint.
  *
  * @module discovery/scope
  */
 
-import { walkFiles } from '../walkFiles.js';
+import type { WatcherClient } from '../interfaces/index.js';
+import { filterModifiedAfter } from '../mtimeFilter.js';
 import type { MetaNode } from './types.js';
 
 /**
@@ -27,7 +28,7 @@ export function getScopePrefix(node: MetaNode): string {
  * - The node's own .meta/ subtree (synthesis outputs are not scope inputs)
  * - Child meta ownerPath subtrees (except child .meta/meta.json for rollups)
  *
- * walkFiles already returns normalized forward-slash paths.
+ * Watcher walk returns normalized forward-slash paths.
  */
 export function filterInScope(node: MetaNode, files: string[]): string[] {
   const prefix = node.ownerPath + '/';
@@ -65,10 +66,13 @@ export interface ScopeFilesResult {
 }
 
 /**
- * Get all files in scope for a meta node via filesystem walk.
+ * Get all files in scope for a meta node via watcher walk.
  */
-export function getScopeFiles(node: MetaNode): ScopeFilesResult {
-  const allFiles = walkFiles(node.ownerPath);
+export async function getScopeFiles(
+  node: MetaNode,
+  watcher: WatcherClient,
+): Promise<ScopeFilesResult> {
+  const allFiles = await watcher.walk([`${node.ownerPath}/**`]);
   return {
     scopeFiles: filterInScope(node, allFiles),
     allFiles,
@@ -79,15 +83,12 @@ export function getScopeFiles(node: MetaNode): ScopeFilesResult {
  * Get files modified since a given timestamp within a meta node's scope.
  *
  * If no generatedAt is provided (first run), returns all scope files.
+ * Reuses scope files from getScopeFiles() and filters locally by mtime.
  */
 export function getDeltaFiles(
-  node: MetaNode,
   generatedAt: string | undefined,
   scopeFiles: string[],
 ): string[] {
   if (!generatedAt) return scopeFiles;
-
-  const modifiedAfter = Math.floor(new Date(generatedAt).getTime() / 1000);
-  const deltaFiles = walkFiles(node.ownerPath, { modifiedAfter });
-  return filterInScope(node, deltaFiles);
+  return filterModifiedAfter(scopeFiles, new Date(generatedAt).getTime());
 }

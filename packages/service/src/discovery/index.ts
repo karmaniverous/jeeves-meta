@@ -4,7 +4,7 @@
  * @module discovery
  */
 
-export { buildMetaFilter, discoverMetas } from './discoverMetas.js';
+export { discoverMetas } from './discoverMetas.js';
 export {
   listMetas,
   type MetaEntry,

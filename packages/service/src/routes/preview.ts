@@ -4,9 +4,6 @@
  * @module routes/preview
  */
 
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-
 import type { FastifyInstance } from 'fastify';
 
 import { readLatestArchive } from '../archive/index.js';
@@ -17,13 +14,13 @@ import {
   listMetas,
 } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
+import { readMetaJson } from '../readMetaJson.js';
 import {
   computeStalenessScore,
   discoverStalestPath,
   hasSteerChanged,
   isArchitectTriggered,
 } from '../scheduling/index.js';
-import type { MetaJson } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
 import type { RouteDeps } from './index.js';
 
@@ -37,7 +34,7 @@ export function registerPreviewRoute(
 
     let result;
     try {
-      result = await listMetas(config, watcher, request.log);
+      result = await listMetas(config, watcher);
     } catch {
       return reply.status(503).send({
         error: 'SERVICE_UNAVAILABLE',
@@ -71,12 +68,10 @@ export function registerPreviewRoute(
       targetNode = findNode(result.tree, stalestPath)!;
     }
 
-    const meta: MetaJson = JSON.parse(
-      readFileSync(join(targetNode.metaPath, 'meta.json'), 'utf8'),
-    ) as MetaJson;
+    const meta = readMetaJson(targetNode.metaPath);
 
     // Scope files
-    const { scopeFiles } = getScopeFiles(targetNode);
+    const { scopeFiles } = await getScopeFiles(targetNode, watcher);
 
     const structureHash = computeStructureHash(scopeFiles);
     const structureChanged = structureHash !== meta._structureHash;
@@ -96,7 +91,7 @@ export function registerPreviewRoute(
     );
 
     // Delta files
-    const deltaFiles = getDeltaFiles(targetNode, meta._generatedAt, scopeFiles);
+    const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
 
     // EMA token estimates
     const estimatedTokens = {
