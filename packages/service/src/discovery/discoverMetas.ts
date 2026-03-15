@@ -1,8 +1,8 @@
 /**
- * Discover .meta/ directories via watcher scan.
+ * Discover .meta/ directories via watcher `/walk` endpoint.
  *
- * Replaces filesystem-based globMetas() with a watcher query
- * that returns indexed .meta/meta.json points, filtered by domain.
+ * Uses filesystem enumeration through the watcher (not Qdrant) to find
+ * all `.meta/meta.json` files and returns deduplicated meta directory paths.
  *
  * @module discovery/discoverMetas
  */

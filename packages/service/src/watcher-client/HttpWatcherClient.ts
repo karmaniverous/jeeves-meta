@@ -1,7 +1,7 @@
 /**
  * HTTP implementation of the WatcherClient interface.
  *
- * Talks to jeeves-watcher's POST /scan and POST /rules endpoints
+ * Talks to jeeves-watcher's POST /walk and POST /rules/register endpoints
  * with retry and exponential backoff.
  *
  * @module watcher-client/HttpWatcherClient

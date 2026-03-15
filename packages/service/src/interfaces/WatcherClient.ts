@@ -1,9 +1,8 @@
 /**
  * Abstraction over the jeeves-watcher HTTP API.
  *
- * The orchestrator uses this for structured queries (POST /scan)
- * and virtual rule registration. Subprocesses use watcher_search
- * directly via tools.
+ * The service uses this for filesystem enumeration (POST /walk)
+ * and virtual rule registration (POST /rules/register).
  *
  * @module interfaces/WatcherClient
  */
