@@ -5,14 +5,13 @@
  * - Its own .meta/ subtree (outputs, not inputs)
  * - Child meta ownerPath subtrees (except their .meta/meta.json for rollups)
  *
- * Uses filesystem walks instead of watcher scans for performance.
+ * All filesystem enumeration delegated to the watcher's `/walk` endpoint.
  *
  * @module discovery/scope
  */
 
-import { statSync } from 'node:fs';
-
 import type { WatcherClient } from '../interfaces/index.js';
+import { filterModifiedAfter } from '../mtimeFilter.js';
 import type { MetaNode } from './types.js';
 
 /**
@@ -29,7 +28,7 @@ export function getScopePrefix(node: MetaNode): string {
  * - The node's own .meta/ subtree (synthesis outputs are not scope inputs)
  * - Child meta ownerPath subtrees (except child .meta/meta.json for rollups)
  *
- * walkFiles already returns normalized forward-slash paths.
+ * Watcher walk returns normalized forward-slash paths.
  */
 export function filterInScope(node: MetaNode, files: string[]): string[] {
   const prefix = node.ownerPath + '/';
@@ -87,21 +86,9 @@ export async function getScopeFiles(
  * Reuses scope files from getScopeFiles() and filters locally by mtime.
  */
 export function getDeltaFiles(
-  node: MetaNode,
   generatedAt: string | undefined,
   scopeFiles: string[],
 ): string[] {
   if (!generatedAt) return scopeFiles;
-
-  const modifiedAfterMs = new Date(generatedAt).getTime();
-
-  return scopeFiles.filter((filePath) => {
-    try {
-      const stat = statSync(filePath);
-      return stat.mtimeMs > modifiedAfterMs;
-    } catch {
-      // If we can't stat the file, exclude it
-      return false;
-    }
-  });
+  return filterModifiedAfter(scopeFiles, new Date(generatedAt).getTime());
 }

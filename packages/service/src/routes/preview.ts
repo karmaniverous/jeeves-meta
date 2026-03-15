@@ -96,7 +96,7 @@ export function registerPreviewRoute(
     );
 
     // Delta files
-    const deltaFiles = getDeltaFiles(targetNode, meta._generatedAt, scopeFiles);
+    const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
 
     // EMA token estimates
     const estimatedTokens = {

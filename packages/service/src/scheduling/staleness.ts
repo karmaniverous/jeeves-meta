@@ -7,9 +7,8 @@
  * @module scheduling/staleness
  */
 
-import { statSync } from 'node:fs';
-
 import type { WatcherClient } from '../interfaces/index.js';
+import { hasModifiedAfter } from '../mtimeFilter.js';
 import type { MetaJson } from '../schema/index.js';
 
 /**
@@ -17,7 +16,7 @@ import type { MetaJson } from '../schema/index.js';
  *
  * Uses watcher `/walk` to enumerate watched files under the scope prefix,
  * then applies a local mtime check (fast) to detect any modifications since
- * `_generatedAt`.
+ * `_generatedAt`. Short-circuits on first match.
  *
  * @param scopePrefix - Path prefix for this meta's scope.
  * @param meta - Current meta.json content.
@@ -31,19 +30,8 @@ export async function isStale(
 ): Promise<boolean> {
   if (!meta._generatedAt) return true; // Never synthesized = stale
 
-  const modifiedAfterMs = new Date(meta._generatedAt).getTime();
   const files = await watcher.walk([`${scopePrefix}/**`]);
-
-  for (const filePath of files) {
-    try {
-      const stat = statSync(filePath);
-      if (stat.mtimeMs > modifiedAfterMs) return true;
-    } catch {
-      // If we can't stat the file, ignore it.
-    }
-  }
-
-  return false;
+  return hasModifiedAfter(files, new Date(meta._generatedAt).getTime());
 }
 
 /** Maximum staleness for never-synthesized metas (1 year in seconds). */

@@ -64,7 +64,7 @@ export async function buildContextPackage(
 ): Promise<MetaContext> {
   // Scope and delta files via watcher walk
   const { scopeFiles } = await getScopeFiles(node, watcher);
-  const deltaFiles = getDeltaFiles(node, meta._generatedAt, scopeFiles);
+  const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
 
   // Child meta outputs
   const childMetas: Record<string, unknown> = {};
