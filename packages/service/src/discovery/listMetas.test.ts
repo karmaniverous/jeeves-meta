@@ -4,11 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type {
-  ScanParams,
-  ScanResponse,
-  WatcherClient,
-} from '../interfaces/index.js';
+import type { WatcherClient } from '../interfaces/index.js';
 import { normalizePath } from '../normalizePath.js';
 import type { MetaConfig } from '../schema/index.js';
 import { listMetas } from './listMetas.js';

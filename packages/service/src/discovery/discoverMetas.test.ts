@@ -11,10 +11,7 @@ import { discoverMetas } from './discoverMetas.js';
 
 function mockWatcher(filePaths: string[]) {
   const watcher: WatcherClient = {
-    // Unused in discoverMetas (kept on interface for now)
-    scan: vi.fn().mockResolvedValue({ files: [], next: undefined }),
     registerRules: vi.fn().mockResolvedValue(undefined),
-    unregisterRules: vi.fn().mockResolvedValue(undefined),
     walk: vi.fn().mockResolvedValue(filePaths),
   };
 

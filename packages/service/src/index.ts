@@ -25,7 +25,6 @@ export { loadServiceConfig, resolveConfigPath } from './configLoader.js';
 
 // ── Discovery ──
 export {
-  buildMetaFilter,
   buildOwnershipTree,
   discoverMetas,
   filterInScope,
@@ -52,9 +51,7 @@ export {
   resolveMetaDir,
 } from './lock.js';
 export { normalizePath } from './normalizePath.js';
-export { paginatedScan } from './paginatedScan.js';
 export { computeStructureHash } from './structureHash.js';
-export { walkFiles } from './walkFiles.js';
 
 // ── Executor ──
 export {
@@ -69,9 +66,6 @@ export type {
   MetaExecutor,
   MetaSpawnOptions,
   MetaSpawnResult,
-  ScanFile,
-  ScanParams,
-  ScanResponse,
   WatcherClient,
 } from './interfaces/index.js';
 
@@ -176,7 +170,7 @@ import { createLogger } from './logger/index.js';
 import { orchestrate } from './orchestrator/index.js';
 import { ProgressReporter } from './progress/index.js';
 import { SynthesisQueue } from './queue/index.js';
-import type { ServiceStats } from './routes/index.js';
+import type { RouteDeps, ServiceStats } from './routes/index.js';
 import { WatcherHealthCheck } from './rules/healthCheck.js';
 import { RuleRegistrar } from './rules/index.js';
 import { Scheduler } from './scheduler/index.js';
@@ -223,7 +217,7 @@ export async function startService(
   // Scheduler (needs watcher for discovery)
   const scheduler = new Scheduler(config, queue, logger, watcher);
 
-  const routeDeps = {
+  const routeDeps: RouteDeps = {
     config,
     logger,
     queue,

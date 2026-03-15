@@ -13,7 +13,7 @@ interface StatusResponse {
   uptime: number;
   status: string;
   dependencies: {
-    watcher: { status: string };
+    watcher: { status: string; rulesRegistered?: boolean };
     gateway: { status: string };
   };
 }
@@ -101,6 +101,14 @@ export async function generateMetaMenu(
   const depLines: string[] = [];
   if (status.dependencies.watcher.status !== 'ok') {
     depLines.push('> ⚠️ **Watcher**: ' + status.dependencies.watcher.status);
+  }
+  if (
+    status.dependencies.watcher.rulesRegistered === false &&
+    status.dependencies.watcher.status === 'ok'
+  ) {
+    depLines.push(
+      '> ⚠️ **Watcher rules not registered**: Meta files may not render properly in search/server.',
+    );
   }
   if (status.dependencies.gateway.status !== 'ok') {
     depLines.push('> ⚠️ **Gateway**: ' + status.dependencies.gateway.status);

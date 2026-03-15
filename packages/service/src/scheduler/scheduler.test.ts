@@ -37,6 +37,7 @@ function createTestConfig() {
     metaArchiveProperty: { _meta: 'archive' },
     port: 1938,
     schedule: '* * * * *',
+    watcherHealthIntervalMs: 60000,
     logging: { level: 'info' },
   };
 }
