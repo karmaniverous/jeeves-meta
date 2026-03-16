@@ -13,7 +13,7 @@ interface StatusResponse {
   uptime: number;
   status: string;
   dependencies: {
-    watcher: { status: string; rulesRegistered?: boolean };
+    watcher: { status: string; rulesRegistered?: boolean; indexing?: boolean };
     gateway: { status: string };
   };
 }
@@ -99,7 +99,14 @@ export async function generateMetaMenu(
 
   // Service status + dependency health
   const depLines: string[] = [];
-  if (status.dependencies.watcher.status !== 'ok') {
+  if (status.dependencies.watcher.status === 'indexing') {
+    depLines.push(
+      '> ⏳ **Watcher indexing**: Initial filesystem scan in progress. Synthesis will resume when complete.',
+    );
+  } else if (
+    status.dependencies.watcher.status !== 'ok' &&
+    status.dependencies.watcher.status !== 'indexing'
+  ) {
     depLines.push('> ⚠️ **Watcher**: ' + status.dependencies.watcher.status);
   }
   if (
