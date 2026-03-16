@@ -7,26 +7,14 @@
 import Fastify, { type FastifyBaseLogger } from 'fastify';
 import type { Logger } from 'pino';
 
-import type { SynthesisQueue } from './queue/index.js';
-import { registerRoutes, type ServiceStats } from './routes/index.js';
-import type { Scheduler } from './scheduler/index.js';
-import type { ServiceConfig } from './schema/config.js';
-import type { HttpWatcherClient } from './watcher-client/index.js';
+import { registerRoutes, type RouteDeps } from './routes/index.js';
 
 /** Options for creating the server. */
 export interface ServerOptions {
   /** Pino logger instance. */
   logger: Logger;
-  /** Synthesis queue instance. */
-  queue: SynthesisQueue;
-  /** Validated service configuration. */
-  config: ServiceConfig;
-  /** Watcher client for data queries. */
-  watcher: HttpWatcherClient;
-  /** Scheduler instance (null during tests). */
-  scheduler: Scheduler | null;
-  /** Mutable runtime stats. */
-  stats: ServiceStats;
+  /** Shared route dependencies (mutable — late-bound properties like registrar are set after creation). */
+  deps: RouteDeps;
 }
 
 /**
@@ -41,14 +29,7 @@ export function createServer(options: ServerOptions) {
     loggerInstance: options.logger as unknown as FastifyBaseLogger,
   });
 
-  registerRoutes(app, {
-    config: options.config,
-    logger: options.logger,
-    queue: options.queue,
-    watcher: options.watcher,
-    scheduler: options.scheduler,
-    stats: options.stats,
-  });
+  registerRoutes(app, options.deps);
 
   return app;
 }
