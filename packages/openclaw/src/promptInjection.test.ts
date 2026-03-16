@@ -88,6 +88,27 @@ describe('generateMetaMenu', () => {
     expect(menu).not.toContain('Watcher rules not registered');
   });
 
+  it('shows indexing message when watcher is indexing', async () => {
+    const client = mockClient({
+      statusOverrides: {
+        dependencies: {
+          watcher: {
+            status: 'indexing',
+            rulesRegistered: true,
+            indexing: true,
+          },
+          gateway: { status: 'ok' },
+        },
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('Watcher indexing');
+    expect(menu).toContain('Initial filesystem scan in progress');
+    // Should NOT show generic watcher warning or rules warning
+    expect(menu).not.toContain('**Watcher**: indexing');
+    expect(menu).not.toContain('Watcher rules not registered');
+  });
+
   it('returns ACTION REQUIRED when service is unreachable', async () => {
     const client = {
       status: vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),

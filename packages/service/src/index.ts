@@ -228,11 +228,7 @@ export async function startService(
 
   const server = createServer({
     logger,
-    config,
-    queue,
-    watcher,
-    scheduler,
-    stats,
+    deps: routeDeps,
   });
 
   // Start HTTP server

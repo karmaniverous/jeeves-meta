@@ -17,6 +17,10 @@ interface DepHealth {
   checkedAt: string | null;
 }
 
+interface WatcherHealth extends DepHealth {
+  indexing?: boolean;
+}
+
 async function checkDependency(url: string, path: string): Promise<DepHealth> {
   const checkedAt = new Date().toISOString();
   try {
@@ -24,6 +28,30 @@ async function checkDependency(url: string, path: string): Promise<DepHealth> {
       signal: AbortSignal.timeout(3000),
     });
     return { url, status: res.ok ? 'ok' : 'error', checkedAt };
+  } catch {
+    return { url, status: 'unreachable', checkedAt };
+  }
+}
+
+/** Check watcher, surfacing initialScan.active as indexing state. */
+async function checkWatcher(url: string): Promise<WatcherHealth> {
+  const checkedAt = new Date().toISOString();
+  try {
+    const res = await fetch(new URL('/status', url), {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return { url, status: 'error', checkedAt };
+
+    const data = (await res.json()) as {
+      initialScan?: { active?: boolean };
+    };
+    const indexing = data.initialScan?.active === true;
+    return {
+      url,
+      status: indexing ? 'indexing' : 'ok',
+      checkedAt,
+      indexing,
+    };
   } catch {
     return { url, status: 'unreachable', checkedAt };
   }
@@ -38,12 +66,14 @@ export function registerStatusRoute(
 
     // On-demand dependency checks
     const [watcherHealth, gatewayHealth] = await Promise.all([
-      checkDependency(config.watcherUrl, '/status'),
+      checkWatcher(config.watcherUrl),
       checkDependency(config.gatewayUrl, '/api/status'),
     ]);
 
     const degraded =
-      watcherHealth.status !== 'ok' || gatewayHealth.status !== 'ok';
+      (watcherHealth.status !== 'ok' && watcherHealth.status !== 'indexing') ||
+      gatewayHealth.status !== 'ok';
+    const indexing = watcherHealth.status === 'indexing';
 
     // Determine status
     let status: string;
@@ -53,6 +83,8 @@ export function registerStatusRoute(
       status = 'synthesizing';
     } else if (degraded) {
       status = 'degraded';
+    } else if (indexing) {
+      status = 'waiting';
     } else {
       status = 'idle';
     }
