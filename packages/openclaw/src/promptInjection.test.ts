@@ -92,7 +92,11 @@ describe('generateMetaMenu', () => {
     const client = mockClient({
       statusOverrides: {
         dependencies: {
-          watcher: { status: 'indexing', rulesRegistered: true, indexing: true },
+          watcher: {
+            status: 'indexing',
+            rulesRegistered: true,
+            indexing: true,
+          },
           gateway: { status: 'ok' },
         },
       },
