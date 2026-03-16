@@ -88,6 +88,14 @@ export class WatcherHealthCheck {
       }
 
       const data = (await res.json()) as WatcherStatusResponse;
+
+      // If rules were never successfully registered (startup failure),
+      // attempt registration now that the watcher is reachable.
+      if (!this.registrar.isRegistered) {
+        this.logger.info('Rules not registered — attempting registration');
+        await this.registrar.register();
+      }
+
       await this.registrar.checkAndReregister(data.uptime);
     } catch (err) {
       this.logger.debug(
