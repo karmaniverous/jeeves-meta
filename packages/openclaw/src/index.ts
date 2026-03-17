@@ -8,6 +8,10 @@
  * @packageDocumentation
  */
 
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import {
   createAsyncContentCache,
   createComponentWriter,
@@ -20,8 +24,18 @@ import { generateMetaMenu } from './promptInjection.js';
 import { MetaServiceClient } from './serviceClient.js';
 import { registerMetaTools } from './tools.js';
 
-/** Plugin version — kept in sync with package.json via release hooks. */
-const PLUGIN_VERSION = '0.3.0';
+/** Plugin version derived from package.json. */
+const PLUGIN_VERSION: string = (() => {
+  try {
+    const dir = dirname(fileURLToPath(import.meta.url));
+    const pkg = JSON.parse(
+      readFileSync(resolve(dir, '..', 'package.json'), 'utf8'),
+    ) as { version?: string };
+    return pkg.version ?? 'unknown';
+  } catch {
+    return 'unknown';
+  }
+})();
 
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
 export default function register(api: PluginApi): void {
