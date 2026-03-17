@@ -115,6 +115,6 @@
     }
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.1.0"
+    "@karmaniverous/jeeves": "^0.1.1"
   }
 }

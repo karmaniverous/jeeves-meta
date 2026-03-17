@@ -9,6 +9,7 @@
  */
 
 import {
+  createAsyncContentCache,
   createComponentWriter,
   init,
   type ServiceStatus,
@@ -39,25 +40,36 @@ export default function register(api: PluginApi): void {
   // Initialize jeeves-core
   init({ workspacePath, configRoot });
 
+  // Async content cache — bridges generateMetaMenu (async HTTP) to
+  // generateToolsContent (sync interface)
+  const getContent = createAsyncContentCache({
+    fetch: async () => generateMetaMenu(client),
+    placeholder:
+      'The jeeves-meta synthesis engine is initializing...\n\n' +
+      '### Tools\n' +
+      '| Tool | Description |\n' +
+      '|------|-------------|\n' +
+      '| `meta_list` | List metas with summary stats and per-meta projection |\n' +
+      '| `meta_detail` | Full detail for a single meta with optional archive history |\n' +
+      '| `meta_trigger` | Manually trigger synthesis for a specific meta or next-stalest |\n' +
+      '| `meta_preview` | Dry-run: show what inputs would be gathered without running LLM |\n' +
+      '\n' +
+      'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
+  });
+
   // Create and start the component writer
   const writer = createComponentWriter({
     name: 'meta',
     version: PLUGIN_VERSION,
     sectionId: 'Meta',
     refreshIntervalSeconds: 73,
-    generateToolsContent: () => {
-      // generateMetaMenu is async but generateToolsContent must be sync.
-      // Cache the last successful result and update asynchronously.
-      void refreshMenuCache(client);
-      return cachedMenu;
-    },
+    generateToolsContent: getContent,
     serviceCommands: {
       async stop() {
         // Meta service lifecycle is managed externally (NSSM).
-        // This is a no-op from the plugin's perspective.
       },
       async uninstall() {
-        // Service uninstall is handled by the service CLI, not the plugin.
+        // Service uninstall is handled by the service CLI.
       },
       async status(): Promise<ServiceStatus> {
         try {
@@ -78,42 +90,10 @@ export default function register(api: PluginApi): void {
     },
     pluginCommands: {
       async uninstall() {
-        // Plugin uninstall is handled by the CLI (npx jeeves-meta-openclaw uninstall).
+        // Plugin uninstall is handled by the CLI.
       },
     },
   });
 
   writer.start();
-}
-
-/** Cached menu content — updated asynchronously. */
-let cachedMenu =
-  'The jeeves-meta synthesis engine is initializing...\n\n' +
-  '### Tools\n' +
-  '| Tool | Description |\n' +
-  '|------|-------------|\n' +
-  '| `meta_list` | List metas with summary stats and per-meta projection |\n' +
-  '| `meta_detail` | Full detail for a single meta with optional archive history |\n' +
-  '| `meta_trigger` | Manually trigger synthesis for a specific meta or next-stalest |\n' +
-  '| `meta_preview` | Dry-run: show what inputs would be gathered without running LLM |\n' +
-  '\n' +
-  'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.';
-
-/** Whether a refresh is currently in flight. */
-let refreshInFlight = false;
-
-/**
- * Refresh the cached menu from the meta service.
- * Deduplicates concurrent calls — only one fetch runs at a time.
- */
-async function refreshMenuCache(client: MetaServiceClient): Promise<void> {
-  if (refreshInFlight) return;
-  refreshInFlight = true;
-  try {
-    cachedMenu = await generateMetaMenu(client);
-  } catch {
-    // Keep the previous cached value on failure.
-  } finally {
-    refreshInFlight = false;
-  }
 }
