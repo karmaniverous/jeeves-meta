@@ -113,5 +113,8 @@
     "npm": {
       "publish": true
     }
+  },
+  "dependencies": {
+    "@karmaniverous/jeeves": "^0.1.0"
   }
 }

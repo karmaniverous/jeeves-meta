@@ -57,6 +57,24 @@ export function getServiceUrl(api: PluginApi): string {
   return DEFAULT_SERVICE_URL;
 }
 
+/**
+ * Resolve the platform config root.
+ *
+ * Resolution order:
+ * 1. Plugin config `configRoot` setting
+ * 2. `JEEVES_CONFIG_ROOT` environment variable
+ * 3. Default: `j:/config`
+ */
+export function getConfigRoot(api: PluginApi): string {
+  const fromPlugin = getPluginConfig(api)?.configRoot;
+  if (typeof fromPlugin === 'string') return fromPlugin;
+
+  const fromEnv = process.env['JEEVES_CONFIG_ROOT'];
+  if (fromEnv) return fromEnv;
+
+  return 'j:/config';
+}
+
 /** Format a successful tool result. */
 export function ok(data: unknown): ToolResult {
   return {
