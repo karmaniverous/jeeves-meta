@@ -21,36 +21,17 @@ Results are written to `.meta/meta.json` files with full archive history, enabli
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────┐
-│                  jeeves-meta service                 │
-│                                                     │
-│  Scheduler ──→ Queue ──→ Orchestrator               │
-│                              │                      │
-│                              ├── Discovery (watcher) │
-│                              ├── Scope computation   │
-│                              ├── Archive management  │
-│                              └── Lock staging        │
-│                                                     │
-│  Fastify HTTP API (port 1938)                       │
-│    /status  /metas  /preview  /synthesize           │
-│    /seed  /unlock  /config/validate                 │
-│                                                     │
-│  RuleRegistrar ──→ watcher (virtual rules)          │
-│  ProgressReporter ──→ gateway (channel messages)    │
-│  GatewayExecutor ──→ gateway (LLM sessions)         │
-└─────────────────────────────────────────────────────┘
-         ▲                           │
-         │                           ▼
-   OpenClaw plugin            jeeves-watcher
-   (HTTP client)             (walk / rules)
-```
+![Service Architecture](diagrams/assets/service-architecture.png)
 
 - **jeeves-meta service** runs as a standalone HTTP service (NSSM/systemd/launchd)
 - **Built-in scheduler** (croner-based) discovers stale candidates and enqueues them
 - **GatewayExecutor** spawns LLM sessions via the OpenClaw gateway `/tools/invoke` endpoint
 - **jeeves-watcher** provides filesystem enumeration (`POST /walk`) and hosts virtual inference rules
 - **OpenClaw plugin** is a thin HTTP client — all logic lives in the service
+
+## Synthesis Data Flow
+
+![Data Flow](diagrams/assets/data-flow.png)
 
 ## Quick Start
 
@@ -101,8 +82,8 @@ Install the plugin package. Four tools become available to the agent:
   "port": 1938,
   "schedule": "*/30 * * * *",
   "reportChannel": "C0AK9D0GL5A",
-  "metaProperty": { "domains": ["meta"] },
-  "metaArchiveProperty": { "domains": ["meta-archive"] },
+  "metaProperty": { "_meta": "current" },
+  "metaArchiveProperty": { "_meta": "archive" },
   "logging": { "level": "info" }
 }
 ```

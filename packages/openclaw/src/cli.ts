@@ -28,6 +28,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Duplicated from helpers.ts — separate rollup bundle cannot share imports.
 const PLUGIN_ID = 'jeeves-meta-openclaw';
 
 /** Resolve the OpenClaw home directory. */

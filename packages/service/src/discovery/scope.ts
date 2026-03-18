@@ -58,7 +58,7 @@ export function filterInScope(node: MetaNode, files: string[]): string[] {
 }
 
 /** Result of getScopeFiles. */
-export interface ScopeFilesResult {
+interface ScopeFilesResult {
   /** Files directly owned by this meta (excluding child subtrees and own .meta/). */
   scopeFiles: string[];
   /** All files under the owner path (including child subtrees). */

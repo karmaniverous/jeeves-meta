@@ -2,11 +2,57 @@
  * Thin HTTP client for the jeeves-meta service.
  *
  * Plugin delegates all operations to the running service via HTTP.
+ * Response types are defined here as the single source of truth —
+ * consumers should not redefine them.
  *
  * @module serviceClient
  */
 
-export interface MetaServiceConfig {
+/** Service status response from GET /status. */
+export interface StatusResponse {
+  /** Service uptime in seconds. */
+  uptime: number;
+  /** Current service status (idle, synthesizing, stopping, degraded). */
+  status: string;
+  /** Service version. */
+  version?: string;
+  /** Dependency health. */
+  dependencies: {
+    watcher: {
+      status: string;
+      rulesRegistered?: boolean;
+      indexing?: boolean;
+    };
+    gateway: { status: string };
+  };
+}
+
+/** Summary block in the metas response. */
+export interface MetasSummary {
+  total: number;
+  stale: number;
+  errors: number;
+  neverSynthesized: number;
+  stalestPath: string | null;
+  lastSynthesizedPath: string | null;
+  lastSynthesizedAt: string | null;
+  tokens: { architect: number; builder: number; critic: number };
+}
+
+/** Per-meta item in the metas response. */
+export interface MetasItem {
+  stalenessSeconds: number | null;
+  [key: string]: unknown;
+}
+
+/** Response from GET /metas. */
+export interface MetasResponse {
+  summary: MetasSummary;
+  metas: MetasItem[];
+}
+
+/** Constructor config. */
+interface MetaServiceConfig {
   /** Base URL of the jeeves-meta service (e.g. http://127.0.0.1:1938). */
   serviceUrl: string;
 }
@@ -19,7 +65,7 @@ export class MetaServiceClient {
   }
 
   /** GET helper — returns parsed JSON. */
-  private async get(path: string): Promise<unknown> {
+  private async get<T = unknown>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path);
     if (!res.ok) {
       const text = await res.text();
@@ -27,11 +73,11 @@ export class MetaServiceClient {
         `META ${path} ${String(res.status)} ${res.statusText}: ${text}`,
       );
     }
-    return res.json();
+    return res.json() as Promise<T>;
   }
 
   /** POST helper — returns parsed JSON. */
-  private async post(path: string, body?: unknown): Promise<unknown> {
+  private async post<T = unknown>(path: string, body?: unknown): Promise<T> {
     const res = await fetch(this.baseUrl + path, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -43,12 +89,12 @@ export class MetaServiceClient {
         `META ${path} ${String(res.status)} ${res.statusText}: ${text}`,
       );
     }
-    return res.json();
+    return res.json() as Promise<T>;
   }
 
   /** GET /status — service health + queue state. */
-  public async status(): Promise<unknown> {
-    return this.get('/status');
+  public async status(): Promise<StatusResponse> {
+    return this.get<StatusResponse>('/status');
   }
 
   /** GET /metas — list all meta entities with summary. */
@@ -59,7 +105,7 @@ export class MetaServiceClient {
     neverSynthesized?: boolean;
     locked?: boolean;
     fields?: string[];
-  }): Promise<unknown> {
+  }): Promise<MetasResponse> {
     const qs = new URLSearchParams();
     if (params?.pathPrefix) qs.set('pathPrefix', params.pathPrefix);
     if (params?.hasError !== undefined)
@@ -71,7 +117,7 @@ export class MetaServiceClient {
     if (params?.locked !== undefined) qs.set('locked', String(params.locked));
     if (params?.fields?.length) qs.set('fields', params.fields.join(','));
     const query = qs.toString();
-    return this.get('/metas' + (query ? '?' + query : ''));
+    return this.get<MetasResponse>('/metas' + (query ? '?' + query : ''));
   }
 
   /** GET /metas/:path — detail for a single meta. */

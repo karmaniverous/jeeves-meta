@@ -12,6 +12,10 @@
       "serviceUrl": {
         "type": "string",
         "description": "URL of the jeeves-meta HTTP service. Defaults to http://127.0.0.1:1938. Falls back to JEEVES_META_URL env var."
+      },
+      "configRoot": {
+        "type": "string",
+        "description": "Absolute path to the platform config root (e.g. j:/config). Used by @karmaniverous/jeeves core for config directory resolution."
       }
     }
   }

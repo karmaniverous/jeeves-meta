@@ -7,30 +7,12 @@
  * @module promptInjection
  */
 
-import type { MetaServiceClient } from './serviceClient.js';
-
-interface StatusResponse {
-  uptime: number;
-  status: string;
-  dependencies: {
-    watcher: { status: string; rulesRegistered?: boolean; indexing?: boolean };
-    gateway: { status: string };
-  };
-}
-
-interface MetasResponse {
-  summary: {
-    total: number;
-    stale: number;
-    errors: number;
-    neverSynthesized: number;
-    stalestPath: string | null;
-    lastSynthesizedPath: string | null;
-    lastSynthesizedAt: string | null;
-    tokens: { architect: number; builder: number; critic: number };
-  };
-  metas: Array<{ stalenessSeconds: number | null }>;
-}
+import type {
+  MetaServiceClient,
+  MetasResponse,
+  StatusResponse,
+} from './serviceClient.js';
+import { renderToolsTable } from './toolMeta.js';
 
 /**
  * Generate the Meta menu Markdown for TOOLS.md.
@@ -45,8 +27,8 @@ export async function generateMetaMenu(
   let metas: MetasResponse;
 
   try {
-    status = (await client.status()) as StatusResponse;
-    metas = (await client.listMetas()) as MetasResponse;
+    status = await client.status();
+    metas = await client.listMetas();
   } catch {
     return [
       '> **ACTION REQUIRED: jeeves-meta service is unreachable.**',
@@ -137,14 +119,6 @@ export async function generateMetaMenu(
     '| Last synthesized | ' + lastSynthDisplay + ' |',
     ...(depLines.length > 0 ? ['', '### Dependencies', ...depLines] : []),
     '',
-    '### Tools',
-    '| Tool | Description |',
-    '|------|-------------|',
-    '| `meta_list` | List metas with summary stats and per-meta projection |',
-    '| `meta_detail` | Full detail for a single meta with optional archive history |',
-    '| `meta_trigger` | Manually trigger synthesis for a specific meta or next-stalest |',
-    '| `meta_preview` | Dry-run: show what inputs would be gathered without running LLM |',
-    '',
-    'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
+    renderToolsTable(),
   ].join('\n');
 }
