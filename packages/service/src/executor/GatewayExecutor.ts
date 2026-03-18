@@ -162,10 +162,14 @@ export class GatewayExecutor implements MetaExecutor {
       '\n\n' +
       'Reply with ONLY the file path you wrote to. No other text.';
 
-    // Step 1: Spawn the sub-agent session
+    // Step 1: Spawn the sub-agent session (unique label per cycle to avoid
+    // "label already in use" errors — gateway labels persist after session completion)
+    const labelBase = options?.label ?? 'jeeves-meta-synthesis';
+    const label = labelBase + '-' + outputId.slice(0, 8);
+
     const spawnResult = await this.invoke('sessions_spawn', {
       task: taskWithOutput,
-      label: options?.label ?? 'jeeves-meta-synthesis',
+      label,
       runTimeoutSeconds: timeoutSeconds,
       ...(options?.thinking ? { thinking: options.thinking } : {}),
       ...(options?.model ? { model: options.model } : {}),
