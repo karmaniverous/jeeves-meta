@@ -17,6 +17,5 @@ export {
   getDeltaFiles,
   getScopeFiles,
   getScopePrefix,
-  type ScopeFilesResult,
 } from './scope.js';
 export type { MetaNode, OwnershipTree } from './types.js';

@@ -13,7 +13,7 @@ import type { SynthesisQueue } from '../queue/index.js';
 import type { RouteDeps } from '../routes/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 
-export interface ShutdownDeps {
+interface ShutdownDeps {
   server: { close: () => Promise<void> };
   scheduler: Scheduler | null;
   queue: SynthesisQueue;
