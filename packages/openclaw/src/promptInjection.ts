@@ -14,55 +14,6 @@ import type {
 } from './serviceClient.js';
 import { renderToolsTable } from './toolMeta.js';
 
-/** Fetch status and metas, returning null on failure. */
-async function fetchServiceData(
-  client: MetaServiceClient,
-): Promise<{ status: StatusResponse; metas: MetasResponse } | null> {
-  try {
-    const [status, metas] = await Promise.all([
-      client.status(),
-      client.listMetas(),
-    ]);
-    return { status, metas };
-  } catch {
-    return null;
-  }
-}
-
-/** Format a staleness value as a human-readable age string. */
-function formatAge(seconds: number): string {
-  if (!isFinite(seconds)) return 'never synthesized';
-  if (seconds < 3600) return Math.round(seconds / 60).toString() + 'm';
-  if (seconds < 86400) return Math.round(seconds / 3600).toString() + 'h';
-  return Math.round(seconds / 86400).toString() + 'd';
-}
-
-/** Build dependency warning lines from service status. */
-function buildDependencyLines(status: StatusResponse): string[] {
-  const lines: string[] = [];
-  const { watcher, gateway } = status.dependencies;
-
-  if (watcher.status === 'indexing') {
-    lines.push(
-      '> ⏳ **Watcher indexing**: Initial filesystem scan in progress. Synthesis will resume when complete.',
-    );
-  } else if (watcher.status !== 'ok') {
-    lines.push('> ⚠️ **Watcher**: ' + watcher.status);
-  }
-
-  if (watcher.rulesRegistered === false && watcher.status === 'ok') {
-    lines.push(
-      '> ⚠️ **Watcher rules not registered**: Meta files may not render properly in search/server.',
-    );
-  }
-
-  if (gateway.status !== 'ok') {
-    lines.push('> ⚠️ **Gateway**: ' + gateway.status);
-  }
-
-  return lines;
-}
-
 /**
  * Generate the Meta menu Markdown for TOOLS.md.
  *
@@ -72,9 +23,13 @@ function buildDependencyLines(status: StatusResponse): string[] {
 export async function generateMetaMenu(
   client: MetaServiceClient,
 ): Promise<string> {
-  const data = await fetchServiceData(client);
+  let status: StatusResponse;
+  let metas: MetasResponse;
 
-  if (!data) {
+  try {
+    status = await client.status();
+    metas = await client.listMetas();
+  } catch {
     return [
       '> **ACTION REQUIRED: jeeves-meta service is unreachable.**',
       '> The service API is down or not configured.',
@@ -88,8 +43,6 @@ export async function generateMetaMenu(
     ].join('\n');
   }
 
-  const { status, metas } = data;
-
   if (metas.summary.total === 0) {
     return [
       '> **ACTION REQUIRED: No synthesis entities found.**',
@@ -102,7 +55,14 @@ export async function generateMetaMenu(
 
   const { summary } = metas;
 
-  // Find stalest age across all metas
+  const formatAge = (seconds: number): string => {
+    if (!isFinite(seconds)) return 'never synthesized';
+    if (seconds < 3600) return Math.round(seconds / 60).toString() + 'm';
+    if (seconds < 86400) return Math.round(seconds / 3600).toString() + 'h';
+    return Math.round(seconds / 86400).toString() + 'd';
+  };
+
+  // Find stalest age
   let stalestAge = 0;
   for (const item of metas.metas) {
     const s = item.stalenessSeconds !== null ? item.stalenessSeconds : Infinity;
@@ -119,7 +79,29 @@ export async function generateMetaMenu(
       ')'
     : 'n/a';
 
-  const depLines = buildDependencyLines(status);
+  // Service status + dependency health
+  const depLines: string[] = [];
+  if (status.dependencies.watcher.status === 'indexing') {
+    depLines.push(
+      '> ⏳ **Watcher indexing**: Initial filesystem scan in progress. Synthesis will resume when complete.',
+    );
+  } else if (
+    status.dependencies.watcher.status !== 'ok' &&
+    status.dependencies.watcher.status !== 'indexing'
+  ) {
+    depLines.push('> ⚠️ **Watcher**: ' + status.dependencies.watcher.status);
+  }
+  if (
+    status.dependencies.watcher.rulesRegistered === false &&
+    status.dependencies.watcher.status === 'ok'
+  ) {
+    depLines.push(
+      '> ⚠️ **Watcher rules not registered**: Meta files may not render properly in search/server.',
+    );
+  }
+  if (status.dependencies.gateway.status !== 'ok') {
+    depLines.push('> ⚠️ **Gateway**: ' + status.dependencies.gateway.status);
+  }
 
   return [
     'The jeeves-meta synthesis engine manages ' +

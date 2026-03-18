@@ -2,8 +2,7 @@
  * OpenClaw plugin for jeeves-meta.
  *
  * Thin HTTP client — all operations delegate to the jeeves-meta service.
- * The plugin registers tools and uses `@karmaniverous/jeeves` core to
- * manage TOOLS.md section writing and platform content maintenance.
+ * Uses `@karmaniverous/jeeves` core for TOOLS.md and platform content.
  *
  * @packageDocumentation
  */
@@ -16,12 +15,15 @@ import {
   createAsyncContentCache,
   createComponentWriter,
   init,
-  type ServiceStatus,
 } from '@karmaniverous/jeeves';
 
 import { getConfigRoot, getServiceUrl, type PluginApi } from './helpers.js';
 import { generateMetaMenu } from './promptInjection.js';
 import { MetaServiceClient } from './serviceClient.js';
+import {
+  createPluginCommands,
+  createServiceCommands,
+} from './serviceCommands.js';
 import { renderToolsTable } from './toolMeta.js';
 import { registerMetaTools } from './tools.js';
 
@@ -39,41 +41,13 @@ const PLUGIN_VERSION: string = (() => {
 })();
 
 /**
- * Resolve the workspace path from the plugin API.
- * Falls back to CWD if `api.resolvePath` is not available.
+ * Resolve the workspace path from the OpenClaw plugin API.
+ * Falls back to CWD if `api.resolvePath` is unavailable.
  */
 function resolveWorkspacePath(api: PluginApi): string {
   const resolvePath = (api as unknown as Record<string, unknown>)
     .resolvePath as ((input: string) => string) | undefined;
   return typeof resolvePath === 'function' ? resolvePath('.') : process.cwd();
-}
-
-/** Build ServiceCommands backed by the meta service HTTP client. */
-function buildServiceCommands(client: MetaServiceClient): {
-  stop: () => Promise<void>;
-  uninstall: () => Promise<void>;
-  status: () => Promise<ServiceStatus>;
-} {
-  return {
-    async stop() {
-      // Meta service lifecycle is managed externally (NSSM).
-    },
-    async uninstall() {
-      // Service uninstall is handled by the service CLI.
-    },
-    async status(): Promise<ServiceStatus> {
-      try {
-        const res = await client.status();
-        return {
-          running: res.status !== 'stopped',
-          version: res.version,
-          uptimeSeconds: res.uptime,
-        };
-      } catch {
-        return { running: false };
-      }
-    },
-  };
 }
 
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
@@ -87,23 +61,21 @@ export default function register(api: PluginApi): void {
     configRoot: getConfigRoot(api),
   });
 
+  const getContent = createAsyncContentCache({
+    fetch: async () => generateMetaMenu(client),
+    placeholder:
+      'The jeeves-meta synthesis engine is initializing...\n\n' +
+      renderToolsTable(),
+  });
+
   const writer = createComponentWriter({
     name: 'meta',
     version: PLUGIN_VERSION,
     sectionId: 'Meta',
     refreshIntervalSeconds: 73,
-    generateToolsContent: createAsyncContentCache({
-      fetch: async () => generateMetaMenu(client),
-      placeholder:
-        'The jeeves-meta synthesis engine is initializing...\n\n' +
-        renderToolsTable(),
-    }),
-    serviceCommands: buildServiceCommands(client),
-    pluginCommands: {
-      async uninstall() {
-        // Plugin uninstall is handled by the CLI.
-      },
-    },
+    generateToolsContent: getContent,
+    serviceCommands: createServiceCommands(client),
+    pluginCommands: createPluginCommands(),
   });
 
   writer.start();

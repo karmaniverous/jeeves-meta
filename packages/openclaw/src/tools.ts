@@ -2,6 +2,7 @@
  * Meta tool registrations for OpenClaw.
  *
  * All tools delegate to the jeeves-meta HTTP service.
+ * Tool names and descriptions are sourced from {@link META_TOOLS}.
  *
  * @module tools
  */
@@ -10,8 +11,8 @@ import { fail, ok, type PluginApi, type ToolResult } from './helpers.js';
 import type { MetaServiceClient } from './serviceClient.js';
 import { META_TOOLS } from './toolMeta.js';
 
-/** Look up a tool description by name. */
-function descriptionOf(name: string): string {
+/** Look up a tool's description by name. */
+function desc(name: string): string {
   return META_TOOLS.find((t) => t.name === name)?.description ?? name;
 }
 
@@ -23,7 +24,7 @@ export function registerMetaTools(
   // ─── meta_list ──────────────────────────────────────────────
   api.registerTool({
     name: 'meta_list',
-    description: descriptionOf('meta_list'),
+    description: desc('meta_list'),
     parameters: {
       type: 'object',
       properties: {
@@ -74,7 +75,7 @@ export function registerMetaTools(
   // ─── meta_detail ────────────────────────────────────────────
   api.registerTool({
     name: 'meta_detail',
-    description: descriptionOf('meta_detail'),
+    description: desc('meta_detail'),
     parameters: {
       type: 'object',
       properties: {
@@ -116,7 +117,7 @@ export function registerMetaTools(
   // ─── meta_preview ────────────────────────────────────────────
   api.registerTool({
     name: 'meta_preview',
-    description: descriptionOf('meta_preview'),
+    description: desc('meta_preview'),
     parameters: {
       type: 'object',
       properties: {
@@ -143,7 +144,7 @@ export function registerMetaTools(
   // ─── meta_trigger ────────────────────────────────────────────
   api.registerTool({
     name: 'meta_trigger',
-    description: descriptionOf('meta_trigger'),
+    description: desc('meta_trigger'),
     parameters: {
       type: 'object',
       properties: {

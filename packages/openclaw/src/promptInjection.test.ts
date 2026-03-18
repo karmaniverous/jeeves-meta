@@ -7,13 +7,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { generateMetaMenu } from './promptInjection.js';
-import type { MetaServiceClient } from './serviceClient.js';
+import type {
+  MetaServiceClient,
+  MetasResponse,
+  StatusResponse,
+} from './serviceClient.js';
 
 function mockClient(overrides?: {
-  statusOverrides?: Record<string, unknown>;
-  metasOverrides?: Record<string, unknown>;
+  statusOverrides?: Partial<StatusResponse>;
+  metasOverrides?: Partial<MetasResponse>;
 }): MetaServiceClient {
-  const defaultStatus = {
+  const defaultStatus: StatusResponse = {
     uptime: 3600,
     status: 'idle',
     dependencies: {
@@ -22,7 +26,7 @@ function mockClient(overrides?: {
     },
   };
 
-  const defaultMetas = {
+  const defaultMetas: MetasResponse = {
     summary: {
       total: 10,
       stale: 5,
@@ -84,7 +88,6 @@ describe('generateMetaMenu', () => {
     });
     const menu = await generateMetaMenu(client);
     expect(menu).toContain('**Watcher**: unreachable');
-    // Should NOT also show rules warning when watcher is down
     expect(menu).not.toContain('Watcher rules not registered');
   });
 
@@ -104,7 +107,6 @@ describe('generateMetaMenu', () => {
     const menu = await generateMetaMenu(client);
     expect(menu).toContain('Watcher indexing');
     expect(menu).toContain('Initial filesystem scan in progress');
-    // Should NOT show generic watcher warning or rules warning
     expect(menu).not.toContain('**Watcher**: indexing');
     expect(menu).not.toContain('Watcher rules not registered');
   });

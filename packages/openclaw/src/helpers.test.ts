@@ -6,7 +6,12 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getConfigRoot, getServiceUrl, type PluginApi } from './helpers.js';
+import {
+  getConfigRoot,
+  getServiceUrl,
+  type PluginApi,
+  resolvePluginSetting,
+} from './helpers.js';
 
 function makeApi(config?: Record<string, unknown>): PluginApi {
   return {
@@ -20,6 +25,49 @@ function makeApi(config?: Record<string, unknown>): PluginApi {
     registerTool: () => {},
   } as unknown as PluginApi;
 }
+
+describe('resolvePluginSetting', () => {
+  const originalEnv = process.env['TEST_RESOLVE_VAR'];
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env['TEST_RESOLVE_VAR'];
+    } else {
+      process.env['TEST_RESOLVE_VAR'] = originalEnv;
+    }
+  });
+
+  it('returns plugin config value first', () => {
+    const api = makeApi({ myKey: 'from-plugin' });
+    expect(
+      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+    ).toBe('from-plugin');
+  });
+
+  it('falls back to env var when plugin config is absent', () => {
+    const api = makeApi({});
+    process.env['TEST_RESOLVE_VAR'] = 'from-env';
+    expect(
+      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+    ).toBe('from-env');
+  });
+
+  it('falls back to default when both are absent', () => {
+    const api = makeApi({});
+    delete process.env['TEST_RESOLVE_VAR'];
+    expect(
+      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+    ).toBe('default');
+  });
+
+  it('prefers plugin config over env var', () => {
+    const api = makeApi({ myKey: 'from-plugin' });
+    process.env['TEST_RESOLVE_VAR'] = 'from-env';
+    expect(
+      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+    ).toBe('from-plugin');
+  });
+});
 
 describe('getConfigRoot', () => {
   const originalEnv = process.env['JEEVES_CONFIG_ROOT'];
@@ -37,22 +85,10 @@ describe('getConfigRoot', () => {
     expect(getConfigRoot(api)).toBe('/custom/config');
   });
 
-  it('falls back to JEEVES_CONFIG_ROOT env var', () => {
-    const api = makeApi({});
-    process.env['JEEVES_CONFIG_ROOT'] = '/env/config';
-    expect(getConfigRoot(api)).toBe('/env/config');
-  });
-
   it('defaults to j:/config', () => {
     const api = makeApi({});
     delete process.env['JEEVES_CONFIG_ROOT'];
     expect(getConfigRoot(api)).toBe('j:/config');
-  });
-
-  it('prefers plugin config over env var', () => {
-    const api = makeApi({ configRoot: '/plugin/config' });
-    process.env['JEEVES_CONFIG_ROOT'] = '/env/config';
-    expect(getConfigRoot(api)).toBe('/plugin/config');
   });
 });
 
@@ -70,12 +106,6 @@ describe('getServiceUrl', () => {
   it('returns serviceUrl from plugin config', () => {
     const api = makeApi({ serviceUrl: 'http://custom:9999' });
     expect(getServiceUrl(api)).toBe('http://custom:9999');
-  });
-
-  it('falls back to JEEVES_META_URL env var', () => {
-    const api = makeApi({});
-    process.env['JEEVES_META_URL'] = 'http://env:8888';
-    expect(getServiceUrl(api)).toBe('http://env:8888');
   });
 
   it('defaults to http://127.0.0.1:1938', () => {
