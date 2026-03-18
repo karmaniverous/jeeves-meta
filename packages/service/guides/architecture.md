@@ -14,31 +14,13 @@
 | Config hot-reload | `fs.watchFile` monitors config for schedule/reportChannel/logging changes |
 | Shutdown handlers | SIGTERM/SIGINT → stop scheduler → release lock → close server |
 
+## Service Architecture
+
+![Service Architecture](../../diagrams/assets/service-architecture.png)
+
 ## Data Flow
 
-```
-Config (JSON) → loadServiceConfig() → startService()
-                                          │
-                     ┌────────────────────┤
-                     ▼                    ▼
-               Scheduler            Fastify server
-               (cron tick)          (HTTP requests)
-                     │                    │
-                     ▼                    ▼
-               Queue.enqueue()     Queue.enqueue(priority)
-                     │
-                     ▼
-               processQueue() → orchestrate()
-                                     │
-                    ┌────────────────┤
-                    ▼                ▼
-              Discovery        GatewayExecutor
-              (watcher walk)   (architect/builder/critic)
-                    │                │
-                    ▼                ▼
-              Lock staging     ProgressReporter
-              meta.json write  (channel events)
-```
+![Data Flow](../../diagrams/assets/data-flow.png)
 
 ## Virtual Rules
 
@@ -58,4 +40,3 @@ Three inference rules are registered with jeeves-watcher:
 | jeeves-watcher | 1936 |
 | jeeves-runner | 1937 |
 | **jeeves-meta** | **1938** |
-

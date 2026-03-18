@@ -1,0 +1,48 @@
+@startuml plugin-lifecycle
+
+skinparam backgroundColor #FFFFFF
+skinparam sequenceMessageAlign center
+skinparam defaultFontSize 12
+
+title jeeves-meta-openclaw — Plugin Lifecycle
+
+participant "OpenClaw Gateway" as GW
+participant "Plugin\nregister()" as Plugin
+participant "@karmaniverous/jeeves\nComponentWriter" as Core
+participant "jeeves-meta\nservice" as Service
+
+== Startup ==
+
+GW -> Plugin: register(api)
+activate Plugin
+
+Plugin -> Plugin: init({ workspacePath, configRoot })
+Plugin -> Plugin: registerMetaTools(api, client)
+note right: meta_list\nmeta_detail\nmeta_trigger\nmeta_preview
+
+Plugin -> Core: createComponentWriter(component)
+Plugin -> Core: writer.start()
+deactivate Plugin
+
+== Periodic Cycle (every 73s) ==
+
+Core -> Service: GET /status
+Service --> Core: StatusResponse
+
+Core -> Service: GET /metas
+Service --> Core: MetasResponse
+
+Core -> Core: generateMetaMenu()\n→ TOOLS.md section
+
+Core -> Core: updateManagedSection()\n→ write TOOLS.md
+
+Core -> Core: refreshPlatformContent()\n→ SOUL.md / AGENTS.md
+
+== Tool Invocation ==
+
+GW -> Plugin: meta_trigger({ path })
+Plugin -> Service: POST /synthesize
+Service --> Plugin: { status: "accepted" }
+Plugin --> GW: ToolResult
+
+@enduml

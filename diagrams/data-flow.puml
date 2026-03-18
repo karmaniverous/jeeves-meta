@@ -1,0 +1,56 @@
+@startuml data-flow
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontSize 12
+skinparam activityBorderColor #333
+skinparam activityBackgroundColor #LightBlue
+
+title jeeves-meta — Synthesis Data Flow
+
+start
+
+:Config (JSON)\nloadServiceConfig();
+note right: @file: resolution\n${VAR} substitution
+
+fork
+  :Scheduler\n(cron tick);
+fork again
+  :Fastify server\n(HTTP request);
+end fork
+
+:Queue.enqueue();
+note right: Deduplicated\nPriority for HTTP triggers
+
+:processQueue()\norchestrate();
+
+:Discovery\nwatcher POST /walk;
+note right: No Qdrant dependency\nFilesystem-based
+
+:Scope computation\n+ mtime delta;
+
+if (Architect triggered?) then (yes)
+  :Architect\n(GatewayExecutor);
+  note right: Structure changed\nSteer changed\nPeriodic refresh
+else (no)
+  :Reuse cached\n_builder;
+endif
+
+:Builder\n(GatewayExecutor);
+note right: Reads files\nSearches Qdrant\nProduces _content
+
+:Critic\n(GatewayExecutor);
+note right: Spot-checks claims\nProduces _feedback
+
+:Lock staging\n.meta/.lock;
+
+:Commit\nmeta.json write;
+
+:Archive snapshot\n+ prune;
+
+:Release lock;
+
+:ProgressReporter\n→ gateway channel;
+
+stop
+
+@enduml

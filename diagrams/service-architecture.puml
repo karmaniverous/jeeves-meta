@@ -1,0 +1,67 @@
+@startuml service-architecture
+
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontSize 12
+skinparam componentBorderColor #333
+skinparam packageBorderColor #666
+skinparam arrowColor #555
+
+title jeeves-meta — Service Architecture
+
+package "jeeves-meta service (port 1938)" as service {
+  component [Scheduler\n(croner)] as sched #LightBlue
+  component [SynthesisQueue\n(single-threaded)] as queue #LightBlue
+  component [Orchestrator] as orch #LightGreen
+  component [GatewayExecutor] as exec #Plum
+  component [ProgressReporter] as progress #Plum
+  component [RuleRegistrar] as rules #Plum
+  component [Config\n(hot-reload)] as config #LightYellow
+  component [Fastify HTTP API] as api #LightCoral
+}
+
+package "External Services" {
+  component [OpenClaw\nGateway] as gateway #FFDAB9
+  component [jeeves-watcher] as watcher #FFDAB9
+}
+
+package "Consumers" {
+  component [OpenClaw Plugin\n(HTTP client)] as plugin #E0E0E0
+  component [CLI] as cli #E0E0E0
+}
+
+database "Filesystem" as fs {
+  file ".meta/\nmeta.json" as meta
+}
+
+sched --> queue : enqueue\n(stalest)
+api --> queue : enqueue\n(priority)
+queue --> orch : processQueue()
+
+orch --> exec : spawn\n(architect/builder/critic)
+orch --> meta : lock → write → archive
+orch --> progress : synthesis events
+
+exec --> gateway : /tools/invoke\n(sessions_spawn)
+progress --> gateway : /tools/invoke\n(message)
+rules --> watcher : POST /rules/register
+
+orch ..> watcher : POST /walk\n(discovery + scope)
+
+config --> sched : schedule\n(hot-reload)
+config --> progress : reportChannel\n(hot-reload)
+
+plugin --> api : HTTP
+cli --> api : HTTP
+
+legend right
+  |= Color |= Layer |
+  | <#LightBlue> | Scheduling |
+  | <#LightGreen> | Core orchestration |
+  | <#Plum> | External integrations |
+  | <#LightCoral> | HTTP API |
+  | <#LightYellow> | Configuration |
+  | <#E0E0E0> | Consumers |
+  | <#FFDAB9> | External services |
+endlegend
+
+@enduml

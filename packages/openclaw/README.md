@@ -1,14 +1,18 @@
 # @karmaniverous/jeeves-meta-openclaw
 
-OpenClaw plugin for [jeeves-meta](../service/). A thin HTTP client that registers interactive tools and maintains dynamic TOOLS.md content.
+OpenClaw plugin for [jeeves-meta](../service/). A thin HTTP client that registers interactive tools and uses [`@karmaniverous/jeeves`](https://github.com/karmaniverous/jeeves) core for managed TOOLS.md content writing and platform maintenance.
 
 ## Features
 
 - **Four interactive tools** — `meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`
-- **MetaServiceClient** — HTTP client delegating all operations to the running service
-- **TOOLS.md injection** — periodic refresh of entity stats and tool listing in the agent's system prompt
+- **MetaServiceClient** — typed HTTP client delegating all operations to the running service
+- **TOOLS.md injection** — periodic refresh of entity stats via `ComponentWriter` from `@karmaniverous/jeeves` (73-second prime interval)
 - **Dependency health** — shows warnings when watcher/gateway are degraded
 - **Consumer skill** — `SKILL.md` for agent integration
+
+## Plugin Lifecycle
+
+![Plugin Lifecycle](diagrams/assets/plugin-lifecycle.png)
 
 ## Install
 
@@ -24,10 +28,12 @@ npx @karmaniverous/jeeves-meta-openclaw install
 
 ## Configuration
 
-The plugin resolves the service URL in order:
-1. Plugin config `serviceUrl` in `openclaw.json`
-2. `JEEVES_META_URL` environment variable
-3. Default: `http://127.0.0.1:1938`
+The plugin resolves settings via a three-step fallback chain: plugin config → environment variable → default.
+
+| Setting | Plugin Config Key | Env Var | Default |
+|---------|-------------------|---------|---------|
+| Service URL | `serviceUrl` | `JEEVES_META_URL` | `http://127.0.0.1:1938` |
+| Config Root | `configRoot` | `JEEVES_CONFIG_ROOT` | `j:/config` |
 
 ```json
 {
@@ -36,13 +42,16 @@ The plugin resolves the service URL in order:
       "jeeves-meta-openclaw": {
         "enabled": true,
         "config": {
-          "serviceUrl": "http://127.0.0.1:1938"
+          "serviceUrl": "http://127.0.0.1:1938",
+          "configRoot": "j:/config"
         }
       }
     }
   }
 }
 ```
+
+The `configRoot` setting tells `@karmaniverous/jeeves` core where to find the platform config directory. Core derives `{configRoot}/jeeves-meta/` for component-specific configuration.
 
 ## Documentation
 
@@ -54,4 +63,3 @@ The plugin resolves the service URL in order:
 ## License
 
 BSD-3-Clause
-

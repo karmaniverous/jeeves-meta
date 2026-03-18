@@ -1,26 +1,27 @@
 # TOOLS.md Injection
 
-The plugin periodically writes a `## Meta` section into the workspace `TOOLS.md` file. The OpenClaw gateway reads this file fresh on each new session, making synthesis stats available in the agent's system prompt.
+The plugin uses `ComponentWriter` from `@karmaniverous/jeeves` to periodically write a `## Meta` section into the workspace `TOOLS.md` file. The OpenClaw gateway reads this file fresh on each new session, making synthesis stats available in the agent's system prompt.
 
 ## Content
 
 The injected section includes:
 - Entity summary table (total, stale, errors, never synthesized, stalest, last synthesized)
-- Dependency health warnings (watcher/gateway status)
-- Token usage table (cumulative architect/builder/critic)
+- Dependency health warnings (watcher/gateway status, rules registration state)
 - Tool listing table
 
 ## Refresh Cycle
 
-- **Initial delay:** 5 seconds after gateway startup
-- **Refresh interval:** every 60 seconds
-- **Deduplication:** only writes when content changes
+- **Refresh interval:** every 73 seconds (prime number — avoids beat frequencies with other component writers)
+- **Async content cache:** `createAsyncContentCache()` bridges the async HTTP fetch to the sync `generateToolsContent()` interface. First cycle returns a placeholder; subsequent cycles return the last successfully fetched data.
 
-## Section Ordering
+## Section Management
 
-The writer maintains ordering: `## Watcher` → `## Server` → `## Meta`. If the section doesn't exist, it's inserted in the correct position.
+All section management is handled by `@karmaniverous/jeeves` core:
+- **Managed markers** — version-stamped begin/end markers for each section
+- **Section ordering** — Platform → Watcher → Server → Runner → Meta
+- **Platform content** — SOUL.md and AGENTS.md platform sections are maintained alongside TOOLS.md
+- **Deduplication** — only writes when content or version stamps change
 
 ## Error Handling
 
-If the service is unreachable, the section displays troubleshooting guidance instead of entity stats.
-
+If the meta service is unreachable, the section displays an `ACTION REQUIRED` block with troubleshooting guidance instead of entity stats. If the service is reachable but no `.meta/` entities are discovered, a guidance block directs to the skill's Bootstrapping section.
