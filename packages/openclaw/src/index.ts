@@ -67,6 +67,8 @@ export default function register(api: PluginApi): void {
     generateToolsContent: getContent,
     serviceCommands: createServiceCommands(client),
     pluginCommands: createPluginCommands(),
+    servicePackage: '@karmaniverous/jeeves-meta',
+    pluginPackage: '@karmaniverous/jeeves-meta-openclaw',
   });
 
   writer.start();
