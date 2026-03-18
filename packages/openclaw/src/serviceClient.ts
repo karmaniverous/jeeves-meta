@@ -52,7 +52,7 @@ export interface MetasResponse {
 }
 
 /** Constructor config. */
-export interface MetaServiceConfig {
+interface MetaServiceConfig {
   /** Base URL of the jeeves-meta service (e.g. http://127.0.0.1:1938). */
   serviceUrl: string;
 }

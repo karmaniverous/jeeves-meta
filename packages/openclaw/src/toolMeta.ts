@@ -6,7 +6,7 @@
  */
 
 /** Metadata for a single meta_* tool. */
-export interface ToolMeta {
+interface ToolMeta {
   /** Tool name as registered with OpenClaw. */
   name: string;
   /** Human-readable description. */

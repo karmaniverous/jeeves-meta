@@ -31,8 +31,8 @@ export interface ToolResult {
   isError?: boolean;
 }
 
-/** Plugin identifier — shared across plugin and CLI entry points. */
-export const PLUGIN_ID = 'jeeves-meta-openclaw';
+/** Plugin identifier. */
+const PLUGIN_ID = 'jeeves-meta-openclaw';
 
 /** Get plugin config object from the OpenClaw API. */
 function getPluginConfig(api: PluginApi): Record<string, unknown> | undefined {
