@@ -8,6 +8,12 @@
 
 import { fail, ok, type PluginApi, type ToolResult } from './helpers.js';
 import type { MetaServiceClient } from './serviceClient.js';
+import { META_TOOLS } from './toolMeta.js';
+
+/** Look up a tool description by name. */
+function descriptionOf(name: string): string {
+  return META_TOOLS.find((t) => t.name === name)?.description ?? name;
+}
 
 /** Register all meta_* tools. */
 export function registerMetaTools(
@@ -17,8 +23,7 @@ export function registerMetaTools(
   // ─── meta_list ──────────────────────────────────────────────
   api.registerTool({
     name: 'meta_list',
-    description:
-      'List metas with summary stats and per-meta projection. Replaces meta_status + meta_entities.',
+    description: descriptionOf('meta_list'),
     parameters: {
       type: 'object',
       properties: {
@@ -69,8 +74,7 @@ export function registerMetaTools(
   // ─── meta_detail ────────────────────────────────────────────
   api.registerTool({
     name: 'meta_detail',
-    description:
-      'Full detail for a single meta, with optional archive history.',
+    description: descriptionOf('meta_detail'),
     parameters: {
       type: 'object',
       properties: {
@@ -112,8 +116,7 @@ export function registerMetaTools(
   // ─── meta_preview ────────────────────────────────────────────
   api.registerTool({
     name: 'meta_preview',
-    description:
-      'Dry-run: show what inputs would be gathered for the next synthesis cycle without running LLM.',
+    description: descriptionOf('meta_preview'),
     parameters: {
       type: 'object',
       properties: {
@@ -140,8 +143,7 @@ export function registerMetaTools(
   // ─── meta_trigger ────────────────────────────────────────────
   api.registerTool({
     name: 'meta_trigger',
-    description:
-      'Manually trigger synthesis for a specific meta or the next-stalest candidate. Runs the full 3-step cycle (architect, builder, critic).',
+    description: descriptionOf('meta_trigger'),
     parameters: {
       type: 'object',
       properties: {

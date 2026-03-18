@@ -22,6 +22,7 @@ import {
 import { getConfigRoot, getServiceUrl, type PluginApi } from './helpers.js';
 import { generateMetaMenu } from './promptInjection.js';
 import { MetaServiceClient } from './serviceClient.js';
+import { renderToolsTable } from './toolMeta.js';
 import { registerMetaTools } from './tools.js';
 
 /** Plugin version derived from package.json. */
@@ -37,71 +38,67 @@ const PLUGIN_VERSION: string = (() => {
   }
 })();
 
+/**
+ * Resolve the workspace path from the plugin API.
+ * Falls back to CWD if `api.resolvePath` is not available.
+ */
+function resolveWorkspacePath(api: PluginApi): string {
+  const resolvePath = (api as unknown as Record<string, unknown>)
+    .resolvePath as ((input: string) => string) | undefined;
+  return typeof resolvePath === 'function' ? resolvePath('.') : process.cwd();
+}
+
+/** Build ServiceCommands backed by the meta service HTTP client. */
+function buildServiceCommands(client: MetaServiceClient): {
+  stop: () => Promise<void>;
+  uninstall: () => Promise<void>;
+  status: () => Promise<ServiceStatus>;
+} {
+  return {
+    async stop() {
+      // Meta service lifecycle is managed externally (NSSM).
+    },
+    async uninstall() {
+      // Service uninstall is handled by the service CLI.
+    },
+    async status(): Promise<ServiceStatus> {
+      try {
+        const res = await client.status();
+        return {
+          running: res.status !== 'stopped',
+          version: res.version,
+          uptimeSeconds: res.uptime,
+        };
+      } catch {
+        return { running: false };
+      }
+    },
+  };
+}
+
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
 export default function register(api: PluginApi): void {
-  const serviceUrl = getServiceUrl(api);
-  const client = new MetaServiceClient({ serviceUrl });
-  const configRoot = getConfigRoot(api);
+  const client = new MetaServiceClient({ serviceUrl: getServiceUrl(api) });
 
   registerMetaTools(api, client);
 
-  // Resolve workspace path — api.resolvePath if available, else CWD
-  const resolvePath = (api as unknown as Record<string, unknown>)
-    .resolvePath as ((input: string) => string) | undefined;
-  const workspacePath =
-    typeof resolvePath === 'function' ? resolvePath('.') : process.cwd();
-
-  // Initialize jeeves-core
-  init({ workspacePath, configRoot });
-
-  // Async content cache — bridges generateMetaMenu (async HTTP) to
-  // generateToolsContent (sync interface)
-  const getContent = createAsyncContentCache({
-    fetch: async () => generateMetaMenu(client),
-    placeholder:
-      'The jeeves-meta synthesis engine is initializing...\n\n' +
-      '### Tools\n' +
-      '| Tool | Description |\n' +
-      '|------|-------------|\n' +
-      '| `meta_list` | List metas with summary stats and per-meta projection |\n' +
-      '| `meta_detail` | Full detail for a single meta with optional archive history |\n' +
-      '| `meta_trigger` | Manually trigger synthesis for a specific meta or next-stalest |\n' +
-      '| `meta_preview` | Dry-run: show what inputs would be gathered without running LLM |\n' +
-      '\n' +
-      'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
+  init({
+    workspacePath: resolveWorkspacePath(api),
+    configRoot: getConfigRoot(api),
   });
 
-  // Create and start the component writer
   const writer = createComponentWriter({
     name: 'meta',
     version: PLUGIN_VERSION,
     sectionId: 'Meta',
     refreshIntervalSeconds: 73,
-    generateToolsContent: getContent,
-    serviceCommands: {
-      async stop() {
-        // Meta service lifecycle is managed externally (NSSM).
-      },
-      async uninstall() {
-        // Service uninstall is handled by the service CLI.
-      },
-      async status(): Promise<ServiceStatus> {
-        try {
-          const statusResponse = (await client.status()) as {
-            status: string;
-            version?: string;
-            uptime?: number;
-          };
-          return {
-            running: statusResponse.status !== 'stopped',
-            version: statusResponse.version,
-            uptimeSeconds: statusResponse.uptime,
-          };
-        } catch {
-          return { running: false };
-        }
-      },
-    },
+    generateToolsContent: createAsyncContentCache({
+      fetch: async () => generateMetaMenu(client),
+      placeholder:
+        'The jeeves-meta synthesis engine is initializing...\n\n' +
+        renderToolsTable(),
+    }),
+    serviceCommands: buildServiceCommands(client),
     pluginCommands: {
       async uninstall() {
         // Plugin uninstall is handled by the CLI.

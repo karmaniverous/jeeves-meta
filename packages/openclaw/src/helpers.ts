@@ -31,48 +31,56 @@ export interface ToolResult {
   isError?: boolean;
 }
 
-const PLUGIN_NAME = 'jeeves-meta-openclaw';
-const DEFAULT_SERVICE_URL = 'http://127.0.0.1:1938';
+/** Plugin identifier — shared across plugin and CLI entry points. */
+export const PLUGIN_ID = 'jeeves-meta-openclaw';
 
-/** Get plugin config. */
+/** Get plugin config object from the OpenClaw API. */
 function getPluginConfig(api: PluginApi): Record<string, unknown> | undefined {
-  return api.config?.plugins?.entries?.[PLUGIN_NAME]?.config;
+  return api.config?.plugins?.entries?.[PLUGIN_ID]?.config;
 }
 
 /**
- * Resolve the service URL.
+ * Resolve a plugin setting via the standard three-step fallback chain:
+ * plugin config → environment variable → default value.
  *
- * Resolution order:
- * 1. Plugin config `serviceUrl` setting
- * 2. `JEEVES_META_URL` environment variable
- * 3. Default: http://127.0.0.1:1938
+ * @param api - Plugin API.
+ * @param configKey - Key in the plugin config object.
+ * @param envVar - Environment variable name.
+ * @param fallback - Default value if neither source provides one.
  */
+export function resolvePluginSetting(
+  api: PluginApi,
+  configKey: string,
+  envVar: string,
+  fallback: string,
+): string {
+  const fromPlugin = getPluginConfig(api)?.[configKey];
+  if (typeof fromPlugin === 'string') return fromPlugin;
+
+  const fromEnv = process.env[envVar];
+  if (fromEnv) return fromEnv;
+
+  return fallback;
+}
+
+/** Resolve the meta service URL. */
 export function getServiceUrl(api: PluginApi): string {
-  const fromPlugin = getPluginConfig(api)?.serviceUrl;
-  if (typeof fromPlugin === 'string') return fromPlugin;
-
-  const fromEnv = process.env['JEEVES_META_URL'];
-  if (fromEnv) return fromEnv;
-
-  return DEFAULT_SERVICE_URL;
+  return resolvePluginSetting(
+    api,
+    'serviceUrl',
+    'JEEVES_META_URL',
+    'http://127.0.0.1:1938',
+  );
 }
 
-/**
- * Resolve the platform config root.
- *
- * Resolution order:
- * 1. Plugin config `configRoot` setting
- * 2. `JEEVES_CONFIG_ROOT` environment variable
- * 3. Default: `j:/config`
- */
+/** Resolve the platform config root. */
 export function getConfigRoot(api: PluginApi): string {
-  const fromPlugin = getPluginConfig(api)?.configRoot;
-  if (typeof fromPlugin === 'string') return fromPlugin;
-
-  const fromEnv = process.env['JEEVES_CONFIG_ROOT'];
-  if (fromEnv) return fromEnv;
-
-  return 'j:/config';
+  return resolvePluginSetting(
+    api,
+    'configRoot',
+    'JEEVES_CONFIG_ROOT',
+    'j:/config',
+  );
 }
 
 /** Format a successful tool result. */

@@ -7,29 +7,60 @@
  * @module promptInjection
  */
 
-import type { MetaServiceClient } from './serviceClient.js';
+import type {
+  MetaServiceClient,
+  MetasResponse,
+  StatusResponse,
+} from './serviceClient.js';
+import { renderToolsTable } from './toolMeta.js';
 
-interface StatusResponse {
-  uptime: number;
-  status: string;
-  dependencies: {
-    watcher: { status: string; rulesRegistered?: boolean; indexing?: boolean };
-    gateway: { status: string };
-  };
+/** Fetch status and metas, returning null on failure. */
+async function fetchServiceData(
+  client: MetaServiceClient,
+): Promise<{ status: StatusResponse; metas: MetasResponse } | null> {
+  try {
+    const [status, metas] = await Promise.all([
+      client.status(),
+      client.listMetas(),
+    ]);
+    return { status, metas };
+  } catch {
+    return null;
+  }
 }
 
-interface MetasResponse {
-  summary: {
-    total: number;
-    stale: number;
-    errors: number;
-    neverSynthesized: number;
-    stalestPath: string | null;
-    lastSynthesizedPath: string | null;
-    lastSynthesizedAt: string | null;
-    tokens: { architect: number; builder: number; critic: number };
-  };
-  metas: Array<{ stalenessSeconds: number | null }>;
+/** Format a staleness value as a human-readable age string. */
+function formatAge(seconds: number): string {
+  if (!isFinite(seconds)) return 'never synthesized';
+  if (seconds < 3600) return Math.round(seconds / 60).toString() + 'm';
+  if (seconds < 86400) return Math.round(seconds / 3600).toString() + 'h';
+  return Math.round(seconds / 86400).toString() + 'd';
+}
+
+/** Build dependency warning lines from service status. */
+function buildDependencyLines(status: StatusResponse): string[] {
+  const lines: string[] = [];
+  const { watcher, gateway } = status.dependencies;
+
+  if (watcher.status === 'indexing') {
+    lines.push(
+      '> ⏳ **Watcher indexing**: Initial filesystem scan in progress. Synthesis will resume when complete.',
+    );
+  } else if (watcher.status !== 'ok') {
+    lines.push('> ⚠️ **Watcher**: ' + watcher.status);
+  }
+
+  if (watcher.rulesRegistered === false && watcher.status === 'ok') {
+    lines.push(
+      '> ⚠️ **Watcher rules not registered**: Meta files may not render properly in search/server.',
+    );
+  }
+
+  if (gateway.status !== 'ok') {
+    lines.push('> ⚠️ **Gateway**: ' + gateway.status);
+  }
+
+  return lines;
 }
 
 /**
@@ -41,13 +72,9 @@ interface MetasResponse {
 export async function generateMetaMenu(
   client: MetaServiceClient,
 ): Promise<string> {
-  let status: StatusResponse;
-  let metas: MetasResponse;
+  const data = await fetchServiceData(client);
 
-  try {
-    status = (await client.status()) as StatusResponse;
-    metas = (await client.listMetas()) as MetasResponse;
-  } catch {
+  if (!data) {
     return [
       '> **ACTION REQUIRED: jeeves-meta service is unreachable.**',
       '> The service API is down or not configured.',
@@ -61,6 +88,8 @@ export async function generateMetaMenu(
     ].join('\n');
   }
 
+  const { status, metas } = data;
+
   if (metas.summary.total === 0) {
     return [
       '> **ACTION REQUIRED: No synthesis entities found.**',
@@ -73,14 +102,7 @@ export async function generateMetaMenu(
 
   const { summary } = metas;
 
-  const formatAge = (seconds: number): string => {
-    if (!isFinite(seconds)) return 'never synthesized';
-    if (seconds < 3600) return Math.round(seconds / 60).toString() + 'm';
-    if (seconds < 86400) return Math.round(seconds / 3600).toString() + 'h';
-    return Math.round(seconds / 86400).toString() + 'd';
-  };
-
-  // Find stalest age
+  // Find stalest age across all metas
   let stalestAge = 0;
   for (const item of metas.metas) {
     const s = item.stalenessSeconds !== null ? item.stalenessSeconds : Infinity;
@@ -97,29 +119,7 @@ export async function generateMetaMenu(
       ')'
     : 'n/a';
 
-  // Service status + dependency health
-  const depLines: string[] = [];
-  if (status.dependencies.watcher.status === 'indexing') {
-    depLines.push(
-      '> ⏳ **Watcher indexing**: Initial filesystem scan in progress. Synthesis will resume when complete.',
-    );
-  } else if (
-    status.dependencies.watcher.status !== 'ok' &&
-    status.dependencies.watcher.status !== 'indexing'
-  ) {
-    depLines.push('> ⚠️ **Watcher**: ' + status.dependencies.watcher.status);
-  }
-  if (
-    status.dependencies.watcher.rulesRegistered === false &&
-    status.dependencies.watcher.status === 'ok'
-  ) {
-    depLines.push(
-      '> ⚠️ **Watcher rules not registered**: Meta files may not render properly in search/server.',
-    );
-  }
-  if (status.dependencies.gateway.status !== 'ok') {
-    depLines.push('> ⚠️ **Gateway**: ' + status.dependencies.gateway.status);
-  }
+  const depLines = buildDependencyLines(status);
 
   return [
     'The jeeves-meta synthesis engine manages ' +
@@ -137,14 +137,6 @@ export async function generateMetaMenu(
     '| Last synthesized | ' + lastSynthDisplay + ' |',
     ...(depLines.length > 0 ? ['', '### Dependencies', ...depLines] : []),
     '',
-    '### Tools',
-    '| Tool | Description |',
-    '|------|-------------|',
-    '| `meta_list` | List metas with summary stats and per-meta projection |',
-    '| `meta_detail` | Full detail for a single meta with optional archive history |',
-    '| `meta_trigger` | Manually trigger synthesis for a specific meta or next-stalest |',
-    '| `meta_preview` | Dry-run: show what inputs would be gathered without running LLM |',
-    '',
-    'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
+    renderToolsTable(),
   ].join('\n');
 }
