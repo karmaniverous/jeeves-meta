@@ -10,6 +10,11 @@ export interface PluginApi {
     plugins?: {
       entries?: Record<string, { config?: Record<string, unknown> }>;
     };
+    agents?: {
+      defaults?: {
+        workspace?: string;
+      };
+    };
   };
   resolvePath?: (input: string) => string;
   registerTool(

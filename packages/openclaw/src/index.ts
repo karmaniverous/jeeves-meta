@@ -15,6 +15,7 @@ import {
   createAsyncContentCache,
   createComponentWriter,
   init,
+  resolveWorkspacePath,
 } from '@karmaniverous/jeeves';
 
 import { getConfigRoot, getServiceUrl, type PluginApi } from './helpers.js';
@@ -39,14 +40,6 @@ const PLUGIN_VERSION: string = (() => {
     return 'unknown';
   }
 })();
-
-/**
- * Resolve the workspace path from the OpenClaw plugin API.
- * Falls back to CWD if `api.resolvePath` is unavailable.
- */
-function resolveWorkspacePath(api: PluginApi): string {
-  return api.resolvePath ? api.resolvePath('.') : process.cwd();
-}
 
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
 export default function register(api: PluginApi): void {
