@@ -45,9 +45,7 @@ const PLUGIN_VERSION: string = (() => {
  * Falls back to CWD if `api.resolvePath` is unavailable.
  */
 function resolveWorkspacePath(api: PluginApi): string {
-  const resolvePath = (api as unknown as Record<string, unknown>)
-    .resolvePath as ((input: string) => string) | undefined;
-  return typeof resolvePath === 'function' ? resolvePath('.') : process.cwd();
+  return api.resolvePath ? api.resolvePath('.') : process.cwd();
 }
 
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
