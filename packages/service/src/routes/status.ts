@@ -67,7 +67,7 @@ export function registerStatusRoute(
     // On-demand dependency checks
     const [watcherHealth, gatewayHealth] = await Promise.all([
       checkWatcher(config.watcherUrl),
-      checkDependency(config.gatewayUrl, '/api/status'),
+      checkDependency(config.gatewayUrl, '/status'),
     ]);
 
     const degraded =
