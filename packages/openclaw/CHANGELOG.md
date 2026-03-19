@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.4.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.3.0...0.4.0)
+#### [0.4.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.4.0...0.4.1)
+
+- fix(openclaw): use core resolveWorkspacePath from jeeves v0.1.4 [`#50`](https://github.com/karmaniverous/jeeves-meta/pull/50)
+- fix(service): unique session labels per synthesis cycle [`#49`](https://github.com/karmaniverous/jeeves-meta/pull/49)
+- fix(openclaw): bundle @karmaniverous/jeeves instead of externalizing [`#48`](https://github.com/karmaniverous/jeeves-meta/pull/48)
+- fix(openclaw): use core resolveWorkspacePath from @karmaniverous/jeeves v0.1.4 [`b50f42a`](https://github.com/karmaniverous/jeeves-meta/commit/b50f42a91944a9fd6492c68ab8523e4b365c69c1)
+- chore: release @karmaniverous/jeeves-meta v0.6.1 [`7f83576`](https://github.com/karmaniverous/jeeves-meta/commit/7f835764f71d0ca59c00bfdbe0c8304d1228b06f)
+- fix(openclaw): update jeeves to 0.1.6, add servicePackage/pluginPackage fields [`8f5755a`](https://github.com/karmaniverous/jeeves-meta/commit/8f5755a74dee641ec4e8d3d69e80cf56a6da44e2)
+- fix(openclaw): update @karmaniverous/jeeves to 0.1.5 (workspace path fallback fix) [`4284d25`](https://github.com/karmaniverous/jeeves-meta/commit/4284d252774e4a8dbc78d650a1252f206b7193cf)
+- fix(openclaw): update @karmaniverous/jeeves to 0.1.3 (inlined content files) [`1cc6e84`](https://github.com/karmaniverous/jeeves-meta/commit/1cc6e847fb7da0a8cdd8066d154b54d8259c250c)
+- fix(service): use unique session labels to prevent 'label already in use' errors [`ed6be65`](https://github.com/karmaniverous/jeeves-meta/commit/ed6be6536742959a553e7e500bc0eb5f84d2c038)
+- fix(service): gateway health probe path /api/status -&gt; /status [`348f39e`](https://github.com/karmaniverous/jeeves-meta/commit/348f39e651e357f8bdc7ea055ed1a977874434ea)
+
+#### [openclaw/0.4.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.3.0...openclaw/0.4.0)
+
+> 18 March 2026
 
 - feat(openclaw): adopt @karmaniverous/jeeves v0.1.0 for TOOLS.md management [`#47`](https://github.com/karmaniverous/jeeves-meta/pull/47)
 - fix: surface watcher indexing state, fix rulesRegistered false-negative (#43) [`#44`](https://github.com/karmaniverous/jeeves-meta/pull/44)
@@ -11,6 +26,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - refactor(openclaw): resolve SOLID/DRY violations [`100aacd`](https://github.com/karmaniverous/jeeves-meta/commit/100aacd7d8947d1c6e7c1c09a396a556f1e50442)
 - docs: full documentation pass — PlantUML diagrams, sync with implementation [`2063052`](https://github.com/karmaniverous/jeeves-meta/commit/2063052de2dec2f9e099ca9361c27f22cb48a7a7)
 - refactor(openclaw): resolve SOLID/DRY violations [`06b9c10`](https://github.com/karmaniverous/jeeves-meta/commit/06b9c101fcedd6f5617786251640702673d4b8bf)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.4.0 [`437053b`](https://github.com/karmaniverous/jeeves-meta/commit/437053b33f271693545dd58c763fb401cb0397a9)
 - chore: release @karmaniverous/jeeves-meta v0.6.0 [`a2630cb`](https://github.com/karmaniverous/jeeves-meta/commit/a2630cbb679c68cde2d85c9a927dcb6565719da9)
 - test(openclaw): add serviceCommands tests, trim trivial helper tests [`1260ade`](https://github.com/karmaniverous/jeeves-meta/commit/1260ade4746a97a9f21da515b0832f0caed316f0)
 - refactor(openclaw): adopt createAsyncContentCache from @karmaniverous/jeeves v0.1.1 [`2b117eb`](https://github.com/karmaniverous/jeeves-meta/commit/2b117eb25d47fe82d25a1d9def50ea32e5a4e1d5)
