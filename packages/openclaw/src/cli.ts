@@ -34,7 +34,7 @@ import {
   resolveOpenClawHome,
 } from '@karmaniverous/jeeves';
 
-const PLUGIN_ID = 'jeeves-meta-openclaw';
+import { PLUGIN_ID } from './constants.js';
 
 /** Get the package root (where this CLI lives). */
 function getPackageRoot(): string {

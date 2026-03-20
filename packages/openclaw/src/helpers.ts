@@ -6,8 +6,7 @@
 
 import { type PluginApi, resolvePluginSetting } from '@karmaniverous/jeeves';
 
-/** Plugin identifier. */
-const PLUGIN_ID = 'jeeves-meta-openclaw';
+import { PLUGIN_ID } from './constants.js';
 
 /** Resolve the meta service URL. */
 export function getServiceUrl(api: PluginApi): string {
