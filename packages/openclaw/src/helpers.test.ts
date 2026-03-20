@@ -4,21 +4,19 @@
  * @module helpers.test
  */
 
+import { type PluginApi, resolvePluginSetting } from '@karmaniverous/jeeves';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import {
-  getConfigRoot,
-  getServiceUrl,
-  type PluginApi,
-  resolvePluginSetting,
-} from './helpers.js';
+import { getConfigRoot, getServiceUrl } from './helpers.js';
+
+const PLUGIN_ID = 'jeeves-meta-openclaw';
 
 function makeApi(config?: Record<string, unknown>): PluginApi {
   return {
     config: {
       plugins: {
         entries: {
-          'jeeves-meta-openclaw': { config },
+          [PLUGIN_ID]: { config },
         },
       },
     },
@@ -40,7 +38,13 @@ describe('resolvePluginSetting', () => {
   it('returns plugin config value first', () => {
     const api = makeApi({ myKey: 'from-plugin' });
     expect(
-      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+      resolvePluginSetting(
+        api,
+        PLUGIN_ID,
+        'myKey',
+        'TEST_RESOLVE_VAR',
+        'default',
+      ),
     ).toBe('from-plugin');
   });
 
@@ -48,7 +52,13 @@ describe('resolvePluginSetting', () => {
     const api = makeApi({});
     process.env['TEST_RESOLVE_VAR'] = 'from-env';
     expect(
-      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+      resolvePluginSetting(
+        api,
+        PLUGIN_ID,
+        'myKey',
+        'TEST_RESOLVE_VAR',
+        'default',
+      ),
     ).toBe('from-env');
   });
 
@@ -56,7 +66,13 @@ describe('resolvePluginSetting', () => {
     const api = makeApi({});
     delete process.env['TEST_RESOLVE_VAR'];
     expect(
-      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+      resolvePluginSetting(
+        api,
+        PLUGIN_ID,
+        'myKey',
+        'TEST_RESOLVE_VAR',
+        'default',
+      ),
     ).toBe('default');
   });
 
@@ -64,7 +80,13 @@ describe('resolvePluginSetting', () => {
     const api = makeApi({ myKey: 'from-plugin' });
     process.env['TEST_RESOLVE_VAR'] = 'from-env';
     expect(
-      resolvePluginSetting(api, 'myKey', 'TEST_RESOLVE_VAR', 'default'),
+      resolvePluginSetting(
+        api,
+        PLUGIN_ID,
+        'myKey',
+        'TEST_RESOLVE_VAR',
+        'default',
+      ),
     ).toBe('from-plugin');
   });
 });

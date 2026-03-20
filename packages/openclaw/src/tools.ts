@@ -7,9 +7,18 @@
  * @module tools
  */
 
-import { fail, ok, type PluginApi, type ToolResult } from './helpers.js';
+import {
+  connectionFail,
+  ok,
+  type PluginApi,
+  type ToolResult,
+} from '@karmaniverous/jeeves';
+
 import type { MetaServiceClient } from './serviceClient.js';
 import { META_TOOLS } from './toolMeta.js';
+
+/** Plugin identifier for connection error guidance. */
+const PLUGIN_ID = 'jeeves-meta-openclaw';
 
 /** Look up a tool's description by name. */
 function desc(name: string): string {
@@ -21,6 +30,8 @@ export function registerMetaTools(
   api: PluginApi,
   client: MetaServiceClient,
 ): void {
+  const baseUrl = client.getBaseUrl();
+
   // ─── meta_list ──────────────────────────────────────────────
   api.registerTool({
     name: 'meta_list',
@@ -67,7 +78,7 @@ export function registerMetaTools(
         });
         return ok(data);
       } catch (error) {
-        return fail(error);
+        return connectionFail(error, baseUrl, PLUGIN_ID);
       }
     },
   });
@@ -109,7 +120,7 @@ export function registerMetaTools(
         });
         return ok(data);
       } catch (error) {
-        return fail(error);
+        return connectionFail(error, baseUrl, PLUGIN_ID);
       }
     },
   });
@@ -136,7 +147,7 @@ export function registerMetaTools(
         const data = await client.preview(params.path as string | undefined);
         return ok(data);
       } catch (error) {
-        return fail(error);
+        return connectionFail(error, baseUrl, PLUGIN_ID);
       }
     },
   });
@@ -163,7 +174,7 @@ export function registerMetaTools(
         const data = await client.synthesize(params.path as string | undefined);
         return ok(data);
       } catch (error) {
-        return fail(error);
+        return connectionFail(error, baseUrl, PLUGIN_ID);
       }
     },
   });

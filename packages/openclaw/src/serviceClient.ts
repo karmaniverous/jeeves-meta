@@ -64,6 +64,11 @@ export class MetaServiceClient {
     this.baseUrl = config.serviceUrl.replace(/\/$/, '');
   }
 
+  /** Return the base URL (for error reporting). */
+  public getBaseUrl(): string {
+    return this.baseUrl;
+  }
+
   /** GET helper — returns parsed JSON. */
   private async get<T = unknown>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path);

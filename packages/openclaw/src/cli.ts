@@ -24,31 +24,17 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// Duplicated from helpers.ts — separate rollup bundle cannot share imports.
+import {
+  patchConfig,
+  removeManagedSection,
+  resolveConfigPath,
+  resolveOpenClawHome,
+} from '@karmaniverous/jeeves';
+
 const PLUGIN_ID = 'jeeves-meta-openclaw';
-
-/** Resolve the OpenClaw home directory. */
-function resolveOpenClawHome(): string {
-  if (process.env.OPENCLAW_CONFIG) {
-    return dirname(resolve(process.env.OPENCLAW_CONFIG));
-  }
-  if (process.env.OPENCLAW_HOME) {
-    return resolve(process.env.OPENCLAW_HOME);
-  }
-  return join(homedir(), '.openclaw');
-}
-
-/** Resolve the config file path. */
-function resolveConfigPath(home: string): string {
-  if (process.env.OPENCLAW_CONFIG) {
-    return resolve(process.env.OPENCLAW_CONFIG);
-  }
-  return join(home, 'openclaw.json');
-}
 
 /** Get the package root (where this CLI lives). */
 function getPackageRoot(): string {
@@ -68,75 +54,6 @@ function readJson(path: string): Record<string, unknown> | null {
 /** Write JSON with 2-space indent + trailing newline. */
 function writeJson(path: string, data: unknown): void {
   writeFileSync(path, JSON.stringify(data, null, 2) + '\n');
-}
-
-/**
- * Patch an allowlist array: add or remove the plugin ID.
- * Returns a log message if a change was made, or undefined.
- */
-function patchAllowList(
-  parent: Record<string, unknown>,
-  key: string,
-  label: string,
-  mode: 'add' | 'remove',
-): string | undefined {
-  if (!Array.isArray(parent[key]) || (parent[key] as unknown[]).length === 0)
-    return undefined;
-
-  const list = parent[key] as string[];
-  if (mode === 'add') {
-    if (!list.includes(PLUGIN_ID)) {
-      list.push(PLUGIN_ID);
-      return `Added "${PLUGIN_ID}" to ${label}`;
-    }
-  } else {
-    const filtered = list.filter((id) => id !== PLUGIN_ID);
-    if (filtered.length !== list.length) {
-      parent[key] = filtered;
-      return `Removed "${PLUGIN_ID}" from ${label}`;
-    }
-  }
-  return undefined;
-}
-
-/** Patch OpenClaw config for install or uninstall. Returns log messages. */
-export function patchConfig(
-  config: Record<string, unknown>,
-  mode: 'add' | 'remove',
-): string[] {
-  const messages: string[] = [];
-
-  // Ensure plugins section
-  if (!config.plugins || typeof config.plugins !== 'object') {
-    config.plugins = {};
-  }
-  const plugins = config.plugins as Record<string, unknown>;
-
-  // plugins.allow
-  const pluginAllow = patchAllowList(plugins, 'allow', 'plugins.allow', mode);
-  if (pluginAllow) messages.push(pluginAllow);
-
-  // plugins.entries
-  if (!plugins.entries || typeof plugins.entries !== 'object') {
-    plugins.entries = {};
-  }
-  const entries = plugins.entries as Record<string, unknown>;
-  if (mode === 'add') {
-    if (!entries[PLUGIN_ID]) {
-      entries[PLUGIN_ID] = { enabled: true };
-      messages.push(`Added "${PLUGIN_ID}" to plugins.entries`);
-    }
-  } else if (PLUGIN_ID in entries) {
-    Reflect.deleteProperty(entries, PLUGIN_ID);
-    messages.push(`Removed "${PLUGIN_ID}" from plugins.entries`);
-  }
-
-  // tools.allow
-  const tools = (config.tools ?? {}) as Record<string, unknown>;
-  const toolAllow = patchAllowList(tools, 'allow', 'tools.allow', mode);
-  if (toolAllow) messages.push(toolAllow);
-
-  return messages;
 }
 
 /** Install the plugin into OpenClaw's extensions directory. */
@@ -212,7 +129,7 @@ function install(): void {
     process.exit(1);
   }
 
-  for (const msg of patchConfig(config, 'add')) {
+  for (const msg of patchConfig(config, PLUGIN_ID, 'add')) {
     console.log(`  \u2713 ${msg}`);
   }
   writeJson(configPath, config);
@@ -223,7 +140,7 @@ function install(): void {
 }
 
 /** Uninstall the plugin from OpenClaw's extensions directory. */
-function uninstall(): void {
+async function uninstall(): Promise<void> {
   const home = resolveOpenClawHome();
   const configPath = resolveConfigPath(home);
   const extDir = join(home, 'extensions', PLUGIN_ID);
@@ -244,11 +161,20 @@ function uninstall(): void {
     console.log('Patching OpenClaw config...');
     const config = readJson(configPath);
     if (config) {
-      for (const msg of patchConfig(config, 'remove')) {
+      for (const msg of patchConfig(config, PLUGIN_ID, 'remove')) {
         console.log(`  \u2713 ${msg}`);
       }
       writeJson(configPath, config);
     }
+  }
+
+  // Remove managed TOOLS.md section
+  const workspacePath = process.cwd();
+  const toolsPath = join(workspacePath, 'TOOLS.md');
+  if (existsSync(toolsPath)) {
+    console.log('Removing managed TOOLS.md section...');
+    await removeManagedSection(toolsPath, { sectionId: 'Meta' });
+    console.log('  \u2713 Removed Meta section from TOOLS.md');
   }
 
   console.log();
@@ -264,7 +190,7 @@ switch (command) {
     install();
     break;
   case 'uninstall':
-    uninstall();
+    void uninstall();
     break;
   default:
     console.log(
