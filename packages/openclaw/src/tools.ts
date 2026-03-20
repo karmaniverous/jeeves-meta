@@ -178,4 +178,87 @@ export function registerMetaTools(
       }
     },
   });
+
+  // ─── meta_seed ──────────────────────────────────────────────
+  api.registerTool({
+    name: 'meta_seed',
+    description: desc('meta_seed'),
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Owner directory path to seed with .meta/ and meta.json.',
+        },
+      },
+      required: ['path'],
+    },
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
+      try {
+        const data = await client.seed(params.path as string);
+        return ok(data);
+      } catch (error) {
+        return connectionFail(error, baseUrl, PLUGIN_ID);
+      }
+    },
+  });
+
+  // ─── meta_unlock ────────────────────────────────────────────
+  api.registerTool({
+    name: 'meta_unlock',
+    description: desc('meta_unlock'),
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Path to the .meta/ directory or owner directory to unlock.',
+        },
+      },
+      required: ['path'],
+    },
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
+      try {
+        const data = await client.unlock(params.path as string);
+        return ok(data);
+      } catch (error) {
+        return connectionFail(error, baseUrl, PLUGIN_ID);
+      }
+    },
+  });
+
+  // ─── meta_config ────────────────────────────────────────────
+  api.registerTool({
+    name: 'meta_config',
+    description: desc('meta_config'),
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Optional JSONPath expression to query specific config fields (e.g. "$.port").',
+        },
+      },
+    },
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
+      try {
+        const data = await client.config(params.path as string | undefined);
+        return ok(data);
+      } catch (error) {
+        return connectionFail(error, baseUrl, PLUGIN_ID);
+      }
+    },
+  });
 }

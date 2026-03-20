@@ -160,8 +160,9 @@ export class MetaServiceClient {
     return this.post('/unlock', { path });
   }
 
-  /** GET /config/validate — validate current config. */
-  public async validate(): Promise<unknown> {
-    return this.get('/config/validate');
+  /** GET /config — query service config with optional JSONPath. */
+  public async config(path?: string): Promise<unknown> {
+    const qs = path ? '?path=' + encodeURIComponent(path) : '';
+    return this.get('/config' + qs);
   }
 }
