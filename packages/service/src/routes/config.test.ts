@@ -85,4 +85,14 @@ describe('GET /config', () => {
     const body = res.json<Record<string, unknown>>();
     expect(body.gatewayApiKey).toBe('[REDACTED]');
   });
+
+  it('returns 400 for invalid JSONPath expression', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/config?path=$[?(',
+    });
+    expect(res.statusCode).toBe(400);
+    const body = res.json<{ error: string }>();
+    expect(body).toHaveProperty('error');
+  });
 });
