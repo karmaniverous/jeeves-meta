@@ -4,7 +4,7 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 
 ## Features
 
-- **Fastify HTTP API** — `/status`, `/metas`, `/preview`, `/synthesize`, `/seed`, `/unlock`, `/config/validate`
+- **Fastify HTTP API** — `/status`, `/metas`, `/preview`, `/synthesize`, `/seed`, `/unlock`, `/config`
 - **Built-in scheduler** — croner-based cron with adaptive backoff
 - **Synthesis queue** — single-threaded, priority-aware, deduplicated
 - **Three-step orchestration** — architect, builder, critic with conditional re-architecture
@@ -17,7 +17,7 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Graceful shutdown** — stop scheduler, release locks, close server
 - **Config hot-reload** — schedule, reportChannel, log level reload without restart
 - **Token tracking** — per-step counts with exponential moving averages
-- **CLI** — `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `validate`, `service` commands
+- **CLI** — `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `config`, `service` commands
 - **Zod schemas** — validated meta.json and config with open schema support
 
 ## Install
@@ -56,7 +56,7 @@ jeeves-meta service install --config /path/to/jeeves-meta.config.json
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
 | POST | `/seed` | Create `.meta/` directory + meta.json |
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
-| GET | `/config/validate` | Return sanitized active configuration |
+| GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 
 ## Configuration
 
