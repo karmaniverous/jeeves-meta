@@ -35,6 +35,9 @@ export interface MetaContext {
   /** Current _steer value, or null if unset. */
   steer: string | null;
 
+  /** _state from the last cycle, or null on first run. */
+  previousState: unknown;
+
   /** Archive snapshot file paths (for steer change detection, etc.). */
   archives: string[];
 }

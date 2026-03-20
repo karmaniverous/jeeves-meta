@@ -12,7 +12,7 @@ import type { RuleRegistrar } from '../rules/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 import type { ServiceConfig } from '../schema/config.js';
 import type { HttpWatcherClient } from '../watcher-client/index.js';
-import { registerConfigValidateRoute } from './configValidate.js';
+import { registerConfigRoute } from './config.js';
 import { registerMetasRoutes } from './metas.js';
 import { registerPreviewRoute } from './preview.js';
 import { registerSeedRoute } from './seed.js';
@@ -75,5 +75,5 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
   registerPreviewRoute(app, deps);
   registerSeedRoute(app, deps);
   registerUnlockRoute(app, deps);
-  registerConfigValidateRoute(app, deps);
+  registerConfigRoute(app, deps);
 }

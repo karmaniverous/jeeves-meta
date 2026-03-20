@@ -46,6 +46,13 @@ export interface MergeOptions {
   criticTokens?: number;
   /** Override output path (default: metaPath/meta.json). Used for lock staging. */
   outputPath?: string;
+  /** Opaque state from builder output for progressive synthesis. */
+  state?: unknown;
+  /**
+   * When true, preserve _content and _generatedAt from current meta.
+   * Used for timeout recovery where state advanced but content did not.
+   */
+  stateOnly?: boolean;
 }
 
 /**
@@ -67,7 +74,9 @@ export function mergeAndWrite(options: MergeOptions): MetaJson {
     _architect: options.architect,
     _builder: options.builder,
     _critic: options.critic,
-    _generatedAt: new Date().toISOString(),
+    _generatedAt: options.stateOnly
+      ? options.current._generatedAt
+      : new Date().toISOString(),
     _structureHash: options.structureHash,
     _synthesisCount: options.synthesisCount,
 
@@ -91,11 +100,16 @@ export function mergeAndWrite(options: MergeOptions): MetaJson {
         ? computeEma(options.criticTokens, options.current._criticTokensAvg)
         : options.current._criticTokensAvg,
 
-    // Content from builder
-    _content: options.builderOutput?.content ?? options.current._content,
+    // Content from builder (stateOnly preserves previous content)
+    _content: options.stateOnly
+      ? options.current._content
+      : (options.builderOutput?.content ?? options.current._content),
 
     // Feedback from critic
     _feedback: options.feedback ?? options.current._feedback,
+
+    // Progressive state
+    _state: options.state,
 
     // Error handling
     _error: options.error ?? undefined,
@@ -115,6 +129,7 @@ export function mergeAndWrite(options: MergeOptions): MetaJson {
     delete merged._architectTokensAvg;
   if (merged._builderTokensAvg === undefined) delete merged._builderTokensAvg;
   if (merged._criticTokensAvg === undefined) delete merged._criticTokensAvg;
+  if (merged._state === undefined) delete merged._state;
   if (merged._error === undefined) delete merged._error;
   if (merged._content === undefined) delete merged._content;
   if (merged._feedback === undefined) delete merged._feedback;

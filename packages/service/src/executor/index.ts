@@ -8,3 +8,4 @@ export {
   GatewayExecutor,
   type GatewayExecutorOptions,
 } from './GatewayExecutor.js';
+export { SpawnTimeoutError } from './SpawnTimeoutError.js';

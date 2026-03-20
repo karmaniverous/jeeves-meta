@@ -119,6 +119,20 @@ export function buildBuilderTask(
     ...ctx.deltaFiles.slice(0, config.maxLines).map((f) => `- ${f}`),
   ];
 
+  if (ctx.previousState != null) {
+    sections.push(
+      '',
+      '## PREVIOUS STATE',
+      'The following opaque state was returned by the previous synthesis cycle.',
+      'Use it to continue progressive work. Update `_state` in your output to',
+      'reflect your progress.',
+      '',
+      '```json',
+      JSON.stringify(ctx.previousState, null, 2),
+      '```',
+    );
+  }
+
   appendSharedSections(sections, ctx, {
     includeSteer: false,
     feedbackHeading: '## FEEDBACK FROM CRITIC',
@@ -135,7 +149,8 @@ export function buildBuilderTask(
     '  "type": "object",',
     '  "required": ["_content"],',
     '  "properties": {',
-    '    "_content": { "type": "string", "description": "Markdown narrative synthesis" }',
+    '    "_content": { "type": "string", "description": "Markdown narrative synthesis" },',
+    '    "_state": { "description": "Opaque state object for progressive work across cycles" }',
     '  },',
     '  "additionalProperties": true',
     '}',
@@ -143,6 +158,7 @@ export function buildBuilderTask(
     'Add any structured fields that capture important facts about this entity',
     '(e.g. status, risks, dependencies, metrics). Use descriptive key names without underscore prefix.',
     'The _content field is the only required key — everything else is domain-driven.',
+    '_state is optional: set it to carry state across synthesis cycles for progressive work.',
     '',
     'DIAGRAMS: When diagrams would aid understanding, use PlantUML in fenced code blocks (```plantuml).',
     'PlantUML is rendered natively by the serving infrastructure. NEVER use ASCII art diagrams.',

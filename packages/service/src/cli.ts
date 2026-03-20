@@ -190,7 +190,7 @@ program
         console.log(JSON.stringify(sanitized, null, 2));
       } else {
         // Remote — query running service
-        const data = await apiGet(parseInt(opts.port, 10), '/config/validate');
+        const data = await apiGet(parseInt(opts.port, 10), '/config');
         console.log(JSON.stringify(data, null, 2));
       }
     } catch (err) {

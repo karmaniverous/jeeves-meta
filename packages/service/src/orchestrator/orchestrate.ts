@@ -7,7 +7,7 @@
  * @module orchestrator/orchestrate
  */
 
-import { copyFileSync, existsSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -20,6 +20,7 @@ import { discoverMetas } from '../discovery/discoverMetas.js';
 import { buildOwnershipTree, type MetaNode } from '../discovery/index.js';
 import { getScopePrefix } from '../discovery/scope.js';
 import { toMetaError } from '../errors.js';
+import { SpawnTimeoutError } from '../executor/index.js';
 import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
 import type { MinimalLogger } from '../logger/index.js';
@@ -78,6 +79,10 @@ interface FinalizeCycleOptions {
   architectTokens?: number;
   builderTokens?: number;
   criticTokens?: number;
+  /** Opaque state from builder output. */
+  state?: unknown;
+  /** When true, preserve _content and _generatedAt from current. */
+  stateOnly?: boolean;
 }
 
 /** Finalize a cycle using lock staging: write to .lock → copy to meta.json + archive → delete .lock. */
@@ -101,6 +106,8 @@ function finalizeCycle(opts: FinalizeCycleOptions): MetaJson {
     builderTokens: opts.builderTokens,
     criticTokens: opts.criticTokens,
     outputPath: lockPath,
+    state: opts.state,
+    stateOnly: opts.stateOnly,
   });
 
   // Commit: copy .lock → meta.json
@@ -243,6 +250,54 @@ async function synthesizeNode(
       durationMs: Date.now() - builderStart,
     });
   } catch (err) {
+    // Timeout recovery: attempt to read partial output and salvage state
+    if (err instanceof SpawnTimeoutError) {
+      let partialOutput: BuilderOutput | null = null;
+      try {
+        if (existsSync(err.outputPath)) {
+          const raw = readFileSync(err.outputPath, 'utf8');
+          partialOutput = parseBuilderOutput(raw);
+        }
+      } catch {
+        // Could not read partial output — fall through to hard failure
+      }
+
+      if (partialOutput?.state !== undefined) {
+        // Check if state advanced compared to current
+        const currentState = JSON.stringify(currentMeta._state);
+        const newState = JSON.stringify(partialOutput.state);
+
+        if (newState !== currentState) {
+          // State advanced — save state only, preserve content
+          const timeoutError: MetaError = {
+            step: 'builder',
+            code: 'TIMEOUT',
+            message: err.message,
+          };
+          finalizeCycle({
+            metaPath: node.metaPath,
+            current: currentMeta,
+            config,
+            architect: currentMeta._architect ?? '',
+            builder: builderBrief,
+            critic: currentMeta._critic ?? '',
+            builderOutput: null,
+            feedback: null,
+            structureHash: newStructureHash,
+            synthesisCount,
+            error: timeoutError,
+            state: partialOutput.state,
+            stateOnly: true,
+          });
+          return {
+            synthesized: true,
+            metaPath: node.metaPath,
+            error: timeoutError,
+          };
+        }
+      }
+    }
+
     stepError = toMetaError('builder', err);
     return { synthesized: true, metaPath: node.metaPath, error: stepError };
   }
@@ -295,6 +350,7 @@ async function synthesizeNode(
     architectTokens,
     builderTokens,
     criticTokens,
+    state: builderOutput.state,
   });
 
   return {

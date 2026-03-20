@@ -19,6 +19,7 @@ import type {
   MetaSpawnResult,
 } from '../interfaces/index.js';
 import { sleep } from '../sleep.js';
+import { SpawnTimeoutError } from './SpawnTimeoutError.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 5000;
 const DEFAULT_TIMEOUT_MS = 600_000; // 10 minutes
@@ -262,8 +263,9 @@ export class GatewayExecutor implements MetaExecutor {
       await sleep(this.pollIntervalMs);
     }
 
-    throw new Error(
+    throw new SpawnTimeoutError(
       'Synthesis subprocess timed out after ' + timeoutMs.toString() + 'ms',
+      outputPath,
     );
   }
 }

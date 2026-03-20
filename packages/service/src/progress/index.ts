@@ -28,6 +28,8 @@ export type ProgressReporterConfig = {
   gatewayApiKey?: string;
   /** Gateway channel target (platform-agnostic). If unset, reporting is disabled. */
   reportChannel?: string;
+  /** Optional base URL for the service, used to construct entity links. */
+  serverBaseUrl?: string;
 };
 
 function formatNumber(n: number): string {
@@ -43,10 +45,24 @@ function titleCasePhase(phase: ProgressPhase): string {
   return phase.charAt(0).toUpperCase() + phase.slice(1);
 }
 
-export function formatProgressEvent(event: ProgressEvent): string {
+/** Build a link for the entity path, if serverBaseUrl is available. */
+function buildEntityLink(path: string, serverBaseUrl?: string): string {
+  if (!serverBaseUrl) return path;
+  const base = serverBaseUrl.replace(/\/+$/, '');
+  // Convert Windows-style path to /drive/rest format: D:\foo → /D/foo
+  const normalized = path.replace(/^([A-Za-z]):/, '/$1').replace(/\\/g, '/');
+  return `${base}/path${normalized}`;
+}
+
+export function formatProgressEvent(
+  event: ProgressEvent,
+  serverBaseUrl?: string,
+): string {
+  const pathDisplay = buildEntityLink(event.path, serverBaseUrl);
+
   switch (event.type) {
     case 'synthesis_start':
-      return `🔬 Started meta synthesis: ${event.path}`;
+      return `🔬 Started meta synthesis: ${pathDisplay}`;
 
     case 'phase_start': {
       if (!event.phase) {
@@ -69,13 +85,13 @@ export function formatProgressEvent(event: ProgressEvent): string {
         event.durationMs !== undefined
           ? formatSeconds(event.durationMs)
           : '0.0s';
-      return `✅ Completed: ${event.path} (${formatNumber(tokens)} tokens / ${duration})`;
+      return `✅ Completed: ${pathDisplay} (${formatNumber(tokens)} tokens / ${duration})`;
     }
 
     case 'error': {
       const phase = event.phase ? `${titleCasePhase(event.phase)} ` : '';
       const error = event.error ?? 'Unknown error';
-      return `❌ Synthesis failed at ${phase}phase: ${event.path}\n   Error: ${error}`;
+      return `❌ Synthesis failed at ${phase}phase: ${pathDisplay}\n   Error: ${error}`;
     }
 
     default: {
@@ -106,7 +122,7 @@ export class ProgressReporter {
     const target = this.config.reportChannel;
     if (!target) return;
 
-    const message = formatProgressEvent(event);
+    const message = formatProgressEvent(event, this.config.serverBaseUrl);
     const url = new URL('/tools/invoke', this.config.gatewayUrl);
 
     const payload: GatewayInvokeRequest = {
