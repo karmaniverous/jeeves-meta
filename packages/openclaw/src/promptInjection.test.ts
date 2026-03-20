@@ -119,4 +119,50 @@ describe('generateMetaMenu', () => {
     const menu = await generateMetaMenu(client);
     expect(menu).toContain('ACTION REQUIRED');
   });
+
+  it('returns ACTION REQUIRED when no entities found', async () => {
+    const client = mockClient({
+      metasOverrides: {
+        summary: {
+          total: 0,
+          stale: 0,
+          errors: 0,
+          neverSynthesized: 0,
+          stalestPath: null,
+          lastSynthesizedPath: null,
+          lastSynthesizedAt: null,
+          tokens: { architect: 0, builder: 0, critic: 0 },
+        },
+        metas: [],
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('ACTION REQUIRED');
+    expect(menu).toContain('No synthesis entities found');
+  });
+
+  it('shows gateway warning when gateway is unreachable', async () => {
+    const client = mockClient({
+      statusOverrides: {
+        dependencies: {
+          watcher: { status: 'ok', rulesRegistered: true },
+          gateway: { status: 'unreachable' },
+        },
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('**Gateway**: unreachable');
+  });
+
+  it('includes all 7 tools in healthy state output', async () => {
+    const client = mockClient();
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('meta_list');
+    expect(menu).toContain('meta_detail');
+    expect(menu).toContain('meta_trigger');
+    expect(menu).toContain('meta_preview');
+    expect(menu).toContain('meta_seed');
+    expect(menu).toContain('meta_unlock');
+    expect(menu).toContain('meta_config');
+  });
 });
