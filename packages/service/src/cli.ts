@@ -171,10 +171,11 @@ program
     }
   });
 
-// ─── validate ───────────────────────────────────────────────────────
+// ─── config ─────────────────────────────────────────────────────────
 program
-  .command('validate')
-  .description('Validate current or candidate config')
+  .command('config')
+  .alias('validate')
+  .description('Query active config or validate a candidate config file')
   .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
   .option('-c, --config <path>', 'Validate a candidate config file locally')
   .action(async (opts: { port: string; config?: string }) => {
