@@ -35,6 +35,20 @@ export const META_TOOLS: readonly ToolMeta[] = [
     description:
       'Dry-run: show what inputs would be gathered for the next synthesis cycle without running LLM.',
   },
+  {
+    name: 'meta_seed',
+    description:
+      'Create a .meta/ directory and initial meta.json for a new entity path.',
+  },
+  {
+    name: 'meta_unlock',
+    description: 'Remove a stale .lock from a meta entity that is stuck.',
+  },
+  {
+    name: 'meta_config',
+    description:
+      'Query service configuration with optional JSONPath expression.',
+  },
 ] as const;
 
 /**
@@ -51,6 +65,9 @@ export function renderToolsTable(): string {
       'Manually trigger synthesis for a specific meta or next-stalest',
     meta_preview:
       'Dry-run: show what inputs would be gathered without running LLM',
+    meta_seed: 'Create .meta/ directory and initial meta.json for a path',
+    meta_unlock: 'Remove stale .lock from a stuck meta entity',
+    meta_config: 'Query service configuration with optional JSONPath',
   };
 
   const rows = META_TOOLS.map(

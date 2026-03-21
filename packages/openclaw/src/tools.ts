@@ -7,7 +7,14 @@
  * @module tools
  */
 
-import { fail, ok, type PluginApi, type ToolResult } from './helpers.js';
+import {
+  connectionFail,
+  ok,
+  type PluginApi,
+  type ToolResult,
+} from '@karmaniverous/jeeves';
+
+import { PLUGIN_ID } from './constants.js';
 import type { MetaServiceClient } from './serviceClient.js';
 import { META_TOOLS } from './toolMeta.js';
 
@@ -16,11 +23,55 @@ function desc(name: string): string {
   return META_TOOLS.find((t) => t.name === name)?.description ?? name;
 }
 
+/** Parameter definition for a simple single-string-param tool. */
+interface SimpleParamDef {
+  name: string;
+  description: string;
+  required?: boolean;
+}
+
+/** Register a tool with a single optional/required string parameter. */
+function registerSimpleTool(
+  api: PluginApi,
+  name: string,
+  paramDef: SimpleParamDef,
+  handler: (param?: string) => Promise<unknown>,
+  baseUrl: string,
+): void {
+  api.registerTool({
+    name,
+    description: desc(name),
+    parameters: {
+      type: 'object',
+      properties: {
+        [paramDef.name]: {
+          type: 'string',
+          description: paramDef.description,
+        },
+      },
+      ...(paramDef.required ? { required: [paramDef.name] } : {}),
+    },
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
+      try {
+        const data = await handler(params[paramDef.name] as string | undefined);
+        return ok(data);
+      } catch (error) {
+        return connectionFail(error, baseUrl, PLUGIN_ID);
+      }
+    },
+  });
+}
+
 /** Register all meta_* tools. */
 export function registerMetaTools(
   api: PluginApi,
   client: MetaServiceClient,
 ): void {
+  const baseUrl = client.getBaseUrl();
+
   // ─── meta_list ──────────────────────────────────────────────
   api.registerTool({
     name: 'meta_list',
@@ -67,7 +118,7 @@ export function registerMetaTools(
         });
         return ok(data);
       } catch (error) {
-        return fail(error);
+        return connectionFail(error, baseUrl, PLUGIN_ID);
       }
     },
   });
@@ -109,62 +160,69 @@ export function registerMetaTools(
         });
         return ok(data);
       } catch (error) {
-        return fail(error);
+        return connectionFail(error, baseUrl, PLUGIN_ID);
       }
     },
   });
 
-  // ─── meta_preview ────────────────────────────────────────────
-  api.registerTool({
-    name: 'meta_preview',
-    description: desc('meta_preview'),
-    parameters: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description:
-            'Optional: specific .meta/ path to preview. If omitted, previews the stalest candidate.',
-        },
-      },
+  // ─── Simple single-param tools ─────────────────────────────
+  registerSimpleTool(
+    api,
+    'meta_preview',
+    {
+      name: 'path',
+      description:
+        'Optional: specific .meta/ path to preview. If omitted, previews the stalest candidate.',
     },
-    execute: async (
-      _id: string,
-      params: Record<string, unknown>,
-    ): Promise<ToolResult> => {
-      try {
-        const data = await client.preview(params.path as string | undefined);
-        return ok(data);
-      } catch (error) {
-        return fail(error);
-      }
-    },
-  });
+    (path) => client.preview(path),
+    baseUrl,
+  );
 
-  // ─── meta_trigger ────────────────────────────────────────────
-  api.registerTool({
-    name: 'meta_trigger',
-    description: desc('meta_trigger'),
-    parameters: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description:
-            'Optional: specific .meta/ or owner path to synthesize. If omitted, synthesizes the stalest candidate.',
-        },
-      },
+  registerSimpleTool(
+    api,
+    'meta_trigger',
+    {
+      name: 'path',
+      description:
+        'Optional: specific .meta/ or owner path to synthesize. If omitted, synthesizes the stalest candidate.',
     },
-    execute: async (
-      _id: string,
-      params: Record<string, unknown>,
-    ): Promise<ToolResult> => {
-      try {
-        const data = await client.synthesize(params.path as string | undefined);
-        return ok(data);
-      } catch (error) {
-        return fail(error);
-      }
+    (path) => client.synthesize(path),
+    baseUrl,
+  );
+
+  registerSimpleTool(
+    api,
+    'meta_seed',
+    {
+      name: 'path',
+      description: 'Owner directory path to seed with .meta/ and meta.json.',
+      required: true,
     },
-  });
+    (path) => client.seed(path!),
+    baseUrl,
+  );
+
+  registerSimpleTool(
+    api,
+    'meta_unlock',
+    {
+      name: 'path',
+      description: 'Path to the .meta/ directory or owner directory to unlock.',
+      required: true,
+    },
+    (path) => client.unlock(path!),
+    baseUrl,
+  );
+
+  registerSimpleTool(
+    api,
+    'meta_config',
+    {
+      name: 'path',
+      description:
+        'Optional JSONPath expression to query specific config fields (e.g. "$.port").',
+    },
+    (path) => client.config(path),
+    baseUrl,
+  );
 }

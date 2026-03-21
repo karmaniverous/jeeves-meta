@@ -42,3 +42,30 @@ Enqueue synthesis for a specific meta or the stalest candidate.
 
 **Response:** `{ status: "accepted", path, queuePosition, alreadyQueued }`
 
+## meta_seed
+
+Create a `.meta/` directory with a skeleton `meta.json` for a new entity path.
+
+**Parameters:**
+- `path` (string, required) — owner directory path
+
+**Response:** `{ path, _id }` (201 Created) or 409 Conflict if already exists
+
+## meta_unlock
+
+Remove a stale `.lock` file from a meta entity that is stuck.
+
+**Parameters:**
+- `path` (string, required) — `.meta/` or owner directory path
+
+**Response:** `{ path, unlocked: true }` or 409 if already unlocked
+
+## meta_config
+
+Query the running service configuration with an optional JSONPath expression.
+
+**Parameters:**
+- `path` (string, optional) — JSONPath like `"$.port"` to query a specific field
+
+**Response:** Full sanitized config (with `gatewayApiKey` redacted) or the specific field value
+

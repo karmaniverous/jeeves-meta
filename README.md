@@ -57,18 +57,21 @@ jeeves-meta preview                   # dry-run next synthesis
 jeeves-meta synthesize                # enqueue synthesis
 jeeves-meta seed <path>               # create .meta/ for a new path
 jeeves-meta unlock <path>             # remove stale .lock file
-jeeves-meta validate                  # validate current config
+jeeves-meta config                    # query active config (supports JSONPath)
 jeeves-meta service start|stop|status|install|remove
 ```
 
 ### As an OpenClaw plugin
 
-Install the plugin package. Four tools become available to the agent:
+Install the plugin package. Seven tools become available to the agent:
 
 - `meta_list` — list metas with summary stats and filtering
 - `meta_detail` — full detail for a single meta with optional archive history
 - `meta_trigger` — manually trigger synthesis (enqueues work)
 - `meta_preview` — dry-run showing what inputs would be gathered
+- `meta_seed` — create `.meta/` directory for a new path
+- `meta_unlock` — remove stale `.lock` from a meta entity
+- `meta_config` — query service configuration with optional JSONPath
 
 ## Configuration
 

@@ -15,10 +15,11 @@ import {
   createAsyncContentCache,
   createComponentWriter,
   init,
+  type PluginApi,
   resolveWorkspacePath,
 } from '@karmaniverous/jeeves';
 
-import { getConfigRoot, getServiceUrl, type PluginApi } from './helpers.js';
+import { getConfigRoot, getServiceUrl } from './helpers.js';
 import { generateMetaMenu } from './promptInjection.js';
 import { MetaServiceClient } from './serviceClient.js';
 import {

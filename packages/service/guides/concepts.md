@@ -22,6 +22,10 @@ A three-step LLM pipeline:
 
 A meta is stale when any file in its scope was modified after `_generatedAt`. The scheduler uses a weighted formula incorporating tree depth and per-meta emphasis to prioritize which meta to synthesize next.
 
+## Progressive Synthesis (`_state`)
+
+The builder can populate an opaque `_state` field in `meta.json` to carry forward intermediate progress across cycles. On timeout (`SpawnTimeoutError`), the service attempts to salvage any advanced `_state` from partial output — preserving progress even when the full synthesis fails.
+
 ## Lock Staging
 
 Synthesis results are staged in a `.lock` file before being committed to `meta.json`. If the process crashes between staging and commit, `meta.json` is untouched — "never write worse."

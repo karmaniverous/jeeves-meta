@@ -64,6 +64,11 @@ export class MetaServiceClient {
     this.baseUrl = config.serviceUrl.replace(/\/$/, '');
   }
 
+  /** Return the base URL (for error reporting). */
+  public getBaseUrl(): string {
+    return this.baseUrl;
+  }
+
   /** GET helper — returns parsed JSON. */
   private async get<T = unknown>(path: string): Promise<T> {
     const res = await fetch(this.baseUrl + path);
@@ -155,8 +160,9 @@ export class MetaServiceClient {
     return this.post('/unlock', { path });
   }
 
-  /** GET /config/validate — validate current config. */
-  public async validate(): Promise<unknown> {
-    return this.get('/config/validate');
+  /** GET /config — query service config with optional JSONPath. */
+  public async config(path?: string): Promise<unknown> {
+    const qs = path ? '?path=' + encodeURIComponent(path) : '';
+    return this.get('/config' + qs);
   }
 }

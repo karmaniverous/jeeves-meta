@@ -55,6 +55,31 @@ critic) runs in the background.
 - `path` (optional): Specific `.meta/` or owner directory path. If omitted,
   synthesizes the stalest candidate.
 
+### meta_seed
+Create a new `.meta/` directory with a skeleton `meta.json` (containing a
+UUID `_id`). Use this to bootstrap synthesis for a new path before the
+first cycle runs.
+
+**Parameters:**
+- `path` (required): Owner directory path where `.meta/` will be created.
+
+### meta_unlock
+Remove a stale `.lock` file from a meta entity. Locks are created during
+synthesis and normally cleaned up automatically; use this when a synthesis
+crashed and left a lock behind.
+
+**Parameters:**
+- `path` (required): `.meta/` or owner directory path with a stuck lock.
+
+### meta_config
+Query the running service configuration. Supports optional JSONPath
+filtering to extract specific settings. Sensitive fields (e.g.
+`gatewayApiKey`) are redacted.
+
+**Parameters:**
+- `path` (optional): JSONPath expression (e.g. `$.schedule`). If omitted,
+  returns the full sanitized config.
+
 ## When to Use
 
 - **Checking synthesis health:** `meta_list`
@@ -63,6 +88,9 @@ critic) runs in the background.
 - **Getting full details:** `meta_detail` with optional `includeArchive: 5`
 - **Understanding what a cycle will do:** `meta_preview`
 - **Forcing a refresh:** `meta_trigger` with optional path
+- **Seeding a new meta:** `meta_seed` with path
+- **Clearing a stuck lock:** `meta_unlock` with path
+- **Inspecting service config:** `meta_config` with optional JSONPath
 - **Reading synthesis output:** Use `watcher_search` filtered by the properties
   configured in `metaProperty` (e.g. `{ "domains": ["meta"] }` in production).
   The default properties are `{ _meta: "current" }` for live metas and
@@ -77,6 +105,12 @@ critic) runs in the background.
 - **Three steps:** Architect crafts the task brief, Builder produces content,
   Critic evaluates quality. The feedback loop self-improves over cycles.
 - **Archives:** Each cycle creates a timestamped snapshot in `.meta/archive/`.
+- **Progressive synthesis (`_state`):** The builder can set an opaque `_state`
+  value in its output JSON. This state is persisted in `meta.json` and passed
+  back as context on the next cycle, enabling multi-cycle progressive work
+  (e.g. phased analysis, incremental refinement). On builder timeout, the
+  engine attempts to recover partial output — if `_state` advanced, it saves
+  the new state without overwriting existing content.
 
 ## Configuration
 
@@ -105,6 +139,7 @@ Key settings:
 | `thinking` | `low` | Thinking level for spawned LLM sessions |
 | `port` | 1938 | HTTP API listen port |
 | `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
+| `serverBaseUrl` | (optional) | Public base URL of the service (e.g. `http://myhost:1938`). When set, progress reports include clickable entity links. |
 | `reportChannel` | (optional) | Gateway channel target for progress messages (e.g. Slack channel ID) |
 | `logging.level` | `info` | Log level (trace/debug/info/warn/error) |
 | `logging.file` | (optional) | Log file path |
@@ -357,7 +392,7 @@ The service exposes these endpoints (default port 1938):
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
 | POST | `/seed` | Create `.meta/` directory + meta.json |
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
-| GET | `/config/validate` | Return sanitized active configuration |
+| GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 
 All endpoints return JSON. The OpenClaw plugin tools are thin wrappers
 around these endpoints.
@@ -371,7 +406,7 @@ jeeves-meta <command> [options]
 ```
 
 Commands: `start`, `status`, `list`, `detail`, `preview`, `synthesize`,
-`seed`, `unlock`, `validate`, `service install|start|stop|status|remove`.
+`seed`, `unlock`, `config`, `service install|start|stop|status|remove`.
 
 Config resolution: `--config` flag → `JEEVES_META_CONFIG` env var → error.
 All client commands support `-p, --port` to specify the service port (default: 1938).
@@ -437,13 +472,19 @@ stalest entity) in the agent's system prompt automatically.
 
 ### Executor timeouts
 
-**Symptom:** `meta_trigger` fails with timeout error
+**Symptom:** `meta_detail` shows `_error` with code `TIMEOUT`
 **Cause:** Subprocess took longer than configured timeout
+**Note:** The engine attempts partial recovery on builder timeouts. If the
+builder wrote partial output with an advanced `_state`, the state is saved
+(preserving existing content) and the error is recorded. This means
+progressive work is not lost on timeout — only the content update is skipped.
 **Fix:**
-1. Increase timeout in config (`architectTimeout`, `builderTimeout`,
+1. Check if `_state` advanced (partial recovery succeeded) — subsequent
+   cycles can continue from where the builder left off
+2. Increase timeout in config (`architectTimeout`, `builderTimeout`,
    `criticTimeout`)
-2. Check if the LLM provider is slow or rate-limited
-3. Check scope size: large scopes with many files take longer
+3. Check if the LLM provider is slow or rate-limited
+4. Check scope size: large scopes with many files take longer
 
 ### LLM errors in synthesis steps
 

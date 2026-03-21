@@ -72,6 +72,27 @@ describe('metaJsonSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  it('accepts _state with arbitrary data', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _state: { step: 3, progress: 'analyzing', pending: ['a', 'b'] },
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._state).toEqual({
+      step: 3,
+      progress: 'analyzing',
+      pending: ['a', 'b'],
+    });
+  });
+
+  it('accepts _state as null', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _state: null,
+    });
+    expect(result.success).toBe(true);
+  });
+
   it('rejects negative _synthesisCount', () => {
     const result = metaJsonSchema.safeParse({
       _id: '550e8400-e29b-41d4-a716-446655440000',

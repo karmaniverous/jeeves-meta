@@ -95,6 +95,12 @@ export const metaJsonSchema = z
     _criticTokensAvg: z.number().optional(),
 
     /**
+     * Opaque state carried across synthesis cycles for progressive work.
+     * Set by the builder, passed back as context on next cycle.
+     */
+    _state: z.unknown().optional(),
+
+    /**
      * Structured error from last cycle. Present when a step failed.
      * Cleared on successful cycle.
      */

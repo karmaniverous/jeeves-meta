@@ -62,6 +62,34 @@ describe('formatProgressEvent', () => {
       '❌ Synthesis failed at Critic phase: x\n   Error: boom',
     );
   });
+
+  it('constructs server links in synthesis_start when serverBaseUrl is set', () => {
+    const e: ProgressEvent = {
+      type: 'synthesis_start',
+      path: 'D:\\domains\\github\\org',
+    };
+    const result = formatProgressEvent(e, 'http://localhost:1938');
+    expect(result).toContain('http://localhost:1938/path/D/domains/github/org');
+  });
+
+  it('constructs server links in synthesis_complete when serverBaseUrl is set', () => {
+    const e: ProgressEvent = {
+      type: 'synthesis_complete',
+      path: 'j:/domains/github/org',
+      tokens: 100,
+      durationMs: 5000,
+    };
+    const result = formatProgressEvent(e, 'https://meta.example.com');
+    expect(result).toContain(
+      'https://meta.example.com/path/j/domains/github/org',
+    );
+  });
+
+  it('uses plain path when serverBaseUrl is not set', () => {
+    const e: ProgressEvent = { type: 'synthesis_start', path: 'x' };
+    const result = formatProgressEvent(e);
+    expect(result).toBe('🔬 Started meta synthesis: x');
+  });
 });
 
 describe('ProgressReporter', () => {

@@ -31,6 +31,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `schedule` | string | `*/30 * * * *` | Cron expression for synthesis scheduling |
 | `reportChannel` | string | — | Gateway channel target for progress messages |
 | `watcherHealthIntervalMs` | number | `60000` | Periodic watcher health check interval in ms. 0 = disabled. |
+| `serverBaseUrl` | string | — | Base URL for entity links in progress reports (e.g. `http://myserver:1938`) |
 | `logging.level` | string | `"info"` | Log level (trace/debug/info/warn/error) |
 | `logging.file` | string | — | Log file path |
 

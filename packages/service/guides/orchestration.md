@@ -16,11 +16,23 @@ The `orchestrate()` function runs a single synthesis cycle in 13 steps:
 12. **Archive & prune** — create timestamped archive snapshot, prune beyond `maxArchive`
 13. **Release lock** — delete `.lock` file (in `finally` block)
 
+### Module Structure
+
+The orchestration pipeline is split into focused modules following SOLID/DRY principles:
+
+| Module | Responsibility |
+|--------|---------------|
+| `orchestrate.ts` | Discovery, staleness ranking, lock management, delegates to `synthesizeNode` |
+| `synthesizeNode.ts` | Single-node architect → builder → critic pipeline |
+| `finalizeCycle.ts` | Lock-staged writes: `.lock` → `meta.json` → archive → prune |
+| `timeoutRecovery.ts` | `SpawnTimeoutError` recovery with partial `_state` salvage |
+
 ### Error Handling
 
 - **Architect failure with cached builder**: continues with existing `_builder`
 - **Architect failure without cached builder**: cycle ends, error recorded
 - **Builder failure**: cycle ends, error recorded
+- **Builder timeout (`SpawnTimeoutError`)**: attempts to salvage advanced `_state` from partial output via `timeoutRecovery`; if `_state` progressed, it is persisted (state-only finalize) and the cycle is recorded as a partial success
 - **Critic failure**: synthesis is preserved, error attached
 - **Errors never block the queue**: logged, reported, queue advances
 

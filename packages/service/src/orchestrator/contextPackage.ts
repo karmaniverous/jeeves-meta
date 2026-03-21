@@ -90,6 +90,7 @@ export async function buildContextPackage(
     previousContent: meta._content ?? null,
     previousFeedback: meta._feedback ?? null,
     steer: meta._steer ?? null,
+    previousState: meta._state ?? null,
     archives,
   };
 }

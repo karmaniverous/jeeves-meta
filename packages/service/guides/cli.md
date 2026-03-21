@@ -39,9 +39,9 @@ Create a `.meta/` directory with a fresh `meta.json` (containing a new UUID `_id
 
 Remove a `.lock` file from a meta entity. Use when a lock is stale due to a crashed synthesis.
 
-## `jeeves-meta validate [-c <config-path>]`
+## `jeeves-meta config [-c <config-path>]`
 
-Validate the active service config (or a candidate config file).
+Query the active service config (or validate a candidate config file locally). Supports JSONPath via `-c` for local files or queries the running service's `GET /config` endpoint.
 
 ## `jeeves-meta service install|start|stop|status|remove`
 

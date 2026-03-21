@@ -14,6 +14,8 @@ export interface BuilderOutput {
   content: string;
   /** Additional structured fields (non-underscore keys). */
   fields: Record<string, unknown>;
+  /** Opaque state for progressive synthesis, if provided by the builder. */
+  state?: unknown;
 }
 
 /**
@@ -86,6 +88,9 @@ function tryParseJson(str: string): BuilderOutput | null {
 
     if (content === null) return null;
 
+    // Extract _state (the ONLY underscore key the builder is allowed to set)
+    const state = '_state' in parsed ? parsed['_state'] : undefined;
+
     // Extract non-underscore fields
     const fields: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(parsed)) {
@@ -94,7 +99,7 @@ function tryParseJson(str: string): BuilderOutput | null {
       }
     }
 
-    return { content, fields };
+    return { content, fields, ...(state !== undefined ? { state } : {}) };
   } catch {
     return null;
   }

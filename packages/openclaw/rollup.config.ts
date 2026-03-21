@@ -42,6 +42,8 @@ const cliConfig: RollupOptions = {
     banner: '#!/usr/bin/env node',
   },
   plugins: [
+    resolve({ preferBuiltins: true }),
+    commonjs(),
     typescriptPlugin({
       tsconfig: './tsconfig.json',
       outputToFilesystem: false,
