@@ -198,7 +198,7 @@ export function registerMetaTools(
       description: 'Owner directory path to seed with .meta/ and meta.json.',
       required: true,
     },
-    (path) => client.seed(path as string),
+    (path) => client.seed(path!),
     baseUrl,
   );
 
@@ -210,7 +210,7 @@ export function registerMetaTools(
       description: 'Path to the .meta/ directory or owner directory to unlock.',
       required: true,
     },
-    (path) => client.unlock(path as string),
+    (path) => client.unlock(path!),
     baseUrl,
   );
 

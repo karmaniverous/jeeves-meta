@@ -159,6 +159,19 @@ export async function synthesizeNode(
     }
 
     stepError = toMetaError('builder', err);
+    finalizeCycle({
+      metaPath: node.metaPath,
+      current: currentMeta,
+      config,
+      architect: currentMeta._architect ?? '',
+      builder: builderBrief,
+      critic: currentMeta._critic ?? '',
+      builderOutput: null,
+      feedback: null,
+      structureHash: newStructureHash,
+      synthesisCount,
+      error: stepError,
+    });
     return { synthesized: true, metaPath: node.metaPath, error: stepError };
   }
 
