@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.5.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.4.1...0.5.0)
+#### [0.6.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.5.0...0.6.0)
+
+- fix: upgrade core to ^0.3.0 + remove redundant TOOLS.md tool catalogue (#67) [`#68`](https://github.com/karmaniverous/jeeves-meta/pull/68)
+- fix: upgrade @karmaniverous/jeeves to ^0.3.0 and trim TOOLS.md meta section [`#67`](https://github.com/karmaniverous/jeeves-meta/pull/67)
+- chore: release @karmaniverous/jeeves-meta v0.8.0 [`71bbe4d`](https://github.com/karmaniverous/jeeves-meta/commit/71bbe4d25bd3f4359b3948b65d39ce12b20d9c62)
+
+#### [openclaw/0.5.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.4.1...openclaw/0.5.0)
+
+> 22 March 2026
 
 - fix: standardise bind address, plugin configSchema naming, and defaults (#65) [`#66`](https://github.com/karmaniverous/jeeves-meta/pull/66)
 - fix: standardise bind address, plugin configSchema naming, and defaults [`#65`](https://github.com/karmaniverous/jeeves-meta/pull/65)
@@ -15,6 +23,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - docs: update skills, READMEs for v0.7.0 — 7 tools, _state, GET /config [`790b3b0`](https://github.com/karmaniverous/jeeves-meta/commit/790b3b0b02755c7938272817ecda60961b02ce6b)
 - docs: sync all guides and READMEs with v0.7.0 implementation [`2ad7b29`](https://github.com/karmaniverous/jeeves-meta/commit/2ad7b29a9e8fc9890616e4d28e516f64c5c68b3e)
 - test(openclaw): add promptInjection tests for 7-tool set [`a118c4a`](https://github.com/karmaniverous/jeeves-meta/commit/a118c4a6cbe8f91a34f0ecae801d221c634b1fd1)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.5.0 [`662c1a1`](https://github.com/karmaniverous/jeeves-meta/commit/662c1a12f6a11d63a5775fcc71c6b061b636703b)
 - chore: release @karmaniverous/jeeves-meta v0.7.0 [`d5af0fa`](https://github.com/karmaniverous/jeeves-meta/commit/d5af0fa1bbc63446d56b13dc523870d17b38e6f9)
 - fix(service): persist builder error to meta.json on non-timeout failure [`cb81f75`](https://github.com/karmaniverous/jeeves-meta/commit/cb81f75c5742e175a8c4c9eaa756f6b9d611472b)
 - test(service): add 400 test for GET /config with invalid JSONPath [`14ff779`](https://github.com/karmaniverous/jeeves-meta/commit/14ff779dc767c8780dafce531b14464509e49c4e)
