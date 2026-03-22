@@ -26,7 +26,6 @@ import {
   createPluginCommands,
   createServiceCommands,
 } from './serviceCommands.js';
-import { renderToolsTable } from './toolMeta.js';
 import { registerMetaTools } from './tools.js';
 
 /** Plugin version derived from package.json. */
@@ -57,7 +56,7 @@ export default function register(api: PluginApi): void {
     fetch: async () => generateMetaMenu(client),
     placeholder:
       'The jeeves-meta synthesis engine is initializing...\n\n' +
-      renderToolsTable(),
+      'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
   });
 
   const writer = createComponentWriter({

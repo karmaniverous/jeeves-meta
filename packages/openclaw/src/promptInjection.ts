@@ -12,7 +12,6 @@ import type {
   MetasResponse,
   StatusResponse,
 } from './serviceClient.js';
-import { renderToolsTable } from './toolMeta.js';
 
 /**
  * Generate the Meta menu Markdown for TOOLS.md.
@@ -119,6 +118,6 @@ export async function generateMetaMenu(
     '| Last synthesized | ' + lastSynthDisplay + ' |',
     ...(depLines.length > 0 ? ['', '### Dependencies', ...depLines] : []),
     '',
-    renderToolsTable(),
+    'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
   ].join('\n');
 }

@@ -55,7 +55,7 @@ describe('generateMetaMenu', () => {
     const client = mockClient();
     const menu = await generateMetaMenu(client);
     expect(menu).toContain('10 meta entities');
-    expect(menu).toContain('meta_list');
+    expect(menu).toContain('jeeves-meta');
   });
 
   it('shows warning when rulesRegistered is false', async () => {
@@ -154,15 +154,12 @@ describe('generateMetaMenu', () => {
     expect(menu).toContain('**Gateway**: unreachable');
   });
 
-  it('includes all 7 tools in healthy state output', async () => {
+  it('does not include tool catalogue in healthy state output', async () => {
     const client = mockClient();
     const menu = await generateMetaMenu(client);
-    expect(menu).toContain('meta_list');
-    expect(menu).toContain('meta_detail');
-    expect(menu).toContain('meta_trigger');
-    expect(menu).toContain('meta_preview');
-    expect(menu).toContain('meta_seed');
-    expect(menu).toContain('meta_unlock');
-    expect(menu).toContain('meta_config');
+    // Tool catalogue was removed (issue #67) — tool definitions are
+    // already in the system prompt via OpenClaw's native tool injection.
+    expect(menu).not.toContain('| Tool |');
+    expect(menu).toContain('jeeves-meta');
   });
 });
