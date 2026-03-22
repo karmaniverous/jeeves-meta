@@ -32,7 +32,7 @@ The plugin resolves settings via a three-step fallback chain: plugin config → 
 
 | Setting | Plugin Config Key | Env Var | Default |
 |---------|-------------------|---------|---------|
-| Service URL | `serviceUrl` | `JEEVES_META_URL` | `http://127.0.0.1:1938` |
+| Service URL | `apiUrl` | `JEEVES_META_URL` | `http://127.0.0.1:1938` |
 | Config Root | `configRoot` | `JEEVES_CONFIG_ROOT` | `j:/config` |
 
 ```json
@@ -42,7 +42,7 @@ The plugin resolves settings via a three-step fallback chain: plugin config → 
       "jeeves-meta-openclaw": {
         "enabled": true,
         "config": {
-          "serviceUrl": "http://127.0.0.1:1938",
+          "apiUrl": "http://127.0.0.1:1938",
           "configRoot": "j:/config"
         }
       }

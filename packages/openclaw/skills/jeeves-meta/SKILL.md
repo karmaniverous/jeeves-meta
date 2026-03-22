@@ -138,6 +138,7 @@ Key settings:
 | `skipUnchanged` | true | Skip candidates with no changes since last synthesis |
 | `thinking` | `low` | Thinking level for spawned LLM sessions |
 | `port` | 1938 | HTTP API listen port |
+| `host` | `127.0.0.1` | Bind address for the HTTP server |
 | `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
 | `serverBaseUrl` | (optional) | Public base URL of the service (e.g. `http://myhost:1938`). When set, progress reports include clickable entity links. |
 | `reportChannel` | (optional) | Gateway channel target for progress messages (e.g. Slack channel ID) |
@@ -256,8 +257,8 @@ The following fields can be changed without restarting the service:
 - `logging.level` — log verbosity
 
 Edit the config file and save; the service detects changes via `fs.watchFile`.
-All other fields (including `metaProperty`, `port`, timeouts) require a service
-restart.
+All other fields (including `metaProperty`, `host`, `port`, timeouts) require a
+service restart.
 
 ### Progress Reporting
 
@@ -337,7 +338,7 @@ To uninstall: `npx @karmaniverous/jeeves-meta-openclaw uninstall`
       "jeeves-meta-openclaw": {
         "enabled": true,
         "config": {
-          "serviceUrl": "http://127.0.0.1:1938"
+          "apiUrl": "http://127.0.0.1:1938"
         }
       }
     }
@@ -432,11 +433,11 @@ stalest entity) in the agent's system prompt automatically.
 ### Service unreachable
 
 **Symptom:** TOOLS.md shows "ACTION REQUIRED: jeeves-meta service is unreachable"
-**Cause:** Meta service not running or wrong `serviceUrl` in plugin config
+**Cause:** Meta service not running or wrong `apiUrl` in plugin config
 **Fix:**
 1. Check if the service is running: `jeeves-meta service status` or `curl http://localhost:1938/status`
 2. If down, start it: `jeeves-meta service start` or `jeeves-meta start --config <path>`
-3. If running on a different port, update `serviceUrl` in plugin config
+3. If running on a different port, update `apiUrl` in plugin config
 
 ### Watcher unreachable
 

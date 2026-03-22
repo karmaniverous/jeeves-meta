@@ -13,7 +13,7 @@ export function getServiceUrl(api: PluginApi): string {
   return resolvePluginSetting(
     api,
     PLUGIN_ID,
-    'serviceUrl',
+    'apiUrl',
     'JEEVES_META_URL',
     'http://127.0.0.1:1938',
   );

@@ -77,8 +77,8 @@ export async function startService(
 
   // Start HTTP server
   try {
-    await server.listen({ port: config.port, host: '0.0.0.0' });
-    logger.info({ port: config.port }, 'Service listening');
+    await server.listen({ port: config.port, host: config.host });
+    logger.info({ port: config.port, host: config.host }, 'Service listening');
   } catch (err) {
     logger.error(err, 'Failed to start service');
     process.exit(1);
