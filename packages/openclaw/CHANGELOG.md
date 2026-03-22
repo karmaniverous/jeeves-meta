@@ -2,12 +2,33 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.4.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.4.0...0.4.1)
+#### [0.5.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.4.1...0.5.0)
+
+- fix: standardise bind address, plugin configSchema naming, and defaults (#65) [`#66`](https://github.com/karmaniverous/jeeves-meta/pull/66)
+- fix: standardise bind address, plugin configSchema naming, and defaults [`#65`](https://github.com/karmaniverous/jeeves-meta/pull/65)
+- feat: v0.7.0/v0.5.0 — Progressive Synthesis & Core SDK Adoption [`#64`](https://github.com/karmaniverous/jeeves-meta/pull/64)
+- refactor: SOLID/DRY pass — extract finalizeCycle, deduplicate PLUGIN_ID and tool registration [`bb2e9c6`](https://github.com/karmaniverous/jeeves-meta/commit/bb2e9c6bfd6b34f29b4625124df412109ea7127d)
+- feat(service): Phase 2 - progressive state, timeout recovery, GET /config [`169f035`](https://github.com/karmaniverous/jeeves-meta/commit/169f035a2f7b216c3c237d516fe9ce82450c3c5d)
+- feat(openclaw): adopt core SDK v0.2.0 - Phase 1 [`f765e0d`](https://github.com/karmaniverous/jeeves-meta/commit/f765e0dc827f9fae0cd432ef5cf5dcb7db6c348b)
+- test(service): add unit tests for finalizeCycle and timeoutRecovery [`03a74f5`](https://github.com/karmaniverous/jeeves-meta/commit/03a74f5b2477686a98de531ff62b4113a0a6172a)
+- feat(openclaw): add meta_seed, meta_unlock, meta_config tools [`35718b5`](https://github.com/karmaniverous/jeeves-meta/commit/35718b5c3d8b895e431e5d51d5cdd8701eef7341)
+- docs: update skills, READMEs for v0.7.0 — 7 tools, _state, GET /config [`790b3b0`](https://github.com/karmaniverous/jeeves-meta/commit/790b3b0b02755c7938272817ecda60961b02ce6b)
+- docs: sync all guides and READMEs with v0.7.0 implementation [`2ad7b29`](https://github.com/karmaniverous/jeeves-meta/commit/2ad7b29a9e8fc9890616e4d28e516f64c5c68b3e)
+- test(openclaw): add promptInjection tests for 7-tool set [`a118c4a`](https://github.com/karmaniverous/jeeves-meta/commit/a118c4a6cbe8f91a34f0ecae801d221c634b1fd1)
+- chore: release @karmaniverous/jeeves-meta v0.7.0 [`d5af0fa`](https://github.com/karmaniverous/jeeves-meta/commit/d5af0fa1bbc63446d56b13dc523870d17b38e6f9)
+- fix(service): persist builder error to meta.json on non-timeout failure [`cb81f75`](https://github.com/karmaniverous/jeeves-meta/commit/cb81f75c5742e175a8c4c9eaa756f6b9d611472b)
+- test(service): add 400 test for GET /config with invalid JSONPath [`14ff779`](https://github.com/karmaniverous/jeeves-meta/commit/14ff779dc767c8780dafce531b14464509e49c4e)
+- refactor(service): rename CLI validate command to config with alias [`2c79e4d`](https://github.com/karmaniverous/jeeves-meta/commit/2c79e4d63ddbb29aaf645a5b5a6f7e4c7883594b)
+
+#### [openclaw/0.4.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.4.0...openclaw/0.4.1)
+
+> 19 March 2026
 
 - fix(openclaw): use core resolveWorkspacePath from jeeves v0.1.4 [`#50`](https://github.com/karmaniverous/jeeves-meta/pull/50)
 - fix(service): unique session labels per synthesis cycle [`#49`](https://github.com/karmaniverous/jeeves-meta/pull/49)
 - fix(openclaw): bundle @karmaniverous/jeeves instead of externalizing [`#48`](https://github.com/karmaniverous/jeeves-meta/pull/48)
 - fix(openclaw): use core resolveWorkspacePath from @karmaniverous/jeeves v0.1.4 [`b50f42a`](https://github.com/karmaniverous/jeeves-meta/commit/b50f42a91944a9fd6492c68ab8523e4b365c69c1)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.4.1 [`4503873`](https://github.com/karmaniverous/jeeves-meta/commit/4503873650ebddd626aff34d56df5caae7492e72)
 - chore: release @karmaniverous/jeeves-meta v0.6.1 [`7f83576`](https://github.com/karmaniverous/jeeves-meta/commit/7f835764f71d0ca59c00bfdbe0c8304d1228b06f)
 - fix(openclaw): update jeeves to 0.1.6, add servicePackage/pluginPackage fields [`8f5755a`](https://github.com/karmaniverous/jeeves-meta/commit/8f5755a74dee641ec4e8d3d69e80cf56a6da44e2)
 - fix(openclaw): update @karmaniverous/jeeves to 0.1.5 (workspace path fallback fix) [`4284d25`](https://github.com/karmaniverous/jeeves-meta/commit/4284d252774e4a8dbc78d650a1252f206b7193cf)
