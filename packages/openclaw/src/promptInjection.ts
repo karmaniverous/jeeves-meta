@@ -37,7 +37,7 @@ export async function generateMetaMenu(
       '> **Troubleshooting:**',
       '> - Verify the service is installed: `npm list -g @karmaniverous/jeeves-meta`',
       '> - Check if running: `curl http://localhost:1938/status`',
-      '> - Verify `serviceUrl` in plugin config if using a non-default port',
+      '> - Verify `apiUrl` in plugin config if using a non-default port',
       '>',
       "> **Read the `jeeves-meta` skill's Bootstrapping section** for full setup guidance.",
     ].join('\n');

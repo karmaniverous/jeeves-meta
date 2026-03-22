@@ -54,14 +54,14 @@ export interface MetasResponse {
 /** Constructor config. */
 interface MetaServiceConfig {
   /** Base URL of the jeeves-meta service (e.g. http://127.0.0.1:1938). */
-  serviceUrl: string;
+  apiUrl: string;
 }
 
 export class MetaServiceClient {
   private readonly baseUrl: string;
 
   public constructor(config: MetaServiceConfig) {
-    this.baseUrl = config.serviceUrl.replace(/\/$/, '');
+    this.baseUrl = config.apiUrl.replace(/\/$/, '');
   }
 
   /** Return the base URL (for error reporting). */

@@ -44,7 +44,7 @@ const PLUGIN_VERSION: string = (() => {
 
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
 export default function register(api: PluginApi): void {
-  const client = new MetaServiceClient({ serviceUrl: getServiceUrl(api) });
+  const client = new MetaServiceClient({ apiUrl: getServiceUrl(api) });
 
   registerMetaTools(api, client);
 
