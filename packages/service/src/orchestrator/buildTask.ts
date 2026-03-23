@@ -8,6 +8,22 @@ import type { MetaContext } from '../interfaces/index.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
 import { condenseScopeFiles } from './contextPackage.js';
 
+/** Append a keyed record of meta outputs as subsections, if non-empty. */
+function appendMetaSections(
+  sections: string[],
+  heading: string,
+  metas: Record<string, unknown>,
+): void {
+  if (Object.keys(metas).length === 0) return;
+  sections.push('', heading);
+  for (const [path, content] of Object.entries(metas)) {
+    sections.push(
+      `### ${path}`,
+      typeof content === 'string' ? content : '(not yet synthesized)',
+    );
+  }
+}
+
 /** Append optional context sections shared across all step prompts. */
 function appendSharedSections(
   sections: string[],
@@ -43,24 +59,16 @@ function appendSharedSections(
     sections.push('', opts.feedbackHeading, ctx.previousFeedback);
   }
 
-  if (opts.includeChildMetas && Object.keys(ctx.childMetas).length > 0) {
-    sections.push('', '## CHILD META OUTPUTS');
-    for (const [childPath, content] of Object.entries(ctx.childMetas)) {
-      sections.push(
-        `### ${childPath}`,
-        typeof content === 'string' ? content : '(not yet synthesized)',
-      );
-    }
+  if (opts.includeChildMetas) {
+    appendMetaSections(sections, '## CHILD META OUTPUTS', ctx.childMetas);
   }
 
-  if (opts.includeCrossRefs && Object.keys(ctx.crossRefMetas).length > 0) {
-    sections.push('', '## CROSS-REFERENCED METAS');
-    for (const [refPath, content] of Object.entries(ctx.crossRefMetas)) {
-      sections.push(
-        `### ${refPath}`,
-        typeof content === 'string' ? content : '(not yet synthesized)',
-      );
-    }
+  if (opts.includeCrossRefs) {
+    appendMetaSections(
+      sections,
+      '## CROSS-REFERENCED METAS',
+      ctx.crossRefMetas,
+    );
   }
 }
 
