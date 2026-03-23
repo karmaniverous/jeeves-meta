@@ -16,6 +16,7 @@ import type { RouteDeps } from './index.js';
 
 const seedBodySchema = z.object({
   path: z.string().min(1),
+  crossRefs: z.array(z.string()).optional(),
 });
 
 export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
@@ -33,7 +34,8 @@ export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
     deps.logger.info({ metaDir }, 'creating .meta directory');
     mkdirSync(metaDir, { recursive: true });
 
-    const metaJson = { _id: randomUUID() };
+    const metaJson: Record<string, unknown> = { _id: randomUUID() };
+    if (body.crossRefs !== undefined) metaJson._crossRefs = body.crossRefs;
     const metaJsonPath = join(metaDir, 'meta.json');
     deps.logger.info({ metaJsonPath }, 'writing meta.json');
     writeFileSync(metaJsonPath, JSON.stringify(metaJson, null, 2) + '\n');

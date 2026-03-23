@@ -51,6 +51,7 @@ const sampleCtx: MetaContext = {
   scopeFiles: ['/test/a.md', '/test/b.md', '/test/sub/c.md'],
   deltaFiles: ['/test/b.md'],
   childMetas: { '/test/sub': 'Child synthesis content' },
+  crossRefMetas: {},
   previousContent: '# Previous synthesis',
   previousFeedback: 'Good but needs more detail.',
   steer: 'Focus on trends.',
@@ -129,6 +130,54 @@ describe('buildCriticTask', () => {
     expect(task).toContain('You are a critic');
     expect(task).toContain('Previous synthesis');
     expect(task).toContain('Focus on trends');
+  });
+});
+
+describe('cross-referenced metas in prompts', () => {
+  const ctxWithCrossRefs: MetaContext = {
+    ...sampleCtx,
+    crossRefMetas: {
+      '/ref/path/a': 'Cross-ref A content',
+      '/ref/path/b': null,
+    },
+  };
+
+  const ctxNoCrossRefs: MetaContext = {
+    ...sampleCtx,
+    crossRefMetas: {},
+  };
+
+  it('architect task includes CROSS-REFERENCED METAS section when non-empty', () => {
+    const task = buildArchitectTask(ctxWithCrossRefs, sampleMeta, sampleConfig);
+    expect(task).toContain('## CROSS-REFERENCED METAS');
+    expect(task).toContain('### /ref/path/a');
+    expect(task).toContain('Cross-ref A content');
+    expect(task).toContain('### /ref/path/b');
+    expect(task).toContain('(not yet synthesized)');
+  });
+
+  it('architect task omits CROSS-REFERENCED METAS section when empty', () => {
+    const task = buildArchitectTask(ctxNoCrossRefs, sampleMeta, sampleConfig);
+    expect(task).not.toContain('## CROSS-REFERENCED METAS');
+  });
+
+  it('builder task includes CROSS-REFERENCED METAS section when non-empty', () => {
+    const meta: MetaJson = { ...sampleMeta, _builder: 'brief' };
+    const task = buildBuilderTask(ctxWithCrossRefs, meta, sampleConfig);
+    expect(task).toContain('## CROSS-REFERENCED METAS');
+    expect(task).toContain('### /ref/path/a');
+    expect(task).toContain('Cross-ref A content');
+  });
+
+  it('builder task omits CROSS-REFERENCED METAS section when empty', () => {
+    const meta: MetaJson = { ...sampleMeta, _builder: 'brief' };
+    const task = buildBuilderTask(ctxNoCrossRefs, meta, sampleConfig);
+    expect(task).not.toContain('## CROSS-REFERENCED METAS');
+  });
+
+  it('critic task does NOT include CROSS-REFERENCED METAS section', () => {
+    const task = buildCriticTask(ctxWithCrossRefs, sampleMeta, sampleConfig);
+    expect(task).not.toContain('## CROSS-REFERENCED METAS');
   });
 });
 

@@ -18,6 +18,7 @@ function appendSharedSections(
     includePreviousFeedback?: boolean;
     feedbackHeading?: string;
     includeChildMetas?: boolean;
+    includeCrossRefs?: boolean;
   },
 ): void {
   const opts = {
@@ -26,6 +27,7 @@ function appendSharedSections(
     includePreviousFeedback: true,
     feedbackHeading: '## PREVIOUS FEEDBACK',
     includeChildMetas: true,
+    includeCrossRefs: true,
     ...options,
   };
 
@@ -46,6 +48,16 @@ function appendSharedSections(
     for (const [childPath, content] of Object.entries(ctx.childMetas)) {
       sections.push(
         `### ${childPath}`,
+        typeof content === 'string' ? content : '(not yet synthesized)',
+      );
+    }
+  }
+
+  if (opts.includeCrossRefs && Object.keys(ctx.crossRefMetas).length > 0) {
+    sections.push('', '## CROSS-REFERENCED METAS');
+    for (const [refPath, content] of Object.entries(ctx.crossRefMetas)) {
+      sections.push(
+        `### ${refPath}`,
         typeof content === 'string' ? content : '(not yet synthesized)',
       );
     }
@@ -195,6 +207,7 @@ export function buildCriticTask(
     includePreviousContent: false,
     feedbackHeading: '## YOUR PREVIOUS FEEDBACK',
     includeChildMetas: false,
+    includeCrossRefs: false,
   });
 
   sections.push(

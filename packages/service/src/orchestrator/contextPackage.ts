@@ -79,6 +79,25 @@ export async function buildContextPackage(
     }
   }
 
+  // Cross-referenced meta outputs
+  const crossRefMetas: Record<string, unknown> = {};
+  const seen = new Set<string>();
+  for (const refPath of meta._crossRefs ?? []) {
+    // Skip self-references
+    if (refPath === node.ownerPath || refPath === node.metaPath) continue;
+    // Deduplicate
+    if (seen.has(refPath)) continue;
+    seen.add(refPath);
+    const refMetaFile = join(refPath, '.meta', 'meta.json');
+    try {
+      const raw = readFileSync(refMetaFile, 'utf8');
+      const refMeta = JSON.parse(raw) as MetaJson;
+      crossRefMetas[refPath] = refMeta._content ?? null;
+    } catch {
+      crossRefMetas[refPath] = null;
+    }
+  }
+
   // Archive paths
   const archives = listArchiveFiles(node.metaPath);
 
@@ -87,6 +106,7 @@ export async function buildContextPackage(
     scopeFiles,
     deltaFiles,
     childMetas,
+    crossRefMetas,
     previousContent: meta._content ?? null,
     previousFeedback: meta._feedback ?? null,
     steer: meta._steer ?? null,

@@ -20,6 +20,12 @@ export const metaJsonSchema = z
     /** Human-provided steering prompt. Optional. */
     _steer: z.string().optional(),
 
+    /**
+     * Explicit cross-references to other meta owner paths.
+     * Referenced metas' _content is included as architect/builder context.
+     */
+    _crossRefs: z.array(z.string()).optional(),
+
     /** Architect system prompt used this turn. Defaults from config. */
     _architect: z.string().optional(),
 
