@@ -18,6 +18,14 @@ A three-step LLM pipeline:
 2. **Builder** — executes the brief, produces `_content` + structured fields
 3. **Critic** — evaluates the synthesis, provides `_feedback` for the next cycle
 
+## Cross-Meta References (`_crossRefs`)
+
+A meta can declare explicit relationships to other metas via the `_crossRefs` property — an array of owner paths. Referenced metas' `_content` is included as context for the architect and builder steps (not the critic), enabling organizational views that aggregate across source domains without requiring data co-location.
+
+Cross-refs form a heterarchical mesh orthogonal to the ownership tree. Cycles are permitted (A refs B, B refs A — each reads the other's last-synthesized content). No transitive closure: if A needs C's content, declare the ref explicitly.
+
+Cross-ref freshness does NOT affect the referencing meta's staleness. Each meta synthesizes on its own schedule, avoiding dependency cascades.
+
 ## Staleness
 
 A meta is stale when any file in its scope was modified after `_generatedAt`. The scheduler uses a weighted formula incorporating tree depth and per-meta emphasis to prioritize which meta to synthesize next.
