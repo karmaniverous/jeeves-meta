@@ -250,6 +250,9 @@ etc. as needed.
    with a UUID (`_id`). All other fields are populated on first synthesis
 3. Optionally edit `meta.json` to set `_steer`, `_depth`, `_emphasis`,
    and `_crossRefs`
+4. Wait for the watcher to index the new `meta.json` (typically seconds via
+   chokidar file watching)
+5. The entity appears in `meta_list` on the next query
 
 ### Adding Cross-Reference Metas
 
@@ -268,9 +271,6 @@ rollup that pulls from GitHub, Slack, and email metas):
 no source data are valid. Use `_crossRefs` and `_steer` to define what context
 flows in. Useful for organizational views (people, projects) that aggregate
 across physically distributed data.
-4. Wait for the watcher to index the new `meta.json` (typically seconds via
-   chokidar file watching)
-5. The entity appears in `meta_list` on the next query
 
 ### Tuning Scheduling
 
