@@ -58,10 +58,14 @@ critic) runs in the background.
 ### meta_seed
 Create a new `.meta/` directory with a skeleton `meta.json` (containing a
 UUID `_id`). Use this to bootstrap synthesis for a new path before the
-first cycle runs.
+first cycle runs. Supports optional cross-references for metas that
+aggregate context from other metas.
 
 **Parameters:**
 - `path` (required): Owner directory path where `.meta/` will be created.
+- `crossRefs` (optional): JSON array of cross-ref owner paths
+  (e.g. `'["j:/path/a","j:/path/b"]'`). Written as `_crossRefs` in the
+  initial `meta.json`.
 
 ### meta_unlock
 Remove a stale `.lock` file from a meta entity. Locks are created during
@@ -88,7 +92,9 @@ filtering to extract specific settings. Sensitive fields (e.g.
 - **Getting full details:** `meta_detail` with optional `includeArchive: 5`
 - **Understanding what a cycle will do:** `meta_preview`
 - **Forcing a refresh:** `meta_trigger` with optional path
-- **Seeding a new meta:** `meta_seed` with path
+- **Seeding a new meta:** `meta_seed` with path (and optional `crossRefs`)
+- **Seeding a cross-ref meta:** `meta_seed` with path and `crossRefs` JSON array
+- **Checking cross-ref health:** `meta_detail` with path — `crossRefs` array shows resolved/missing status
 - **Clearing a stuck lock:** `meta_unlock` with path
 - **Inspecting service config:** `meta_config` with optional JSONPath
 - **Reading synthesis output:** Use `watcher_search` filtered by the properties
@@ -100,8 +106,15 @@ filtering to extract specific settings. Sensitive fields (e.g.
 
 - **Steering (`_steer`):** Human-written prompt in `meta.json` that guides
   synthesis focus. The only field humans typically write.
+- **Cross-references (`_crossRefs`):** Optional array of owner paths pointing
+  to other metas. Referenced metas' `_content` is included as context for
+  the architect and builder steps (not the critic). Enables organizational
+  views that aggregate across source domains without requiring data
+  co-location. Cycles are permitted (A refs B, B refs A). No transitive
+  closure — if A needs C's content, declare the ref explicitly.
 - **Staleness:** Time since last synthesis. Deeper metas (leaves) update more
-  often than rollup metas (parents).
+  often than rollup metas (parents). Cross-ref freshness does NOT affect
+  the referencing meta's staleness — each meta synthesizes independently.
 - **Three steps:** Architect crafts the task brief, Builder produces content,
   Critic evaluates quality. The feedback loop self-improves over cycles.
 - **Archives:** Each cycle creates a timestamped snapshot in `.meta/archive/`.
@@ -235,10 +248,29 @@ etc. as needed.
 1. Create the `.meta/` directory under the domain path
 2. Seed it: `jeeves-meta seed <path>` — creates `meta.json`
    with a UUID (`_id`). All other fields are populated on first synthesis
-3. Optionally edit `meta.json` to set `_steer`, `_depth`, and `_emphasis`
+3. Optionally edit `meta.json` to set `_steer`, `_depth`, `_emphasis`,
+   and `_crossRefs`
 4. Wait for the watcher to index the new `meta.json` (typically seconds via
    chokidar file watching)
 5. The entity appears in `meta_list` on the next query
+
+### Adding Cross-Reference Metas
+
+For metas that aggregate context from other metas (e.g. an organizational
+rollup that pulls from GitHub, Slack, and email metas):
+
+1. Seed with cross-refs: use `meta_seed` with both `path` and `crossRefs`
+   parameters. Example: seed `j:/veterancrowd/projects/ops` with refs to
+   `["j:/veterancrowd/github","j:/veterancrowd/slack"]`
+2. Set `_steer` to guide synthesis focus across the referenced sources
+3. Verify refs: `meta_detail <path>` shows `crossRefs` status (resolved/missing)
+4. Cross-ref metas can have zero sibling files — all context comes from refs
+   and child metas. The engine handles empty scopes gracefully.
+
+**Pure meta trees:** Directories containing only `.meta/` subdirectories and
+no source data are valid. Use `_crossRefs` and `_steer` to define what context
+flows in. Useful for organizational views (people, projects) that aggregate
+across physically distributed data.
 
 ### Tuning Scheduling
 

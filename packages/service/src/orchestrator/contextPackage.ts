@@ -50,6 +50,22 @@ export function condenseScopeFiles(
 }
 
 /**
+ * Read a meta.json file and extract its `_content` field.
+ *
+ * @param metaJsonPath - Absolute path to a meta.json file.
+ * @returns The `_content` string, or null if missing/unreadable.
+ */
+function readMetaContent(metaJsonPath: string): string | null {
+  try {
+    const raw = readFileSync(metaJsonPath, 'utf8');
+    const meta = JSON.parse(raw) as MetaJson;
+    return meta._content ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Build the context package for a synthesis cycle.
  *
  * @param node - The meta node being synthesized.
@@ -69,14 +85,21 @@ export async function buildContextPackage(
   // Child meta outputs
   const childMetas: Record<string, unknown> = {};
   for (const child of node.children) {
-    const childMetaFile = join(child.metaPath, 'meta.json');
-    try {
-      const raw = readFileSync(childMetaFile, 'utf8');
-      const childMeta = JSON.parse(raw) as MetaJson;
-      childMetas[child.ownerPath] = childMeta._content ?? null;
-    } catch {
-      childMetas[child.ownerPath] = null;
-    }
+    childMetas[child.ownerPath] = readMetaContent(
+      join(child.metaPath, 'meta.json'),
+    );
+  }
+
+  // Cross-referenced meta outputs
+  const crossRefMetas: Record<string, unknown> = {};
+  const seen = new Set<string>();
+  for (const refPath of meta._crossRefs ?? []) {
+    if (refPath === node.ownerPath || refPath === node.metaPath) continue;
+    if (seen.has(refPath)) continue;
+    seen.add(refPath);
+    crossRefMetas[refPath] = readMetaContent(
+      join(refPath, '.meta', 'meta.json'),
+    );
   }
 
   // Archive paths
@@ -87,6 +110,7 @@ export async function buildContextPackage(
     scopeFiles,
     deltaFiles,
     childMetas,
+    crossRefMetas,
     previousContent: meta._content ?? null,
     previousFeedback: meta._feedback ?? null,
     steer: meta._steer ?? null,

@@ -151,8 +151,10 @@ export class MetaServiceClient {
   }
 
   /** POST /seed — create .meta/ for a path. */
-  public async seed(path: string): Promise<unknown> {
-    return this.post('/seed', { path });
+  public async seed(path: string, crossRefs?: string[]): Promise<unknown> {
+    const body: Record<string, unknown> = { path };
+    if (crossRefs !== undefined) body.crossRefs = crossRefs;
+    return this.post('/seed', body);
   }
 
   /** POST /unlock — remove .lock from a meta entity. */

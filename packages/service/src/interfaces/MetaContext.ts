@@ -26,6 +26,9 @@ export interface MetaContext {
   /** Child _content outputs, keyed by relative path. */
   childMetas: Record<string, unknown>;
 
+  /** Cross-referenced meta _content outputs, keyed by owner path. */
+  crossRefMetas: Record<string, unknown>;
+
   /** _content from the last cycle, or null on first run. */
   previousContent: string | null;
 

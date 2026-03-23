@@ -5,7 +5,7 @@
  * @module routes/metas
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
@@ -266,6 +266,28 @@ export function registerMetasRoutes(
           score: Math.round(score * 100) / 100,
         },
       };
+
+      // Cross-refs status
+      const crossRefsRaw = meta._crossRefs;
+      if (Array.isArray(crossRefsRaw) && crossRefsRaw.length > 0) {
+        response.crossRefs = crossRefsRaw.map((refPath: unknown) => {
+          const rp = String(refPath);
+          const refMetaFile = join(rp, '.meta', 'meta.json');
+          if (!existsSync(refMetaFile)) return { path: rp, status: 'missing' };
+          try {
+            const refMeta = JSON.parse(
+              readFileSync(refMetaFile, 'utf8'),
+            ) as Record<string, unknown>;
+            return {
+              path: rp,
+              status: 'resolved',
+              hasContent: Boolean(refMeta._content),
+            };
+          } catch {
+            return { path: rp, status: 'missing' };
+          }
+        });
+      }
 
       // Archive
       if (query.includeArchive) {

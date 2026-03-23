@@ -22,7 +22,15 @@ Full detail for a single meta with optional archive history.
 - `fields` (string[], optional) — fields to include
 - `includeArchive` (boolean | number, optional) — false, true (all), or N most recent
 
-**Response:** `{ path, meta, scope, staleness, archive? }`
+**Response:** `{ path, meta, scope, staleness, crossRefs?, archive? }`
+
+When the meta has `_crossRefs`, the response includes a `crossRefs` status array:
+```json
+{ "crossRefs": [
+  { "path": "j:/some/path", "status": "resolved", "hasContent": true },
+  { "path": "j:/missing", "status": "missing" }
+]}
+```
 
 ## meta_preview
 
@@ -48,6 +56,7 @@ Create a `.meta/` directory with a skeleton `meta.json` for a new entity path.
 
 **Parameters:**
 - `path` (string, required) — owner directory path
+- `crossRefs` (string, optional) — JSON array of cross-ref owner paths (e.g. `'["j:/path/a","j:/path/b"]'`). Written as `_crossRefs` in the initial `meta.json`.
 
 **Response:** `{ path, _id }` (201 Created) or 409 Conflict if already exists
 

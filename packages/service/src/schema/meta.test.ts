@@ -100,4 +100,46 @@ describe('metaJsonSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts _crossRefs as array of strings', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _crossRefs: ['j:/path/a', 'j:/path/b'],
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._crossRefs).toEqual(['j:/path/a', 'j:/path/b']);
+  });
+
+  it('accepts meta without _crossRefs', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._crossRefs).toBeUndefined();
+  });
+
+  it('accepts _crossRefs as empty array', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _crossRefs: [],
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._crossRefs).toEqual([]);
+  });
+
+  it('rejects _crossRefs with non-string elements', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _crossRefs: [42, true],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects _crossRefs as a plain string (not array)', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _crossRefs: 'j:/path/a',
+    });
+    expect(result.success).toBe(false);
+  });
 });

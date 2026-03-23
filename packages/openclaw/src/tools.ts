@@ -190,17 +190,42 @@ export function registerMetaTools(
     baseUrl,
   );
 
-  registerSimpleTool(
-    api,
-    'meta_seed',
-    {
-      name: 'path',
-      description: 'Owner directory path to seed with .meta/ and meta.json.',
-      required: true,
+  // ─── meta_seed ──────────────────────────────────────────────
+  api.registerTool({
+    name: 'meta_seed',
+    description: desc('meta_seed'),
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description:
+            'Owner directory path to seed with .meta/ and meta.json.',
+        },
+        crossRefs: {
+          type: 'string',
+          description:
+            'JSON array of cross-ref owner paths (e.g. \'["j:/path/a","j:/path/b"]\').',
+        },
+      },
+      required: ['path'],
     },
-    (path) => client.seed(path!),
-    baseUrl,
-  );
+    execute: async (
+      _id: string,
+      params: Record<string, unknown>,
+    ): Promise<ToolResult> => {
+      try {
+        let crossRefs: string[] | undefined;
+        if (typeof params.crossRefs === 'string' && params.crossRefs) {
+          crossRefs = JSON.parse(params.crossRefs) as string[];
+        }
+        const data = await client.seed(params.path as string, crossRefs);
+        return ok(data);
+      } catch (error) {
+        return connectionFail(error, baseUrl, PLUGIN_ID);
+      }
+    },
+  });
 
   registerSimpleTool(
     api,

@@ -12,6 +12,8 @@ jeeves-meta is an HTTP service that discovers `.meta/` directories via the jeeve
 
 Results are written to `.meta/meta.json` files with full archive history, enabling self-improving feedback loops.
 
+Metas can declare explicit cross-references (`_crossRefs`) to other metas, forming a heterarchical mesh that enables organizational views across source domains.
+
 ## Packages
 
 | Package | Description |
@@ -69,7 +71,7 @@ Install the plugin package. Seven tools become available to the agent:
 - `meta_detail` — full detail for a single meta with optional archive history
 - `meta_trigger` — manually trigger synthesis (enqueues work)
 - `meta_preview` — dry-run showing what inputs would be gathered
-- `meta_seed` — create `.meta/` directory for a new path
+- `meta_seed` — create `.meta/` directory for a new path (with optional cross-refs)
 - `meta_unlock` — remove stale `.lock` from a meta entity
 - `meta_config` — query service configuration with optional JSONPath
 
