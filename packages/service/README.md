@@ -10,6 +10,7 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Three-step orchestration** — architect, builder, critic with conditional re-architecture
 - **Discovery via watcher** — filesystem-based meta discovery via `/walk` endpoint (no Qdrant dependency)
 - **Ownership tree** — hierarchical scoping with child meta rollup
+- **Cross-meta references** — `_crossRefs` declares relationships to other metas; referenced `_content` included as architect/builder context
 - **Archive management** — timestamped snapshots with configurable pruning
 - **Lock staging** — write to `.lock` → copy to `meta.json` → archive (crash-safe)
 - **Virtual rule registration** — registers 3 watcher inference rules at startup with retry
@@ -54,7 +55,7 @@ jeeves-meta service install --config /path/to/jeeves-meta.config.json
 | GET | `/metas/:path` | Single meta detail with optional archive |
 | GET | `/preview` | Dry-run: preview inputs for next synthesis |
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
-| POST | `/seed` | Create `.meta/` directory + meta.json |
+| POST | `/seed` | Create `.meta/` directory + meta.json (optional `crossRefs`) |
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 
