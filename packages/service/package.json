@@ -1,6 +1,6 @@
 {
   "name": "@karmaniverous/jeeves-meta",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": "Jason Williscroft",
   "description": "Fastify HTTP service for the Jeeves Meta synthesis engine",
   "license": "BSD-3-Clause",

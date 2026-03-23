@@ -2,11 +2,25 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.8.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.7.0...0.8.0)
+#### [0.9.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.8.0...0.9.0)
+
+- feat: cross-meta references (_crossRefs) — issue #63 [`#70`](https://github.com/karmaniverous/jeeves-meta/pull/70)
+- npm audit fix [`9ef2856`](https://github.com/karmaniverous/jeeves-meta/commit/9ef2856bc0c1cf86df2531918069914d28db6cec)
+- feat: add _crossRefs support (Phase 1, issue #63) [`743e234`](https://github.com/karmaniverous/jeeves-meta/commit/743e2343a5f5eda798aaecb6ba024a402afd3dc8)
+- refactor: DRY extraction for meta content reading and prompt section rendering [`1113363`](https://github.com/karmaniverous/jeeves-meta/commit/1113363368ecd814f946e705d77699b9d51dbed7)
+- docs: update READMEs and consumer skill for _crossRefs [`1b05274`](https://github.com/karmaniverous/jeeves-meta/commit/1b05274fbbbd6d20b3dd5735be805ee524e9e031)
+- docs: update guides for _crossRefs (tools-reference, concepts) [`809fbb8`](https://github.com/karmaniverous/jeeves-meta/commit/809fbb80709173c814e67bb968eca819c5f78cf3)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.6.0 [`3fbaaab`](https://github.com/karmaniverous/jeeves-meta/commit/3fbaaabc13652749af4c1ed613e19fe27d8f7850)
+- fix: repair interrupted numbered list in SKILL.md (Gemini review) [`d6ace79`](https://github.com/karmaniverous/jeeves-meta/commit/d6ace79bbc837fa7a6ad8529cf76641c4ddb9be7)
+
+#### [service/0.8.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.7.0...service/0.8.0)
+
+> 23 March 2026
 
 - fix: upgrade core to ^0.3.0 + remove redundant TOOLS.md tool catalogue (#67) [`#68`](https://github.com/karmaniverous/jeeves-meta/pull/68)
 - fix: upgrade @karmaniverous/jeeves to ^0.3.0 and trim TOOLS.md meta section [`#67`](https://github.com/karmaniverous/jeeves-meta/pull/67)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.5.0 [`662c1a1`](https://github.com/karmaniverous/jeeves-meta/commit/662c1a12f6a11d63a5775fcc71c6b061b636703b)
+- chore: release @karmaniverous/jeeves-meta v0.8.0 [`71bbe4d`](https://github.com/karmaniverous/jeeves-meta/commit/71bbe4d25bd3f4359b3948b65d39ce12b20d9c62)
 
 #### [service/0.7.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.6.1...service/0.7.0)
 
