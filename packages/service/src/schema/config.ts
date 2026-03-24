@@ -73,6 +73,19 @@ const loggingSchema = z.object({
   file: z.string().optional(),
 });
 
+/** Zod schema for a single auto-seed policy rule. */
+const autoSeedRuleSchema = z.object({
+  /** Glob pattern matched against watcher walk results. */
+  match: z.string(),
+  /** Optional steering prompt for seeded metas. */
+  steer: z.string().optional(),
+  /** Optional cross-references for seeded metas. */
+  crossRefs: z.array(z.string()).optional(),
+});
+
+/** Inferred type for an auto-seed rule. */
+export type AutoSeedRule = z.infer<typeof autoSeedRuleSchema>;
+
 /** Zod schema for jeeves-meta service configuration (superset of MetaConfig). */
 export const serviceConfigSchema = metaConfigSchema.extend({
   /** HTTP port for the service (default: 1938). */
@@ -95,6 +108,12 @@ export const serviceConfigSchema = metaConfigSchema.extend({
 
   /** Logging configuration. */
   logging: loggingSchema.default(() => loggingSchema.parse({})),
+
+  /**
+   * Auto-seed policy: declarative rules for auto-creating .meta/ directories.
+   * Rules are evaluated in order; last match wins for steer/crossRefs.
+   */
+  autoSeed: z.array(autoSeedRuleSchema).optional().default([]),
 });
 
 /** Inferred type for service configuration. */

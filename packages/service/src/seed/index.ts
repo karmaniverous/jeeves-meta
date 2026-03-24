@@ -4,6 +4,7 @@
  * @module seed
  */
 
+export { autoSeedPass, type AutoSeedResult } from './autoSeed.js';
 export {
   createMeta,
   type CreateMetaOptions,

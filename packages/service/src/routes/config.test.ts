@@ -33,6 +33,7 @@ function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
       schedule: '*/30 * * * *',
       watcherHealthIntervalMs: 60000,
       logging: { level: 'info' },
+      autoSeed: [],
     },
     logger: { warn: vi.fn(), error: vi.fn() } as unknown as Logger,
     queue: {} as RouteDeps['queue'],

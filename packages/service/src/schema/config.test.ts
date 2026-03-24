@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { metaConfigSchema } from './config.js';
+import { metaConfigSchema, serviceConfigSchema } from './config.js';
 
 const validConfig = {
   watcherUrl: 'http://localhost:3456',
@@ -94,5 +94,36 @@ describe('metaConfigSchema', () => {
     });
     expect(result.success).toBe(true);
     expect(result.data?.metaProperty).toEqual({ foo: { bar: ['baz'] } });
+  });
+});
+
+describe('serviceConfigSchema autoSeed', () => {
+  const validServiceConfig = {
+    ...validConfig,
+    port: 1938,
+    host: '127.0.0.1',
+    schedule: '*/30 * * * *',
+  };
+
+  it('defaults autoSeed to empty array', () => {
+    const result = serviceConfigSchema.safeParse(validServiceConfig);
+    expect(result.success).toBe(true);
+    expect(result.data?.autoSeed).toEqual([]);
+  });
+
+  it('accepts autoSeed with rules', () => {
+    const result = serviceConfigSchema.safeParse({
+      ...validServiceConfig,
+      autoSeed: [
+        { match: 'j:/domains/**' },
+        {
+          match: 'j:/projects/**',
+          steer: 'Focus on code',
+          crossRefs: ['j:/ref1'],
+        },
+      ],
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.autoSeed).toHaveLength(2);
   });
 });
