@@ -6,6 +6,8 @@
 
 import type { Logger } from 'pino';
 
+import { normalizePath } from '../normalizePath.js';
+
 export type ProgressPhase = 'architect' | 'builder' | 'critic';
 
 export type ProgressEvent = {
@@ -47,8 +49,8 @@ function titleCasePhase(phase: ProgressPhase): string {
 
 /** Build a link to the entity's meta.json output file. */
 function buildEntityLink(path: string, serverBaseUrl?: string): string {
-  // Convert Windows-style path to forward-slash for consistent path handling
-  const normalized = path.replace(/^([A-Za-z]):/, '/$1').replace(/\\/g, '/');
+  // Normalize backslashes, then convert drive letter to URL path segment
+  const normalized = normalizePath(path).replace(/^([A-Za-z]):/, '/$1');
   const metaJsonPath = `${normalized}/.meta/meta.json`;
 
   if (!serverBaseUrl) return metaJsonPath;

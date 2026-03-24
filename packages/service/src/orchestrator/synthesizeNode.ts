@@ -69,6 +69,17 @@ export async function synthesizeNode(
   let builderTokens: number | undefined;
   let criticTokens: number | undefined;
 
+  // Shared base options for all finalizeCycle calls.
+  // Note: synthesisCount is excluded because it mutates during the pipeline.
+  const baseFinalizeOptions = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    architect: currentMeta._architect ?? '',
+    critic: currentMeta._critic ?? '',
+    structureHash: newStructureHash,
+  };
+
   if (architectTriggered) {
     try {
       await onProgress?.({
@@ -98,15 +109,10 @@ export async function synthesizeNode(
       if (!currentMeta._builder) {
         // No cached builder — cycle fails
         await finalizeCycle({
-          metaPath: node.metaPath,
-          current: currentMeta,
-          config,
-          architect: currentMeta._architect ?? '',
+          ...baseFinalizeOptions,
           builder: '',
-          critic: currentMeta._critic ?? '',
           builderOutput: null,
           feedback: null,
-          structureHash: newStructureHash,
           synthesisCount,
           error: stepError,
           architectTokens,
@@ -162,15 +168,10 @@ export async function synthesizeNode(
 
     stepError = toMetaError('builder', err);
     await finalizeCycle({
-      metaPath: node.metaPath,
-      current: currentMeta,
-      config,
-      architect: currentMeta._architect ?? '',
+      ...baseFinalizeOptions,
       builder: builderBrief,
-      critic: currentMeta._critic ?? '',
       builderOutput: null,
       feedback: null,
-      structureHash: newStructureHash,
       synthesisCount,
       error: stepError,
     });
@@ -211,15 +212,10 @@ export async function synthesizeNode(
 
   // Steps 11-12: Merge, archive, prune
   await finalizeCycle({
-    metaPath: node.metaPath,
-    current: currentMeta,
-    config,
-    architect: currentMeta._architect ?? '',
+    ...baseFinalizeOptions,
     builder: builderBrief,
-    critic: currentMeta._critic ?? '',
     builderOutput,
     feedback,
-    structureHash: newStructureHash,
     synthesisCount,
     error: stepError,
     architectTokens,

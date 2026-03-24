@@ -5,7 +5,6 @@
  * @module routes/metas
  */
 
-import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -13,6 +12,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { listArchiveFiles } from '../archive/index.js';
+import { computeSummary } from '../discovery/computeSummary.js';
 import { getScopeFiles } from '../discovery/index.js';
 import { findNode, listMetas } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
@@ -51,65 +51,6 @@ const metaDetailQuerySchema = z.object({
     .optional(),
 });
 
-/** Compute summary stats from a filtered set of MetaEntries. */
-function computeFilteredSummary(
-  entries: Array<{
-    path: string;
-    stalenessSeconds: number;
-    hasError: boolean;
-    lastSynthesized: string | null;
-    architectTokens: number | null;
-    builderTokens: number | null;
-    criticTokens: number | null;
-  }>,
-) {
-  let staleCount = 0;
-  let errorCount = 0;
-  let neverSynthCount = 0;
-  let stalestPath: string | null = null;
-  let stalestSeconds = -1;
-  let lastSynthesizedPath: string | null = null;
-  let lastSynthesizedAt: string | null = null;
-  let totalArchitectTokens = 0;
-  let totalBuilderTokens = 0;
-  let totalCriticTokens = 0;
-
-  for (const e of entries) {
-    if (e.stalenessSeconds > 0) staleCount++;
-    if (e.hasError) errorCount++;
-    if (e.stalenessSeconds === Infinity) neverSynthCount++;
-    if (e.stalenessSeconds > stalestSeconds) {
-      stalestSeconds = e.stalenessSeconds;
-      stalestPath = e.path;
-    }
-    if (
-      e.lastSynthesized &&
-      (!lastSynthesizedAt || e.lastSynthesized > lastSynthesizedAt)
-    ) {
-      lastSynthesizedAt = e.lastSynthesized;
-      lastSynthesizedPath = e.path;
-    }
-    totalArchitectTokens += e.architectTokens ?? 0;
-    totalBuilderTokens += e.builderTokens ?? 0;
-    totalCriticTokens += e.criticTokens ?? 0;
-  }
-
-  return {
-    total: entries.length,
-    stale: staleCount,
-    errors: errorCount,
-    neverSynthesized: neverSynthCount,
-    stalestPath,
-    lastSynthesizedPath,
-    lastSynthesizedAt,
-    tokens: {
-      architect: totalArchitectTokens,
-      builder: totalBuilderTokens,
-      critic: totalCriticTokens,
-    },
-  };
-}
-
 export function registerMetasRoutes(
   app: FastifyInstance,
   deps: RouteDeps,
@@ -143,7 +84,7 @@ export function registerMetasRoutes(
     }
 
     // Summary (computed from filtered entries)
-    const summary = computeFilteredSummary(entries);
+    const summary = computeSummary(entries, config.depthWeight);
 
     // Field projection
     const fieldList = query.fields?.split(',');
@@ -275,8 +216,6 @@ export function registerMetasRoutes(
           crossRefsRaw.map(async (refPath: unknown) => {
             const rp = String(refPath);
             const refMetaFile = join(rp, '.meta', 'meta.json');
-            if (!existsSync(refMetaFile))
-              return { path: rp, status: 'missing' };
             try {
               const refMeta = JSON.parse(
                 await readFile(refMetaFile, 'utf8'),

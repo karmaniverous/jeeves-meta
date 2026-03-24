@@ -13,6 +13,7 @@ import type { RouteDeps } from './index.js';
 const seedBodySchema = z.object({
   path: z.string().min(1),
   crossRefs: z.array(z.string()).optional(),
+  steer: z.string().optional(),
 });
 
 export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
@@ -29,6 +30,7 @@ export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
     deps.logger.info({ path: body.path }, 'seeding .meta directory');
     const result = await createMeta(body.path, {
       crossRefs: body.crossRefs,
+      steer: body.steer,
     });
 
     return reply.status(201).send({

@@ -4,6 +4,7 @@
  * @module discovery
  */
 
+export { computeSummary } from './computeSummary.js';
 export { discoverMetas } from './discoverMetas.js';
 export {
   listMetas,

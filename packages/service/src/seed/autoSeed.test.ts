@@ -60,10 +60,7 @@ describe('autoSeedPass', () => {
     // Watcher returns forward-slash normalized paths
     const rootFwd = testRoot.replace(/\\/g, '/');
     const watcher = createMockWatcher({
-      [`${testRoot}/*/**`]: [
-        `${rootFwd}/a/file1.md`,
-        `${rootFwd}/b/file2.md`,
-      ],
+      [`${testRoot}/*/**`]: [`${rootFwd}/a/file1.md`, `${rootFwd}/b/file2.md`],
     });
 
     const rules: AutoSeedRule[] = [{ match: `${testRoot}/*/**` }];
@@ -86,10 +83,7 @@ describe('autoSeedPass', () => {
 
     const rootFwd = testRoot.replace(/\\/g, '/');
     const watcher = createMockWatcher({
-      [`${testRoot}/*/**`]: [
-        `${rootFwd}/a/file1.md`,
-        `${rootFwd}/b/file2.md`,
-      ],
+      [`${testRoot}/*/**`]: [`${rootFwd}/a/file1.md`, `${rootFwd}/b/file2.md`],
     });
 
     const rules: AutoSeedRule[] = [{ match: `${testRoot}/*/**` }];
