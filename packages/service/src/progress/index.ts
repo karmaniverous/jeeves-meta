@@ -45,13 +45,16 @@ function titleCasePhase(phase: ProgressPhase): string {
   return phase.charAt(0).toUpperCase() + phase.slice(1);
 }
 
-/** Build a link for the entity path, if serverBaseUrl is available. */
+/** Build a link to the entity's meta.json output file. */
 function buildEntityLink(path: string, serverBaseUrl?: string): string {
-  if (!serverBaseUrl) return path;
-  const base = serverBaseUrl.replace(/\/+$/, '');
-  // Convert Windows-style path to /drive/rest format: D:\foo → /D/foo
+  // Convert Windows-style path to forward-slash for consistent path handling
   const normalized = path.replace(/^([A-Za-z]):/, '/$1').replace(/\\/g, '/');
-  return `${base}/path${normalized}`;
+  const metaJsonPath = `${normalized}/.meta/meta.json`;
+
+  if (!serverBaseUrl) return metaJsonPath;
+
+  const base = serverBaseUrl.replace(/\/+$/, '');
+  return `${base}/path${metaJsonPath}`;
 }
 
 export function formatProgressEvent(
