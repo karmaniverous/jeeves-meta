@@ -4,7 +4,7 @@
  * @module orchestrator/finalizeCycle
  */
 
-import { copyFileSync } from 'node:fs';
+import { copyFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { createSnapshot, pruneArchive } from '../archive/index.js';
@@ -35,12 +35,14 @@ interface FinalizeCycleOptions {
 }
 
 /** Finalize a cycle using lock staging: write to .lock → copy to meta.json + archive → delete .lock. */
-export function finalizeCycle(opts: FinalizeCycleOptions): MetaJson {
+export async function finalizeCycle(
+  opts: FinalizeCycleOptions,
+): Promise<MetaJson> {
   const lockPath = join(opts.metaPath, '.lock');
   const metaJsonPath = join(opts.metaPath, 'meta.json');
 
-  // Stage: write merged result to .lock
-  const updated = mergeAndWrite({
+  // Stage: write merged result to .lock (sequential — ordering matters)
+  const updated = await mergeAndWrite({
     metaPath: opts.metaPath,
     current: opts.current,
     architect: opts.architect,
@@ -60,11 +62,11 @@ export function finalizeCycle(opts: FinalizeCycleOptions): MetaJson {
   });
 
   // Commit: copy .lock → meta.json
-  copyFileSync(lockPath, metaJsonPath);
+  await copyFile(lockPath, metaJsonPath);
 
-  // Archive + prune from the committed meta.json
-  createSnapshot(opts.metaPath, updated);
-  pruneArchive(opts.metaPath, opts.config.maxArchive);
+  // Archive + prune from the committed meta.json (sequential)
+  await createSnapshot(opts.metaPath, updated);
+  await pruneArchive(opts.metaPath, opts.config.maxArchive);
 
   // .lock is cleaned up by the finally block (releaseLock)
   return updated;

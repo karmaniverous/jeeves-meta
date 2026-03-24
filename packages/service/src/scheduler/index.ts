@@ -13,6 +13,7 @@ import type { SynthesisQueue } from '../queue/index.js';
 import type { RuleRegistrar } from '../rules/index.js';
 import { discoverStalestPath } from '../scheduling/index.js';
 import type { ServiceConfig } from '../schema/config.js';
+import { autoSeedPass } from '../seed/index.js';
 import type { HttpWatcherClient } from '../watcher-client/index.js';
 
 const MAX_BACKOFF_MULTIPLIER = 4;
@@ -129,6 +130,25 @@ export class Scheduler {
         'Skipping tick (backoff)',
       );
       return;
+    }
+
+    // Auto-seed pass: create .meta/ for matching directories
+    if (this.config.autoSeed.length > 0) {
+      try {
+        const result = await autoSeedPass(
+          this.config.autoSeed,
+          this.watcher,
+          this.logger,
+        );
+        if (result.seeded > 0) {
+          this.logger.info(
+            { seeded: result.seeded },
+            'Auto-seed pass completed',
+          );
+        }
+      } catch (err) {
+        this.logger.warn({ err }, 'Auto-seed pass failed');
+      }
     }
 
     const candidate = await this.discoverStalest();

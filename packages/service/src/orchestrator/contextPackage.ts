@@ -7,7 +7,7 @@
  * @module orchestrator/contextPackage
  */
 
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { listArchiveFiles } from '../archive/index.js';
@@ -17,6 +17,7 @@ import {
   type MetaNode,
 } from '../discovery/index.js';
 import type { MetaContext, WatcherClient } from '../interfaces/index.js';
+import type { MinimalLogger } from '../logger/index.js';
 import type { MetaJson } from '../schema/index.js';
 
 /**
@@ -55,9 +56,9 @@ export function condenseScopeFiles(
  * @param metaJsonPath - Absolute path to a meta.json file.
  * @returns The `_content` string, or null if missing/unreadable.
  */
-function readMetaContent(metaJsonPath: string): string | null {
+async function readMetaContent(metaJsonPath: string): Promise<string | null> {
   try {
-    const raw = readFileSync(metaJsonPath, 'utf8');
+    const raw = await readFile(metaJsonPath, 'utf8');
     const meta = JSON.parse(raw) as MetaJson;
     return meta._content ?? null;
   } catch {
@@ -77,29 +78,53 @@ export async function buildContextPackage(
   node: MetaNode,
   meta: MetaJson,
   watcher: WatcherClient,
+  logger?: MinimalLogger,
 ): Promise<MetaContext> {
   // Scope and delta files via watcher walk
-  const { scopeFiles } = await getScopeFiles(node, watcher);
+  const scopeStart = Date.now();
+  const { scopeFiles } = await getScopeFiles(node, watcher, logger);
   const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
+  logger?.debug(
+    {
+      scopeFiles: scopeFiles.length,
+      deltaFiles: deltaFiles.length,
+      durationMs: Date.now() - scopeStart,
+    },
+    'scope and delta files computed',
+  );
 
-  // Child meta outputs
+  // Child meta outputs (parallel reads)
   const childMetas: Record<string, unknown> = {};
-  for (const child of node.children) {
-    childMetas[child.ownerPath] = readMetaContent(
-      join(child.metaPath, 'meta.json'),
-    );
+  const childEntries = await Promise.all(
+    node.children.map(async (child) => {
+      const content = await readMetaContent(join(child.metaPath, 'meta.json'));
+      return [child.ownerPath, content] as const;
+    }),
+  );
+  for (const [path, content] of childEntries) {
+    childMetas[path] = content;
   }
 
-  // Cross-referenced meta outputs
+  // Cross-referenced meta outputs (parallel reads)
   const crossRefMetas: Record<string, unknown> = {};
   const seen = new Set<string>();
+  const crossRefPaths: string[] = [];
   for (const refPath of meta._crossRefs ?? []) {
     if (refPath === node.ownerPath || refPath === node.metaPath) continue;
     if (seen.has(refPath)) continue;
     seen.add(refPath);
-    crossRefMetas[refPath] = readMetaContent(
-      join(refPath, '.meta', 'meta.json'),
-    );
+    crossRefPaths.push(refPath);
+  }
+  const crossRefEntries = await Promise.all(
+    crossRefPaths.map(async (refPath) => {
+      const content = await readMetaContent(
+        join(refPath, '.meta', 'meta.json'),
+      );
+      return [refPath, content] as const;
+    }),
+  );
+  for (const [path, content] of crossRefEntries) {
+    crossRefMetas[path] = content;
   }
 
   // Archive paths

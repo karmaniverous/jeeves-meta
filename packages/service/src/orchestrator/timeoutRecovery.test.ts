@@ -69,25 +69,25 @@ afterEach(() => {
 });
 
 describe('attemptTimeoutRecovery', () => {
-  it('returns null when output file does not exist', () => {
+  it('returns null when output file does not exist', async () => {
     const err = new SpawnTimeoutError(
       'timed out',
       join(testRoot, 'nonexistent.json'),
     );
-    const result = attemptTimeoutRecovery(baseOpts(err));
+    const result = await attemptTimeoutRecovery(baseOpts(err));
     expect(result).toBeNull();
   });
 
-  it('returns null when partial output has no _state', () => {
+  it('returns null when partial output has no _state', async () => {
     const outputPath = join(testRoot, 'partial.json');
     writeFileSync(outputPath, JSON.stringify({ _content: 'partial' }));
 
     const err = new SpawnTimeoutError('timed out', outputPath);
-    const result = attemptTimeoutRecovery(baseOpts(err));
+    const result = await attemptTimeoutRecovery(baseOpts(err));
     expect(result).toBeNull();
   });
 
-  it('returns null when _state is unchanged', () => {
+  it('returns null when _state is unchanged', async () => {
     const outputPath = join(testRoot, 'partial.json');
     writeFileSync(
       outputPath,
@@ -96,11 +96,11 @@ describe('attemptTimeoutRecovery', () => {
 
     const err = new SpawnTimeoutError('timed out', outputPath);
     const currentMeta = baseMeta({ _state: { step: 1 } });
-    const result = attemptTimeoutRecovery(baseOpts(err, currentMeta));
+    const result = await attemptTimeoutRecovery(baseOpts(err, currentMeta));
     expect(result).toBeNull();
   });
 
-  it('returns OrchestrateResult when _state advanced', () => {
+  it('returns OrchestrateResult when _state advanced', async () => {
     const outputPath = join(testRoot, 'partial.json');
     writeFileSync(
       outputPath,
@@ -109,7 +109,7 @@ describe('attemptTimeoutRecovery', () => {
 
     const err = new SpawnTimeoutError('timed out', outputPath);
     const currentMeta = baseMeta({ _state: { step: 1 } });
-    const result = attemptTimeoutRecovery(baseOpts(err, currentMeta));
+    const result = await attemptTimeoutRecovery(baseOpts(err, currentMeta));
 
     expect(result).not.toBeNull();
     expect(result!.synthesized).toBe(true);
@@ -117,13 +117,13 @@ describe('attemptTimeoutRecovery', () => {
     expect(result!.metaPath).toBe(metaPath);
   });
 
-  it('returns null when file read throws', () => {
-    // Use a directory path — readFileSync will throw EISDIR
+  it('returns null when file read throws', async () => {
+    // Use a directory path — readFile will throw EISDIR
     const dirPath = join(testRoot, 'a-dir');
     mkdirSync(dirPath, { recursive: true });
 
     const err = new SpawnTimeoutError('timed out', dirPath);
-    const result = attemptTimeoutRecovery(baseOpts(err));
+    const result = await attemptTimeoutRecovery(baseOpts(err));
     expect(result).toBeNull();
   });
 });

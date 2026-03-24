@@ -40,6 +40,7 @@ function createTestConfig() {
     schedule: '* * * * *',
     watcherHealthIntervalMs: 60000,
     logging: { level: 'info' },
+    autoSeed: [],
   };
 }
 

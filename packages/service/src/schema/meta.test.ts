@@ -10,6 +10,12 @@ describe('metaJsonSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  it('accepts empty meta without _id (optional)', () => {
+    const result = metaJsonSchema.safeParse({});
+    expect(result.success).toBe(true);
+    expect(result.data?._id).toBeUndefined();
+  });
+
   it('accepts full meta with all reserved fields', () => {
     const result = metaJsonSchema.safeParse({
       _id: '550e8400-e29b-41d4-a716-446655440000',

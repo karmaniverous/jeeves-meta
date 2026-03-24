@@ -5,6 +5,7 @@
  */
 
 export {
+  type AutoSeedRule,
   type MetaConfig,
   metaConfigSchema,
   type ServiceConfig,

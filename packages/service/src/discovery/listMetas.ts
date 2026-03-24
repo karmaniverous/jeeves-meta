@@ -16,6 +16,7 @@ const MAX_STALENESS_SECONDS = 365 * 86_400;
 import { normalizePath } from '../normalizePath.js';
 import { readMetaJson } from '../readMetaJson.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
+import { computeSummary } from './computeSummary.js';
 import { discoverMetas } from './discoverMetas.js';
 import { buildOwnershipTree } from './ownershipTree.js';
 import type { MetaNode, OwnershipTree } from './types.js';
@@ -97,22 +98,11 @@ export async function listMetas(
 
   // Step 3: Read and enrich each meta from disk
   const entries: MetaEntry[] = [];
-  let staleCount = 0;
-  let errorCount = 0;
-  let lockedCount = 0;
-  let neverSynthesizedCount = 0;
-  let totalArchTokens = 0;
-  let totalBuilderTokens = 0;
-  let totalCriticTokens = 0;
-  let lastSynthPath: string | null = null;
-  let lastSynthAt: string | null = null;
-  let stalestPath: string | null = null;
-  let stalestEffective = -1;
 
   for (const node of tree.nodes.values()) {
     let meta: MetaJson;
     try {
-      meta = readMetaJson(node.metaPath);
+      meta = await readMetaJson(node.metaPath);
     } catch {
       // Skip unreadable metas
       continue;
@@ -138,31 +128,6 @@ export async function listMetas(
     const buildTokens = meta._builderTokens ?? 0;
     const critTokens = meta._criticTokens ?? 0;
 
-    // Accumulate summary stats
-    if (stalenessSeconds > 0) staleCount++;
-    if (hasError) errorCount++;
-    if (locked) lockedCount++;
-    if (neverSynth) neverSynthesizedCount++;
-    totalArchTokens += archTokens;
-    totalBuilderTokens += buildTokens;
-    totalCriticTokens += critTokens;
-
-    // Track last synthesized
-    if (meta._generatedAt) {
-      if (!lastSynthAt || meta._generatedAt > lastSynthAt) {
-        lastSynthAt = meta._generatedAt;
-        lastSynthPath = node.metaPath;
-      }
-    }
-
-    // Track stalest (effective staleness for scheduling)
-    const depthFactor = Math.pow(1 + config.depthWeight, depth);
-    const effectiveStaleness = stalenessSeconds * depthFactor * emphasis;
-    if (effectiveStaleness > stalestEffective) {
-      stalestEffective = effectiveStaleness;
-      stalestPath = node.metaPath;
-    }
-
     entries.push({
       path: node.metaPath,
       depth,
@@ -181,21 +146,7 @@ export async function listMetas(
   }
 
   return {
-    summary: {
-      total: entries.length,
-      stale: staleCount,
-      errors: errorCount,
-      locked: lockedCount,
-      neverSynthesized: neverSynthesizedCount,
-      tokens: {
-        architect: totalArchTokens,
-        builder: totalBuilderTokens,
-        critic: totalCriticTokens,
-      },
-      stalestPath,
-      lastSynthesizedPath: lastSynthPath,
-      lastSynthesizedAt: lastSynthAt,
-    },
+    summary: computeSummary(entries, config.depthWeight),
     entries,
     tree,
   };

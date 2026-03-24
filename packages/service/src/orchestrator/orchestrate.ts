@@ -4,7 +4,8 @@
  * @module orchestrator/orchestrate
  */
 
-import { existsSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { buildMinimalNode } from '../discovery/buildMinimalNode.js';
@@ -57,7 +58,7 @@ async function orchestrateOnce(
     if (!acquireLock(node.metaPath)) return { synthesized: false };
 
     try {
-      const currentMeta = readMetaJson(normalizedTarget);
+      const currentMeta = await readMetaJson(normalizedTarget);
 
       return await synthesizeNode(
         node,
@@ -66,6 +67,7 @@ async function orchestrateOnce(
         executor,
         watcher,
         onProgress,
+        logger,
       );
     } finally {
       releaseLock(node.metaPath);
@@ -86,7 +88,7 @@ async function orchestrateOnce(
   const metas = new Map<string, MetaJson>();
   for (const mp of metaPaths) {
     try {
-      metas.set(normalizePath(mp), readMetaJson(mp));
+      metas.set(normalizePath(mp), await readMetaJson(mp));
     } catch {
       // Skip metas with unreadable meta.json
       continue;
@@ -131,9 +133,9 @@ async function orchestrateOnce(
 
     if (!verifiedStale && candidate.meta._generatedAt) {
       // Bump _generatedAt so it doesn't win next cycle
-      const freshMeta = readMetaJson(candidate.node.metaPath);
+      const freshMeta = await readMetaJson(candidate.node.metaPath);
       freshMeta._generatedAt = new Date().toISOString();
-      writeFileSync(
+      await writeFile(
         join(candidate.node.metaPath, 'meta.json'),
         JSON.stringify(freshMeta, null, 2),
       );
@@ -151,7 +153,7 @@ async function orchestrateOnce(
   const node = winner.node;
 
   try {
-    const currentMeta = readMetaJson(node.metaPath);
+    const currentMeta = await readMetaJson(node.metaPath);
 
     return await synthesizeNode(
       node,
@@ -160,6 +162,7 @@ async function orchestrateOnce(
       executor,
       watcher,
       onProgress,
+      logger,
     );
   } finally {
     // Step 13: Release lock

@@ -9,6 +9,7 @@ import type { MetaNode } from '../discovery/index.js';
 import { toMetaError } from '../errors.js';
 import { SpawnTimeoutError } from '../executor/index.js';
 import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
+import type { MinimalLogger } from '../logger/index.js';
 import { hasSteerChanged, isArchitectTriggered } from '../scheduling/index.js';
 import type { MetaConfig, MetaError, MetaJson } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
@@ -36,9 +37,10 @@ export async function synthesizeNode(
   executor: MetaExecutor,
   watcher: WatcherClient,
   onProgress?: ProgressCallback,
+  logger?: MinimalLogger,
 ): Promise<OrchestrateResult> {
   // Step 5-6: Steer change detection
-  const latestArchive = readLatestArchive(node.metaPath);
+  const latestArchive = await readLatestArchive(node.metaPath);
   const steerChanged = hasSteerChanged(
     currentMeta._steer,
     latestArchive?._steer,
@@ -46,7 +48,7 @@ export async function synthesizeNode(
   );
 
   // Step 7: Compute context (includes scope files and delta files)
-  const ctx = await buildContextPackage(node, currentMeta, watcher);
+  const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
   // Step 5 (deferred): Structure hash from context scope files
   const newStructureHash = computeStructureHash(ctx.scopeFiles);
@@ -66,6 +68,17 @@ export async function synthesizeNode(
   let architectTokens: number | undefined;
   let builderTokens: number | undefined;
   let criticTokens: number | undefined;
+
+  // Shared base options for all finalizeCycle calls.
+  // Note: synthesisCount is excluded because it mutates during the pipeline.
+  const baseFinalizeOptions = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    architect: currentMeta._architect ?? '',
+    critic: currentMeta._critic ?? '',
+    structureHash: newStructureHash,
+  };
 
   if (architectTriggered) {
     try {
@@ -95,16 +108,11 @@ export async function synthesizeNode(
 
       if (!currentMeta._builder) {
         // No cached builder — cycle fails
-        finalizeCycle({
-          metaPath: node.metaPath,
-          current: currentMeta,
-          config,
-          architect: currentMeta._architect ?? '',
+        await finalizeCycle({
+          ...baseFinalizeOptions,
           builder: '',
-          critic: currentMeta._critic ?? '',
           builderOutput: null,
           feedback: null,
-          structureHash: newStructureHash,
           synthesisCount,
           error: stepError,
           architectTokens,
@@ -146,7 +154,7 @@ export async function synthesizeNode(
     });
   } catch (err) {
     if (err instanceof SpawnTimeoutError) {
-      const recovered = attemptTimeoutRecovery({
+      const recovered = await attemptTimeoutRecovery({
         err,
         currentMeta,
         metaPath: node.metaPath,
@@ -159,16 +167,11 @@ export async function synthesizeNode(
     }
 
     stepError = toMetaError('builder', err);
-    finalizeCycle({
-      metaPath: node.metaPath,
-      current: currentMeta,
-      config,
-      architect: currentMeta._architect ?? '',
+    await finalizeCycle({
+      ...baseFinalizeOptions,
       builder: builderBrief,
-      critic: currentMeta._critic ?? '',
       builderOutput: null,
       feedback: null,
-      structureHash: newStructureHash,
       synthesisCount,
       error: stepError,
     });
@@ -208,16 +211,11 @@ export async function synthesizeNode(
   }
 
   // Steps 11-12: Merge, archive, prune
-  finalizeCycle({
-    metaPath: node.metaPath,
-    current: currentMeta,
-    config,
-    architect: currentMeta._architect ?? '',
+  await finalizeCycle({
+    ...baseFinalizeOptions,
     builder: builderBrief,
-    critic: currentMeta._critic ?? '',
     builderOutput,
     feedback,
-    structureHash: newStructureHash,
     synthesisCount,
     error: stepError,
     architectTokens,

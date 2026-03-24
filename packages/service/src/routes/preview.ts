@@ -68,7 +68,7 @@ export function registerPreviewRoute(
       targetNode = findNode(result.tree, stalestPath)!;
     }
 
-    const meta = readMetaJson(targetNode.metaPath);
+    const meta = await readMetaJson(targetNode.metaPath);
 
     // Scope files
     const { scopeFiles } = await getScopeFiles(targetNode, watcher);
@@ -76,7 +76,7 @@ export function registerPreviewRoute(
     const structureHash = computeStructureHash(scopeFiles);
     const structureChanged = structureHash !== meta._structureHash;
 
-    const latestArchive = readLatestArchive(targetNode.metaPath);
+    const latestArchive = await readLatestArchive(targetNode.metaPath);
     const steerChanged = hasSteerChanged(
       meta._steer,
       latestArchive?._steer,
