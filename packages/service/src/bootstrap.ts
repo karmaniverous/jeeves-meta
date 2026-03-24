@@ -112,6 +112,7 @@ export async function startService(
           }
           await progress.report(evt);
         },
+        logger,
       );
       // orchestrate() always returns exactly one result
       const result = results[0];

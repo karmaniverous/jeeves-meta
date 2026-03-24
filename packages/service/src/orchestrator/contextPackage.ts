@@ -17,6 +17,7 @@ import {
   type MetaNode,
 } from '../discovery/index.js';
 import type { MetaContext, WatcherClient } from '../interfaces/index.js';
+import type { MinimalLogger } from '../logger/index.js';
 import type { MetaJson } from '../schema/index.js';
 
 /**
@@ -77,10 +78,20 @@ export async function buildContextPackage(
   node: MetaNode,
   meta: MetaJson,
   watcher: WatcherClient,
+  logger?: MinimalLogger,
 ): Promise<MetaContext> {
   // Scope and delta files via watcher walk
-  const { scopeFiles } = await getScopeFiles(node, watcher);
+  const scopeStart = Date.now();
+  const { scopeFiles } = await getScopeFiles(node, watcher, logger);
   const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
+  logger?.debug(
+    {
+      scopeFiles: scopeFiles.length,
+      deltaFiles: deltaFiles.length,
+      durationMs: Date.now() - scopeStart,
+    },
+    'scope and delta files computed',
+  );
 
   // Child meta outputs
   const childMetas: Record<string, unknown> = {};

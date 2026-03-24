@@ -66,6 +66,7 @@ async function orchestrateOnce(
         executor,
         watcher,
         onProgress,
+        logger,
       );
     } finally {
       releaseLock(node.metaPath);
@@ -160,6 +161,7 @@ async function orchestrateOnce(
       executor,
       watcher,
       onProgress,
+      logger,
     );
   } finally {
     // Step 13: Release lock

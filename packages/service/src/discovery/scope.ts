@@ -11,6 +11,7 @@
  */
 
 import type { WatcherClient } from '../interfaces/index.js';
+import type { MinimalLogger } from '../logger/index.js';
 import { filterModifiedAfter } from '../mtimeFilter.js';
 import type { MetaNode } from './types.js';
 
@@ -71,12 +72,21 @@ interface ScopeFilesResult {
 export async function getScopeFiles(
   node: MetaNode,
   watcher: WatcherClient,
+  logger?: MinimalLogger,
 ): Promise<ScopeFilesResult> {
+  const walkStart = Date.now();
   const allFiles = await watcher.walk([`${node.ownerPath}/**`]);
-  return {
-    scopeFiles: filterInScope(node, allFiles),
-    allFiles,
-  };
+  const scopeFiles = filterInScope(node, allFiles);
+  logger?.debug(
+    {
+      ownerPath: node.ownerPath,
+      allFiles: allFiles.length,
+      scopeFiles: scopeFiles.length,
+      durationMs: Date.now() - walkStart,
+    },
+    'scope files enumerated',
+  );
+  return { scopeFiles, allFiles };
 }
 
 /**

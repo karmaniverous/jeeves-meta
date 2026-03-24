@@ -9,6 +9,7 @@ import type { MetaNode } from '../discovery/index.js';
 import { toMetaError } from '../errors.js';
 import { SpawnTimeoutError } from '../executor/index.js';
 import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
+import type { MinimalLogger } from '../logger/index.js';
 import { hasSteerChanged, isArchitectTriggered } from '../scheduling/index.js';
 import type { MetaConfig, MetaError, MetaJson } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
@@ -36,6 +37,7 @@ export async function synthesizeNode(
   executor: MetaExecutor,
   watcher: WatcherClient,
   onProgress?: ProgressCallback,
+  logger?: MinimalLogger,
 ): Promise<OrchestrateResult> {
   // Step 5-6: Steer change detection
   const latestArchive = readLatestArchive(node.metaPath);
@@ -46,7 +48,7 @@ export async function synthesizeNode(
   );
 
   // Step 7: Compute context (includes scope files and delta files)
-  const ctx = await buildContextPackage(node, currentMeta, watcher);
+  const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
   // Step 5 (deferred): Structure hash from context scope files
   const newStructureHash = computeStructureHash(ctx.scopeFiles);
