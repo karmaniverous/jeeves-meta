@@ -52,6 +52,7 @@ describe('verifyRuleApplication', () => {
 
     expect(count).toBe(0);
     expect(logger.warn).toHaveBeenCalledWith(
+      { count: 0 },
       expect.stringContaining('no .meta/meta.json files found'),
     );
   });
