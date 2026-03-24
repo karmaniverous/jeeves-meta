@@ -230,10 +230,7 @@ describe('GET /metas — list with filters', () => {
     expect(body.metas[0]?.path).toContain('old');
   });
 
-  it('neverSynthesized filter with false returns only synthesized entries', async () => {
-    // The route filters on stalenessSeconds === Infinity, but listMetas
-    // caps never-synthesized at MAX_STALENESS_SECONDS (finite). So
-    // neverSynthesized=false returns all entries (none have Infinity).
+  it('neverSynthesized=true returns only never-synthesized entries', async () => {
     const ownerSynth = join(listRoot, 'synth');
     const ownerFresh = join(listRoot, 'fresh');
     const pathSynth = createMeta(ownerSynth, {
@@ -251,16 +248,29 @@ describe('GET /metas — list with filters', () => {
     registerMetasRoutes(app, deps);
     await app.ready();
 
-    // neverSynthesized=false filters to entries where stalenessSeconds !== Infinity
-    // Since listMetas caps at finite MAX_STALENESS_SECONDS, all entries pass
-    const res = await app.inject({
+    // neverSynthesized=true: only entries with lastSynthesized === null
+    const resTrue = await app.inject({
+      method: 'GET',
+      url: '/metas?neverSynthesized=true',
+    });
+    const bodyTrue = resTrue.json<{
+      summary: { total: number };
+      metas: Array<{ lastSynthesized: string | null }>;
+    }>();
+    expect(bodyTrue.metas).toHaveLength(1);
+    expect(bodyTrue.metas[0]?.lastSynthesized).toBeNull();
+
+    // neverSynthesized=false: only entries with lastSynthesized !== null
+    const resFalse = await app.inject({
       method: 'GET',
       url: '/metas?neverSynthesized=false',
     });
-    const body = res.json<{ summary: { total: number }; metas: unknown[] }>();
-
-    expect(body.metas).toHaveLength(2);
-    expect(body.summary.total).toBe(2);
+    const bodyFalse = resFalse.json<{
+      summary: { total: number };
+      metas: Array<{ lastSynthesized: string | null }>;
+    }>();
+    expect(bodyFalse.metas).toHaveLength(1);
+    expect(bodyFalse.metas[0]?.lastSynthesized).not.toBeNull();
   });
 
   it('field projection with custom fields query param', async () => {

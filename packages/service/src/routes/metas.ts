@@ -71,7 +71,7 @@ export function registerMetasRoutes(
     }
     if (query.neverSynthesized !== undefined) {
       entries = entries.filter(
-        (e) => (e.stalenessSeconds === Infinity) === query.neverSynthesized,
+        (e) => (e.lastSynthesized === null) === query.neverSynthesized,
       );
     }
     if (query.locked !== undefined) {
