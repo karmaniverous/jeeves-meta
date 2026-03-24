@@ -94,9 +94,7 @@ describe('formatProgressEvent', () => {
   it('uses meta.json path when serverBaseUrl is not set', () => {
     const e: ProgressEvent = { type: 'synthesis_start', path: 'x' };
     const result = formatProgressEvent(e);
-    expect(result).toBe(
-      '🔬 Started meta synthesis: x/.meta/meta.json',
-    );
+    expect(result).toBe('🔬 Started meta synthesis: x/.meta/meta.json');
   });
 });
 

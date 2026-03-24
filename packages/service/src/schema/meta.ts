@@ -14,8 +14,8 @@ import { metaErrorSchema } from './error.js';
 /** Zod schema for the reserved (underscore-prefixed) meta.json properties. */
 export const metaJsonSchema = z
   .object({
-    /** Stable identity. Generated on first synthesis, never changes. */
-    _id: z.uuid(),
+    /** Stable identity. Auto-generated on first synthesis if not provided. */
+    _id: z.uuid().optional(),
 
     /** Human-provided steering prompt. Optional. */
     _steer: z.string().optional(),

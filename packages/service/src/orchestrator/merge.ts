@@ -8,6 +8,7 @@
  * @module orchestrator/merge
  */
 
+import { randomUUID } from 'node:crypto';
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -64,8 +65,8 @@ export interface MergeOptions {
  */
 export async function mergeAndWrite(options: MergeOptions): Promise<MetaJson> {
   const merged: MetaJson = {
-    // Preserve human-set fields
-    _id: options.current._id,
+    // Preserve human-set fields (auto-generate _id on first synthesis)
+    _id: options.current._id ?? randomUUID(),
     _steer: options.current._steer,
     _depth: options.current._depth,
     _emphasis: options.current._emphasis,

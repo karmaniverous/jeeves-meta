@@ -335,4 +335,54 @@ describe('mergeAndWrite', () => {
 
     rmSync(testRoot, { recursive: true, force: true });
   });
+
+  it('auto-generates _id when current meta has no _id', async () => {
+    mkdirSync(metaPath, { recursive: true });
+
+    const metaWithoutId: MetaJson = {
+      _content: '# Test',
+      _generatedAt: '2026-03-08T07:00:00Z',
+    };
+
+    const result = await mergeAndWrite({
+      metaPath,
+      current: metaWithoutId,
+      architect: 'a',
+      builder: 'b',
+      critic: 'c',
+      builderOutput: { content: '# New', fields: {} },
+      feedback: null,
+      structureHash: 'hash',
+      synthesisCount: 1,
+      error: null,
+    });
+
+    expect(result._id).toBeDefined();
+    expect(result._id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+
+    rmSync(testRoot, { recursive: true, force: true });
+  });
+
+  it('preserves existing _id when present', async () => {
+    mkdirSync(metaPath, { recursive: true });
+
+    const result = await mergeAndWrite({
+      metaPath,
+      current: sampleMeta,
+      architect: 'a',
+      builder: 'b',
+      critic: 'c',
+      builderOutput: { content: '# New', fields: {} },
+      feedback: null,
+      structureHash: 'hash',
+      synthesisCount: 1,
+      error: null,
+    });
+
+    expect(result._id).toBe(sampleMeta._id);
+
+    rmSync(testRoot, { recursive: true, force: true });
+  });
 });

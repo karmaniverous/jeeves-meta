@@ -183,12 +183,36 @@ export async function startService(
   });
   healthCheck.start();
 
-  // Config hot-reload (gap #12)
+  // Config hot-reload (gap #12, expanded #32)
+  // Fields requiring a service restart to take effect
+  const restartRequiredFields = [
+    'port',
+    'host',
+    'watcherUrl',
+    'gatewayUrl',
+    'gatewayApiKey',
+    'defaultArchitect',
+    'defaultCritic',
+  ] as const;
+
   if (configPath) {
     watchFile(configPath, { interval: 5000 }, () => {
       try {
         const newConfig = loadServiceConfig(configPath);
-        // Hot-reloadable fields: schedule, reportChannel, logging level
+
+        // Warn about restart-required field changes
+        for (const field of restartRequiredFields) {
+          const oldVal = config[field];
+          const newVal = newConfig[field];
+          if (oldVal !== newVal) {
+            logger.warn(
+              { field, oldValue: oldVal, newValue: newVal },
+              'Config field changed but requires restart to take effect',
+            );
+          }
+        }
+
+        // Hot-reload schedule
         if (newConfig.schedule !== config.schedule) {
           scheduler.updateSchedule(newConfig.schedule);
           logger.info(
@@ -196,21 +220,27 @@ export async function startService(
             'Schedule hot-reloaded',
           );
         }
-        if (newConfig.reportChannel !== config.reportChannel) {
-          // Mutate shared config reference for progress reporter
-          (config as { reportChannel?: string }).reportChannel =
-            newConfig.reportChannel;
-          logger.info(
-            { reportChannel: newConfig.reportChannel },
-            'reportChannel hot-reloaded',
-          );
-        }
+
+        // Hot-reload logging level
         if (newConfig.logging.level !== config.logging.level) {
           logger.level = newConfig.logging.level;
           logger.info(
             { level: newConfig.logging.level },
             'Log level hot-reloaded',
           );
+        }
+
+        // Merge all non-restart-required fields into shared config ref
+        const restartSet = new Set<string>(restartRequiredFields);
+        for (const key of Object.keys(newConfig)) {
+          if (restartSet.has(key)) continue;
+          if (key === 'logging') continue; // handled above
+          const oldVal = (config as Record<string, unknown>)[key];
+          const newVal = (newConfig as Record<string, unknown>)[key];
+          if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
+            (config as Record<string, unknown>)[key] = newVal;
+            logger.info({ field: key }, 'Config field hot-reloaded');
+          }
         }
       } catch (err) {
         logger.warn({ err }, 'Config hot-reload failed');
