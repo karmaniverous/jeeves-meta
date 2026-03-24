@@ -10,6 +10,8 @@
  * @module seed/autoSeed
  */
 
+import { posix as path } from 'node:path';
+
 import type { WatcherClient } from '../interfaces/index.js';
 import type { MinimalLogger } from '../logger/index.js';
 import type { AutoSeedRule } from '../schema/config.js';
@@ -32,9 +34,9 @@ export interface AutoSeedResult {
 function extractDirectories(filePaths: string[]): string[] {
   const dirs = new Set<string>();
   for (const fp of filePaths) {
-    const lastSlash = fp.lastIndexOf('/');
-    if (lastSlash > 0) {
-      dirs.add(fp.substring(0, lastSlash));
+    const dir = path.dirname(fp);
+    if (dir !== '.' && dir !== '/') {
+      dirs.add(dir);
     }
   }
   return [...dirs];

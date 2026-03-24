@@ -24,9 +24,7 @@ export async function pruneArchive(
   const toRemove = files.length - maxArchive;
   if (toRemove <= 0) return 0;
 
-  for (let i = 0; i < toRemove; i++) {
-    await unlink(files[i]);
-  }
+  await Promise.all(files.slice(0, toRemove).map(unlink));
 
   return toRemove;
 }

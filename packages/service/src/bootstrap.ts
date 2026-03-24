@@ -235,13 +235,15 @@ export async function startService(
           );
         }
 
-        // Merge all non-restart-required fields into shared config ref
+        // Merge all non-restart-required fields into shared config ref.
+        // newConfig is Zod-parsed, so removed fields get defaults — no deletion needed.
         const restartSet = new Set<string>(restartRequiredFields);
         for (const key of Object.keys(newConfig)) {
-          if (restartSet.has(key)) continue;
-          if (key === 'logging') continue; // handled above
+          if (restartSet.has(key) || key === 'logging') continue;
+
           const oldVal = (config as Record<string, unknown>)[key];
           const newVal = (newConfig as Record<string, unknown>)[key];
+
           if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
             (config as Record<string, unknown>)[key] = newVal;
             logger.info({ field: key }, 'Config field hot-reloaded');
