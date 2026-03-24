@@ -16,7 +16,8 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Virtual rule registration** — registers 3 watcher inference rules at startup with retry
 - **Progress reporting** — real-time synthesis events via gateway channel messages
 - **Graceful shutdown** — stop scheduler, release locks, close server
-- **Config hot-reload** — schedule, reportChannel, log level reload without restart
+- **Config hot-reload** — all synthesis parameters reload without restart; restart-required fields (port, host, URLs) warn on change
+- **Auto-seed policy** — config-driven declarative `.meta/` creation via `autoSeed` rules
 - **Token tracking** — per-step counts with exponential moving averages
 - **CLI** — `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `config`, `service` commands
 - **Zod schemas** — validated meta.json and config with open schema support
