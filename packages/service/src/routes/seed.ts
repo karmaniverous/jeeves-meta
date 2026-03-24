@@ -4,15 +4,10 @@
  * @module routes/seed
  */
 
-import { randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { resolveMetaDir } from '../lock.js';
+import { createMeta, metaExists } from '../seed/index.js';
 import type { RouteDeps } from './index.js';
 
 const seedBodySchema = z.object({
@@ -23,29 +18,24 @@ const seedBodySchema = z.object({
 export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
   app.post('/seed', async (request, reply) => {
     const body = seedBodySchema.parse(request.body);
-    const metaDir = resolveMetaDir(body.path);
 
-    if (existsSync(metaDir)) {
+    if (metaExists(body.path)) {
       return reply.status(409).send({
         error: 'CONFLICT',
         message: `.meta directory already exists at ${body.path}`,
       });
     }
 
-    deps.logger.info({ metaDir }, 'creating .meta directory');
-    await mkdir(metaDir, { recursive: true });
-
-    const metaJson: Record<string, unknown> = { _id: randomUUID() };
-    if (body.crossRefs !== undefined) metaJson._crossRefs = body.crossRefs;
-    const metaJsonPath = join(metaDir, 'meta.json');
-    deps.logger.info({ metaJsonPath }, 'writing meta.json');
-    await writeFile(metaJsonPath, JSON.stringify(metaJson, null, 2) + '\n');
+    deps.logger.info({ path: body.path }, 'seeding .meta directory');
+    const result = await createMeta(body.path, {
+      crossRefs: body.crossRefs,
+    });
 
     return reply.status(201).send({
       status: 'created',
       path: body.path,
-      metaDir,
-      _id: metaJson._id,
+      metaDir: result.metaDir,
+      _id: result._id,
     });
   });
 }
