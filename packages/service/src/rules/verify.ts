@@ -31,6 +31,7 @@ export async function verifyRuleApplication(
 
     if (metaPaths.length === 0) {
       logger.warn(
+        { count: 0 },
         'Post-registration verification: no .meta/meta.json files found via watcher walk. ' +
           'Virtual rules may not be applied to indexed files. ' +
           'If metas exist, a path-scoped reindex may be needed.',
