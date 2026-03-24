@@ -2,13 +2,36 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.7.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.6.0...0.7.0)
+#### [0.8.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.7.0...0.8.0)
+
+- fix: MinimalLogger.warn signature in verify.ts [`#76`](https://github.com/karmaniverous/jeeves-meta/pull/76)
+- docs: update documentation for v0.10.0 [`#75`](https://github.com/karmaniverous/jeeves-meta/pull/75)
+- feat: v0.10.0 auto-seed & discovery hardening [`#74`](https://github.com/karmaniverous/jeeves-meta/pull/74)
+- test: add missing tests for computeSummary, routes (metas list, preview, status, unlock, synthesize) [`dc688c6`](https://github.com/karmaniverous/jeeves-meta/commit/dc688c603b2d6e9441645340cc64f9b2fb843474)
+- feat: auto-seed policy with config-driven declarative meta creation (#72) [`b6834aa`](https://github.com/karmaniverous/jeeves-meta/commit/b6834aae52ce5be199affd73ae888ea9b09a9311)
+- feat: convert orchestrator and route file I/O to async (#71) [`db06718`](https://github.com/karmaniverous/jeeves-meta/commit/db067188f00812306fd8d8e02afbdae970394095)
+- refactor: SOLID/DRY cleanup — extract summary, reduce duplication, async route handlers [`07bf698`](https://github.com/karmaniverous/jeeves-meta/commit/07bf6987a3dea3269c749998cc43f4d89533cb7a)
+- refactor: extract shared seed logic from route handler [`e118a16`](https://github.com/karmaniverous/jeeves-meta/commit/e118a167439336279d58131ee578385d39f74e35)
+- feat: post-registration virtual rule verification (#36) [`3c13d71`](https://github.com/karmaniverous/jeeves-meta/commit/3c13d710ddfa5697929acb426b3868fbbcd2c8db)
+- feat: auto-generate _id on first synthesis, expand config hot-reload (#38, #32) [`fba9702`](https://github.com/karmaniverous/jeeves-meta/commit/fba97027c5a71a1a0b773cb7409ef5406932f708)
+- docs: update all documentation to reflect v0.10.0 features (autoSeed, hot-reload, _id auto-gen) [`04045fe`](https://github.com/karmaniverous/jeeves-meta/commit/04045fe3ade170e2f9ecd57107f0812ee098e4ba)
+- feat: thread pino logger through synthesis pipeline (#27) [`12b5a9c`](https://github.com/karmaniverous/jeeves-meta/commit/12b5a9c5ed012dff683d49ac6ec72f30106f274d)
+- feat: link to meta.json in progress reports, support insider links (#37) [`b93eee5`](https://github.com/karmaniverous/jeeves-meta/commit/b93eee5933a3cc1e52bcf69d2c19b7f80b091262)
+- fix: neverSynthesized filter checks lastSynthesized instead of Infinity [`9ec7fb6`](https://github.com/karmaniverous/jeeves-meta/commit/9ec7fb6f66134dcea5e45aac1ff58f192b5eb11f)
+- chore: release @karmaniverous/jeeves-meta v0.10.0 [`0f81316`](https://github.com/karmaniverous/jeeves-meta/commit/0f81316f5cbe234ba832ed7a4f65659e27b0f10e)
+- refactor: address Gemini review — parallel prune, idiomatic dirname, clarify hot-reload [`4f39def`](https://github.com/karmaniverous/jeeves-meta/commit/4f39deff800495f0bcaa0585a824ac248dbe18a1)
+- fix: MinimalLogger.warn signature in verify.ts (requires obj + msg args) [`4bf1310`](https://github.com/karmaniverous/jeeves-meta/commit/4bf131085ce12039cd2a4f59622cb1bdebd16bc1)
+
+#### [openclaw/0.7.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.6.0...openclaw/0.7.0)
+
+> 23 March 2026
 
 - feat: cross-meta references (_crossRefs) — issue #63 [`#70`](https://github.com/karmaniverous/jeeves-meta/pull/70)
 - npm audit fix [`9ef2856`](https://github.com/karmaniverous/jeeves-meta/commit/9ef2856bc0c1cf86df2531918069914d28db6cec)
 - feat: add _crossRefs support (Phase 1, issue #63) [`743e234`](https://github.com/karmaniverous/jeeves-meta/commit/743e2343a5f5eda798aaecb6ba024a402afd3dc8)
 - refactor: DRY extraction for meta content reading and prompt section rendering [`1113363`](https://github.com/karmaniverous/jeeves-meta/commit/1113363368ecd814f946e705d77699b9d51dbed7)
 - docs: update READMEs and consumer skill for _crossRefs [`1b05274`](https://github.com/karmaniverous/jeeves-meta/commit/1b05274fbbbd6d20b3dd5735be805ee524e9e031)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.7.0 [`d694381`](https://github.com/karmaniverous/jeeves-meta/commit/d6943813e6ec4f9431df0762dd4609babe468128)
 - docs: update guides for _crossRefs (tools-reference, concepts) [`809fbb8`](https://github.com/karmaniverous/jeeves-meta/commit/809fbb80709173c814e67bb968eca819c5f78cf3)
 - chore: release @karmaniverous/jeeves-meta v0.9.0 [`a54c619`](https://github.com/karmaniverous/jeeves-meta/commit/a54c61960f3a56039d4d0ab44e8ffd272c59f41b)
 - fix: repair interrupted numbered list in SKILL.md (Gemini review) [`d6ace79`](https://github.com/karmaniverous/jeeves-meta/commit/d6ace79bbc837fa7a6ad8529cf76641c4ddb9be7)
