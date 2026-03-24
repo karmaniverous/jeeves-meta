@@ -66,6 +66,8 @@ aggregate context from other metas.
 - `crossRefs` (optional): JSON array of cross-ref owner paths
   (e.g. `'["j:/path/a","j:/path/b"]'`). Written as `_crossRefs` in the
   initial `meta.json`.
+- `steer` (optional): Steering prompt string. Written as `_steer` in the
+  initial `meta.json`.
 
 ### meta_unlock
 Remove a stale `.lock` file from a meta entity. Locks are created during
@@ -160,19 +162,19 @@ Key settings:
 
 ### Meta Discovery
 
-Discovery is entirely watcher-based. The engine:
+Discovery is entirely filesystem-based (no Qdrant dependency). The engine:
 
 1. **Registers virtual inference rules** at service startup. These rules match
    file paths (`**/.meta/meta.json` and `**/.meta/archive/*.json`) and apply
    the configured `metaProperty`/`metaArchiveProperty` values as watcher
    metadata on those indexed points.
 
-2. **Queries the watcher** via `buildMetaFilter(config)`, which constructs a
-   Qdrant filter from the key-value pairs in `metaProperty`. For example:
-   - Default `{ _meta: "current" }` → filter on `_meta: "current"`
-   - Configured `{ domains: ["meta"] }` → filter on `domains: "meta"`
+2. **Discovers metas** via `watcher.walk(["**/.meta/meta.json"])` — a filesystem
+   walk provided by the watcher's `POST /walk` endpoint. This enumerates all
+   `.meta/meta.json` files under watched paths without using Qdrant or any
+   vector database queries.
 
-3. **Deduplicates** scan results by `.meta/` directory path and builds the
+3. **Deduplicates** results by `.meta/` directory path and builds the
    ownership tree.
 
 **Important:** If you change `metaProperty` or `metaArchiveProperty` in config,
@@ -254,6 +256,52 @@ etc. as needed.
    chokidar file watching)
 5. The entity appears in `meta_list` on the next query
 
+**Note:** `_id` is optional in `meta.json`. A minimal stub of just `{}` or
+`{ "_steer": "..." }` is valid — a UUID will be auto-generated on first
+synthesis. The `meta_seed` tool and auto-seed always generate `_id` at
+creation time.
+
+### Auto-Seed Policy
+
+The `autoSeed` config field enables declarative, config-driven `.meta/`
+creation. It is an array of policy rules, each with the shape:
+
+```json
+{ "match": "<glob>", "steer": "<optional prompt>", "crossRefs": ["<optional paths>"] }
+```
+
+- **`match`** (required) — a glob pattern compatible with `watcher.walk()`.
+  The watcher walks all watched paths matching this glob and returns file
+  paths. Parent directories of matched files become seed candidates.
+- **`steer`** (optional) — steering prompt written as `_steer` in the
+  seeded `meta.json`.
+- **`crossRefs`** (optional) — array of cross-ref owner paths written as
+  `_crossRefs` in the seeded `meta.json`.
+
+**Evaluation order:** Rules are processed in array order. If multiple rules
+match the same directory, the last match wins for `steer` and `crossRefs`.
+
+**Behavior:**
+- Auto-seed runs at the start of each scheduler tick, before candidate
+  discovery. Directories that already have a `.meta/` subdirectory are
+  skipped.
+- Empty directories (no files matching any glob) will not be seeded — the
+  watcher walk only returns actual file paths, and parent directories are
+  derived from those.
+- The `autoSeed` field hot-reloads with all other non-restart-required
+  config fields.
+
+**Example:**
+
+```json
+{
+  "autoSeed": [
+    { "match": "domains/meetings/*/**", "steer": "Summarize this meeting." },
+    { "match": "domains/github/**/*.md", "steer": "Summarize this repository." }
+  ]
+}
+```
+
 ### Adding Cross-Reference Metas
 
 For metas that aggregate context from other metas (e.g. an organizational
@@ -283,14 +331,22 @@ across physically distributed data.
 
 ### Config Hot-Reload
 
-The following fields can be changed without restarting the service:
-- `schedule` — cron expression
-- `reportChannel` — progress reporting target
-- `logging.level` — log verbosity
+All config fields hot-reload without restarting the service **except** these
+restart-required fields:
+
+- `port` — HTTP listen port
+- `host` — bind address
+- `watcherUrl` — watcher service URL
+- `gatewayUrl` — OpenClaw gateway URL
+- `gatewayApiKey` — gateway authentication key
+- `defaultArchitect` — architect system prompt
+- `defaultCritic` — critic system prompt
 
 Edit the config file and save; the service detects changes via `fs.watchFile`.
-All other fields (including `metaProperty`, `host`, `port`, timeouts) require a
-service restart.
+When a restart-required field changes, the service logs a warning but the
+change does not take effect until restart. All other fields (including
+`schedule`, `reportChannel`, `metaProperty`, timeouts, `autoSeed`,
+`logging.level`, etc.) are applied immediately.
 
 ### Progress Reporting
 

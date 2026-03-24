@@ -57,8 +57,9 @@ Create a `.meta/` directory with a skeleton `meta.json` for a new entity path.
 **Parameters:**
 - `path` (string, required) — owner directory path
 - `crossRefs` (string, optional) — JSON array of cross-ref owner paths (e.g. `'["j:/path/a","j:/path/b"]'`). Written as `_crossRefs` in the initial `meta.json`.
+- `steer` (string, optional) — steering prompt written as `_steer` in the initial `meta.json`
 
-**Response:** `{ path, _id }` (201 Created) or 409 Conflict if already exists
+**Response:** `{ path, _id }` (201 Created) or 409 Conflict if already exists. Supports optional `steer` and `crossRefs` in the seed request.
 
 ## meta_unlock
 

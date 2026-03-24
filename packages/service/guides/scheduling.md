@@ -16,10 +16,11 @@ effectiveStaleness = actualStaleness × (normalizedDepth + 1) ^ (depthWeight × 
 The built-in croner scheduler runs on the configured cron expression (default: every 30 minutes).
 
 Each tick:
-1. Discover all metas via watcher `/walk` endpoint
-2. Compute effective staleness for each
-3. Enqueue the stalest candidate (if none found, increase backoff and return)
-4. Check watcher uptime for restart detection → re-register virtual rules if needed (only runs when a candidate was found)
+1. **Auto-seed** — if `autoSeed` rules are configured, walk for matching directories via the watcher and seed any that lack a `.meta/` directory
+2. Discover all metas via watcher `/walk` endpoint
+3. Compute effective staleness for each
+4. Enqueue the stalest candidate (if none found, increase backoff and return)
+5. Check watcher uptime for restart detection → re-register virtual rules if needed (only runs when a candidate was found)
 
 ## Adaptive Backoff
 
