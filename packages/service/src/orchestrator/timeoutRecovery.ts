@@ -4,7 +4,7 @@
  * @module orchestrator/timeoutRecovery
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 
 import type { SpawnTimeoutError } from '../executor/index.js';
 import type { MetaConfig, MetaError, MetaJson } from '../schema/index.js';
@@ -29,9 +29,9 @@ interface TimeoutRecoveryOptions {
  * Returns an {@link OrchestrateResult} if state was salvaged, or `null`
  * if the caller should fall through to a hard failure.
  */
-export function attemptTimeoutRecovery(
+export async function attemptTimeoutRecovery(
   opts: TimeoutRecoveryOptions,
-): OrchestrateResult | null {
+): Promise<OrchestrateResult | null> {
   const {
     err,
     currentMeta,
@@ -44,10 +44,8 @@ export function attemptTimeoutRecovery(
 
   let partialOutput: ReturnType<typeof parseBuilderOutput> | null = null;
   try {
-    if (existsSync(err.outputPath)) {
-      const raw = readFileSync(err.outputPath, 'utf8');
-      partialOutput = parseBuilderOutput(raw);
-    }
+    const raw = await readFile(err.outputPath, 'utf8');
+    partialOutput = parseBuilderOutput(raw);
   } catch {
     // Could not read partial output — fall through to hard failure
   }
@@ -62,7 +60,7 @@ export function attemptTimeoutRecovery(
         code: 'TIMEOUT',
         message: err.message,
       };
-      finalizeCycle({
+      await finalizeCycle({
         metaPath,
         current: currentMeta,
         config,

@@ -78,8 +78,8 @@ afterEach(() => {
 });
 
 describe('finalizeCycle', () => {
-  it('writes .lock file then copies to meta.json', () => {
-    const result = finalizeCycle(baseOpts());
+  it('writes .lock file then copies to meta.json', async () => {
+    const result = await finalizeCycle(baseOpts());
 
     const lockPath = join(metaPath, '.lock');
     const metaJsonPath = join(metaPath, 'meta.json');
@@ -95,14 +95,14 @@ describe('finalizeCycle', () => {
     expect(metaOnDisk._synthesisCount).toBe(result._synthesisCount);
   });
 
-  it('creates archive snapshot', () => {
-    finalizeCycle(baseOpts());
+  it('creates archive snapshot', async () => {
+    await finalizeCycle(baseOpts());
 
     const archiveFiles = listArchiveFiles(metaPath);
     expect(archiveFiles.length).toBe(1);
   });
 
-  it('prunes archive to maxArchive', () => {
+  it('prunes archive to maxArchive', async () => {
     const archiveDir = join(metaPath, 'archive');
     mkdirSync(archiveDir, { recursive: true });
 
@@ -116,19 +116,19 @@ describe('finalizeCycle', () => {
       );
     }
 
-    finalizeCycle(baseOpts());
+    await finalizeCycle(baseOpts());
 
     // maxArchive + 2 pre-existing + 1 new = maxArchive + 3, pruned to maxArchive
     const archiveFiles = listArchiveFiles(metaPath);
     expect(archiveFiles.length).toBe(config.maxArchive);
   });
 
-  it('threads state and stateOnly through to mergeAndWrite', () => {
+  it('threads state and stateOnly through to mergeAndWrite', async () => {
     const opts = baseOpts();
     opts.current._content = 'preserved content';
     opts.current._generatedAt = '2024-06-15T12:00:00.000Z';
 
-    const result = finalizeCycle({
+    const result = await finalizeCycle({
       ...opts,
       state: { step: 3 },
       stateOnly: true,

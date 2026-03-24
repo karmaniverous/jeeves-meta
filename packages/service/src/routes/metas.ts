@@ -5,7 +5,8 @@
  * @module routes/metas
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
@@ -204,7 +205,7 @@ export function registerMetasRoutes(
       }
 
       const meta = JSON.parse(
-        readFileSync(join(targetNode.metaPath, 'meta.json'), 'utf8'),
+        await readFile(join(targetNode.metaPath, 'meta.json'), 'utf8'),
       ) as Record<string, unknown>;
 
       // Field projection
@@ -270,23 +271,26 @@ export function registerMetasRoutes(
       // Cross-refs status
       const crossRefsRaw = meta._crossRefs;
       if (Array.isArray(crossRefsRaw) && crossRefsRaw.length > 0) {
-        response.crossRefs = crossRefsRaw.map((refPath: unknown) => {
-          const rp = String(refPath);
-          const refMetaFile = join(rp, '.meta', 'meta.json');
-          if (!existsSync(refMetaFile)) return { path: rp, status: 'missing' };
-          try {
-            const refMeta = JSON.parse(
-              readFileSync(refMetaFile, 'utf8'),
-            ) as Record<string, unknown>;
-            return {
-              path: rp,
-              status: 'resolved',
-              hasContent: Boolean(refMeta._content),
-            };
-          } catch {
-            return { path: rp, status: 'missing' };
-          }
-        });
+        response.crossRefs = await Promise.all(
+          crossRefsRaw.map(async (refPath: unknown) => {
+            const rp = String(refPath);
+            const refMetaFile = join(rp, '.meta', 'meta.json');
+            if (!existsSync(refMetaFile))
+              return { path: rp, status: 'missing' };
+            try {
+              const refMeta = JSON.parse(
+                await readFile(refMetaFile, 'utf8'),
+              ) as Record<string, unknown>;
+              return {
+                path: rp,
+                status: 'resolved',
+                hasContent: Boolean(refMeta._content),
+              };
+            } catch {
+              return { path: rp, status: 'missing' };
+            }
+          }),
+        );
       }
 
       // Archive
@@ -297,10 +301,12 @@ export function registerMetasRoutes(
             ? query.includeArchive
             : archiveFiles.length;
         const selected = archiveFiles.slice(-limit).reverse();
-        response.archive = selected.map((af) => {
-          const raw = readFileSync(af, 'utf8');
-          return projectMeta(JSON.parse(raw) as Record<string, unknown>);
-        });
+        response.archive = await Promise.all(
+          selected.map(async (af) => {
+            const raw = await readFile(af, 'utf8');
+            return projectMeta(JSON.parse(raw) as Record<string, unknown>);
+          }),
+        );
       }
 
       return response;

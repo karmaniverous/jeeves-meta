@@ -4,7 +4,7 @@
  * @module archive/prune
  */
 
-import { unlinkSync } from 'node:fs';
+import { unlink } from 'node:fs/promises';
 
 import { listArchiveFiles } from './listArchive.js';
 
@@ -16,13 +16,16 @@ import { listArchiveFiles } from './listArchive.js';
  * @param maxArchive - Maximum snapshots to retain.
  * @returns Number of files pruned.
  */
-export function pruneArchive(metaPath: string, maxArchive: number): number {
+export async function pruneArchive(
+  metaPath: string,
+  maxArchive: number,
+): Promise<number> {
   const files = listArchiveFiles(metaPath);
   const toRemove = files.length - maxArchive;
   if (toRemove <= 0) return 0;
 
   for (let i = 0; i < toRemove; i++) {
-    unlinkSync(files[i]);
+    await unlink(files[i]);
   }
 
   return toRemove;

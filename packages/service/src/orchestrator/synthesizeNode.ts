@@ -40,7 +40,7 @@ export async function synthesizeNode(
   logger?: MinimalLogger,
 ): Promise<OrchestrateResult> {
   // Step 5-6: Steer change detection
-  const latestArchive = readLatestArchive(node.metaPath);
+  const latestArchive = await readLatestArchive(node.metaPath);
   const steerChanged = hasSteerChanged(
     currentMeta._steer,
     latestArchive?._steer,
@@ -97,7 +97,7 @@ export async function synthesizeNode(
 
       if (!currentMeta._builder) {
         // No cached builder — cycle fails
-        finalizeCycle({
+        await finalizeCycle({
           metaPath: node.metaPath,
           current: currentMeta,
           config,
@@ -148,7 +148,7 @@ export async function synthesizeNode(
     });
   } catch (err) {
     if (err instanceof SpawnTimeoutError) {
-      const recovered = attemptTimeoutRecovery({
+      const recovered = await attemptTimeoutRecovery({
         err,
         currentMeta,
         metaPath: node.metaPath,
@@ -161,7 +161,7 @@ export async function synthesizeNode(
     }
 
     stepError = toMetaError('builder', err);
-    finalizeCycle({
+    await finalizeCycle({
       metaPath: node.metaPath,
       current: currentMeta,
       config,
@@ -210,7 +210,7 @@ export async function synthesizeNode(
   }
 
   // Steps 11-12: Merge, archive, prune
-  finalizeCycle({
+  await finalizeCycle({
     metaPath: node.metaPath,
     current: currentMeta,
     config,

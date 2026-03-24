@@ -238,10 +238,10 @@ describe('parseCriticOutput', () => {
 describe('mergeAndWrite', () => {
   const metaPath = join(testRoot, '.meta');
 
-  it('writes merged meta.json', () => {
+  it('writes merged meta.json', async () => {
     mkdirSync(metaPath, { recursive: true });
 
-    const result = mergeAndWrite({
+    const result = await mergeAndWrite({
       metaPath,
       current: sampleMeta,
       architect: 'architect prompt',
@@ -266,10 +266,10 @@ describe('mergeAndWrite', () => {
     rmSync(testRoot, { recursive: true, force: true });
   });
 
-  it('preserves previous content when builder is null', () => {
+  it('preserves previous content when builder is null', async () => {
     mkdirSync(metaPath, { recursive: true });
 
-    const result = mergeAndWrite({
+    const result = await mergeAndWrite({
       metaPath,
       current: sampleMeta,
       architect: 'a',
@@ -288,10 +288,10 @@ describe('mergeAndWrite', () => {
     rmSync(testRoot, { recursive: true, force: true });
   });
 
-  it('persists _state in merged output', () => {
+  it('persists _state in merged output', async () => {
     mkdirSync(metaPath, { recursive: true });
 
-    const result = mergeAndWrite({
+    const result = await mergeAndWrite({
       metaPath,
       current: sampleMeta,
       architect: 'a',
@@ -310,10 +310,10 @@ describe('mergeAndWrite', () => {
     rmSync(testRoot, { recursive: true, force: true });
   });
 
-  it('stateOnly preserves _content and _generatedAt from current', () => {
+  it('stateOnly preserves _content and _generatedAt from current', async () => {
     mkdirSync(metaPath, { recursive: true });
 
-    const result = mergeAndWrite({
+    const result = await mergeAndWrite({
       metaPath,
       current: sampleMeta,
       architect: 'a',

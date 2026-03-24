@@ -8,7 +8,7 @@
  * @module orchestrator/merge
  */
 
-import { writeFileSync } from 'node:fs';
+import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { computeEma } from '../ema.js';
@@ -62,7 +62,7 @@ export interface MergeOptions {
  * @returns The updated MetaJson.
  * @throws If validation fails (malformed output).
  */
-export function mergeAndWrite(options: MergeOptions): MetaJson {
+export async function mergeAndWrite(options: MergeOptions): Promise<MetaJson> {
   const merged: MetaJson = {
     // Preserve human-set fields
     _id: options.current._id,
@@ -142,7 +142,7 @@ export function mergeAndWrite(options: MergeOptions): MetaJson {
 
   // Write to specified path (lock staging) or default meta.json
   const filePath = options.outputPath ?? join(options.metaPath, 'meta.json');
-  writeFileSync(filePath, JSON.stringify(result.data, null, 2) + '\n');
+  await writeFile(filePath, JSON.stringify(result.data, null, 2) + '\n');
 
   return result.data;
 }

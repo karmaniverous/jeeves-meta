@@ -112,7 +112,7 @@ export async function listMetas(
   for (const node of tree.nodes.values()) {
     let meta: MetaJson;
     try {
-      meta = readMetaJson(node.metaPath);
+      meta = await readMetaJson(node.metaPath);
     } catch {
       // Skip unreadable metas
       continue;

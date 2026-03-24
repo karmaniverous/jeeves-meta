@@ -37,8 +37,8 @@ afterEach(() => {
 const metaPath = join(testRoot, '.meta');
 
 describe('createSnapshot', () => {
-  it('creates an archive file with _archived and _archivedAt', () => {
-    const archivePath = createSnapshot(metaPath, sampleMeta);
+  it('creates an archive file with _archived and _archivedAt', async () => {
+    const archivePath = await createSnapshot(metaPath, sampleMeta);
     expect(existsSync(archivePath)).toBe(true);
 
     const archivedRaw = readFileSync(archivePath, 'utf8');
@@ -51,7 +51,7 @@ describe('createSnapshot', () => {
 });
 
 describe('pruneArchive', () => {
-  it('removes oldest files when over maxArchive', () => {
+  it('removes oldest files when over maxArchive', async () => {
     const archiveDir = join(metaPath, 'archive');
     for (let i = 0; i < 5; i++) {
       writeFileSync(
@@ -60,22 +60,22 @@ describe('pruneArchive', () => {
       );
     }
 
-    const pruned = pruneArchive(metaPath, 3);
+    const pruned = await pruneArchive(metaPath, 3);
     expect(pruned).toBe(2);
     expect(
       readdirSync(archiveDir).filter((f) => f.endsWith('.json')),
     ).toHaveLength(3);
   });
 
-  it('does nothing when under maxArchive', () => {
+  it('does nothing when under maxArchive', async () => {
     const archiveDir = join(metaPath, 'archive');
     writeFileSync(join(archiveDir, 'snap1.json'), '{}');
-    expect(pruneArchive(metaPath, 10)).toBe(0);
+    expect(await pruneArchive(metaPath, 10)).toBe(0);
   });
 });
 
 describe('readLatestArchive', () => {
-  it('reads the most recent archive', () => {
+  it('reads the most recent archive', async () => {
     const archiveDir = join(metaPath, 'archive');
     writeFileSync(
       join(archiveDir, '2026-03-01.json'),
@@ -86,13 +86,13 @@ describe('readLatestArchive', () => {
       JSON.stringify({ _id: 'new', _steer: 'new steer' }),
     );
 
-    const latest = readLatestArchive(metaPath);
+    const latest = await readLatestArchive(metaPath);
     expect(latest).not.toBeNull();
     expect(latest!._steer).toBe('new steer');
   });
 
-  it('returns null when no archives exist', () => {
-    expect(readLatestArchive(metaPath)).toBeNull();
+  it('returns null when no archives exist', async () => {
+    expect(await readLatestArchive(metaPath)).toBeNull();
   });
 });
 

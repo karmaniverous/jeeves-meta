@@ -5,7 +5,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
@@ -20,7 +21,7 @@ const seedBodySchema = z.object({
 });
 
 export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
-  app.post('/seed', (request, reply) => {
+  app.post('/seed', async (request, reply) => {
     const body = seedBodySchema.parse(request.body);
     const metaDir = resolveMetaDir(body.path);
 
@@ -32,13 +33,13 @@ export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
     }
 
     deps.logger.info({ metaDir }, 'creating .meta directory');
-    mkdirSync(metaDir, { recursive: true });
+    await mkdir(metaDir, { recursive: true });
 
     const metaJson: Record<string, unknown> = { _id: randomUUID() };
     if (body.crossRefs !== undefined) metaJson._crossRefs = body.crossRefs;
     const metaJsonPath = join(metaDir, 'meta.json');
     deps.logger.info({ metaJsonPath }, 'writing meta.json');
-    writeFileSync(metaJsonPath, JSON.stringify(metaJson, null, 2) + '\n');
+    await writeFile(metaJsonPath, JSON.stringify(metaJson, null, 2) + '\n');
 
     return reply.status(201).send({
       status: 'created',

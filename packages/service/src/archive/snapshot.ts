@@ -7,7 +7,7 @@
  * @module archive/snapshot
  */
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { MetaJson } from '../schema/index.js';
@@ -19,9 +19,12 @@ import type { MetaJson } from '../schema/index.js';
  * @param meta - Current meta.json content.
  * @returns The archive file path.
  */
-export function createSnapshot(metaPath: string, meta: MetaJson): string {
+export async function createSnapshot(
+  metaPath: string,
+  meta: MetaJson,
+): Promise<string> {
   const archiveDir = join(metaPath, 'archive');
-  mkdirSync(archiveDir, { recursive: true });
+  await mkdir(archiveDir, { recursive: true });
 
   const now = new Date().toISOString().replace(/[:.]/g, '-');
   const archiveFile = join(archiveDir, now + '.json');
@@ -32,6 +35,6 @@ export function createSnapshot(metaPath: string, meta: MetaJson): string {
     _archivedAt: new Date().toISOString(),
   };
 
-  writeFileSync(archiveFile, JSON.stringify(archived, null, 2) + '\n');
+  await writeFile(archiveFile, JSON.stringify(archived, null, 2) + '\n');
   return archiveFile;
 }
