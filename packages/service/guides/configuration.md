@@ -28,22 +28,28 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `port` | integer | `1938` | HTTP listen port |
+| `host` | string | `127.0.0.1` | HTTP bind address |
 | `schedule` | string | `*/30 * * * *` | Cron expression for synthesis scheduling |
 | `reportChannel` | string | — | Gateway channel target for progress messages |
 | `watcherHealthIntervalMs` | number | `60000` | Periodic watcher health check interval in ms. 0 = disabled. |
 | `serverBaseUrl` | string | — | Base URL for entity links in progress reports (e.g. `http://myserver:1938`) |
+| `autoSeed` | array | `[]` | Auto-seed policy rules. Each rule: `{ match: string, steer?: string, crossRefs?: string[] }`. Glob patterns matched against `watcher.walk()` results. Rules evaluated in order; last match wins for steer/crossRefs. |
 | `logging.level` | string | `"info"` | Log level (trace/debug/info/warn/error) |
 | `logging.file` | string | — | Log file path |
 
 ## Hot-Reload
 
-The following fields are hot-reloadable (no service restart required):
-- `schedule` — cron expression
-- `reportChannel` — progress reporting target
-- `watcherHealthIntervalMs` — watcher health check interval
-- `logging.level` — log verbosity
+All config fields hot-reload without a service restart **except** these restart-required fields:
 
-All other fields require a service restart.
+- `port` — HTTP listen port
+- `host` — bind address
+- `watcherUrl` — watcher service URL
+- `gatewayUrl` — OpenClaw gateway URL
+- `gatewayApiKey` — gateway authentication key
+- `defaultArchitect` — architect system prompt
+- `defaultCritic` — critic system prompt
+
+When a restart-required field changes, the service logs a warning but the change does not take effect until restart. All other fields (including `schedule`, `reportChannel`, `autoSeed`, timeouts, `metaProperty`, `logging.level`, etc.) are applied immediately on config file save.
 
 ## Environment Variables
 
