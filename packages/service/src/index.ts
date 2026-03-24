@@ -142,6 +142,7 @@ export {
 
 // ── Rules ──
 export { RuleRegistrar } from './rules/index.js';
+export { verifyRuleApplication } from './rules/verify.js';
 
 // ── Sleep ──
 export { sleep } from './sleep.js';

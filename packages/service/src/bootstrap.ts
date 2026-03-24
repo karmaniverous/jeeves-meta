@@ -17,6 +17,7 @@ import { SynthesisQueue } from './queue/index.js';
 import type { RouteDeps, ServiceStats } from './routes/index.js';
 import { WatcherHealthCheck } from './rules/healthCheck.js';
 import { RuleRegistrar } from './rules/index.js';
+import { verifyRuleApplication } from './rules/verify.js';
 import { Scheduler } from './scheduler/index.js';
 import { type ServiceConfig } from './schema/config.js';
 import { createServer } from './server.js';
@@ -168,11 +169,15 @@ export async function startService(
   // Start scheduler
   scheduler.start();
 
-  // Rule registration (fire-and-forget with retries)
+  // Rule registration (fire-and-forget with retries) + post-registration verification
   const registrar = new RuleRegistrar(config, logger, watcher);
   scheduler.setRegistrar(registrar);
   routeDeps.registrar = registrar;
-  void registrar.register();
+  void registrar.register().then(() => {
+    if (registrar.isRegistered) {
+      void verifyRuleApplication(watcher, logger);
+    }
+  });
 
   // Periodic watcher health check (independent of scheduler)
   const healthCheck = new WatcherHealthCheck({
