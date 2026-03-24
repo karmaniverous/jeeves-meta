@@ -1,5 +1,8 @@
 /**
- * Tests for GET /metas/:path — crossRefs status in detail response.
+ * Tests for GET /metas routes.
+ *
+ * - GET /metas — list with filters and projection.
+ * - GET /metas/:path — crossRefs status in detail response.
  *
  * @module routes/metas.test
  */
@@ -69,6 +72,255 @@ function makeWatcher(metaJsonPaths: string[]): WatcherClient {
     registerRules: vi.fn().mockResolvedValue(undefined),
   };
 }
+
+describe('GET /metas — list with filters', () => {
+  let app: FastifyInstance;
+  const listRoot = join(
+    tmpdir(),
+    `jeeves-meta-metas-list-${Date.now().toString()}`,
+  );
+
+  function createMeta(
+    ownerDir: string,
+    meta: Record<string, unknown> = {},
+  ): string {
+    const metaDir = join(ownerDir, '.meta');
+    mkdirSync(metaDir, { recursive: true });
+    writeFileSync(
+      join(metaDir, 'meta.json'),
+      JSON.stringify({
+        _id: '550e8400-e29b-41d4-a716-446655440099',
+        ...meta,
+      }),
+    );
+    return join(metaDir, 'meta.json');
+  }
+
+  afterEach(async () => {
+    await app.close();
+    rmSync(listRoot, { recursive: true, force: true });
+  });
+
+  it('returns summary + metas array', async () => {
+    const ownerA = join(listRoot, 'projA');
+    const pathA = createMeta(ownerA, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: '2026-03-01T00:00:00Z',
+    });
+    const watcher = makeWatcher([pathA]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    const res = await app.inject({ method: 'GET', url: '/metas' });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{
+      summary: Record<string, unknown>;
+      metas: unknown[];
+    }>();
+
+    expect(body).toHaveProperty('summary');
+    expect(body).toHaveProperty('metas');
+    expect(body.summary).toHaveProperty('total');
+    expect(body.metas).toHaveLength(1);
+  });
+
+  it('pathPrefix filter works', async () => {
+    const ownerA = join(listRoot, 'alpha', 'projA');
+    const ownerB = join(listRoot, 'beta', 'projB');
+    const pathA = createMeta(ownerA, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: '2026-03-01T00:00:00Z',
+    });
+    const pathB = createMeta(ownerB, {
+      _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      _generatedAt: '2026-03-01T00:00:00Z',
+    });
+    const watcher = makeWatcher([pathA, pathB]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/metas?pathPrefix=alpha',
+    });
+    const body = res.json<{
+      summary: { total: number };
+      metas: Array<{ path: string }>;
+    }>();
+
+    expect(body.summary.total).toBe(1);
+    expect(body.metas).toHaveLength(1);
+    expect(body.metas[0]?.path).toContain('alpha');
+  });
+
+  it('hasError filter works', async () => {
+    const ownerOk = join(listRoot, 'ok');
+    const ownerErr = join(listRoot, 'err');
+    const pathOk = createMeta(ownerOk, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: '2026-03-01T00:00:00Z',
+    });
+    const pathErr = createMeta(ownerErr, {
+      _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      _generatedAt: '2026-03-01T00:00:00Z',
+      _error: {
+        step: 'builder',
+        message: 'timeout',
+        timestamp: '2026-03-01T00:00:00Z',
+      },
+    });
+    const watcher = makeWatcher([pathOk, pathErr]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/metas?hasError=true',
+    });
+    const body = res.json<{
+      summary: { total: number };
+      metas: Array<{ hasError: boolean }>;
+    }>();
+
+    expect(body.metas).toHaveLength(1);
+    expect(body.metas[0]?.hasError).toBe(true);
+  });
+
+  it('staleHours filter works', async () => {
+    const ownerRecent = join(listRoot, 'recent');
+    const ownerOld = join(listRoot, 'old');
+    const pathRecent = createMeta(ownerRecent, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: new Date(Date.now() - 1800_000).toISOString(), // 30 min ago
+    });
+    const pathOld = createMeta(ownerOld, {
+      _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      _generatedAt: new Date(Date.now() - 86400_000 * 3).toISOString(), // 3 days ago
+    });
+    const watcher = makeWatcher([pathRecent, pathOld]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/metas?staleHours=24',
+    });
+    const body = res.json<{
+      summary: { total: number };
+      metas: Array<{ path: string }>;
+    }>();
+
+    expect(body.metas).toHaveLength(1);
+    expect(body.metas[0]?.path).toContain('old');
+  });
+
+  it('neverSynthesized filter with false returns only synthesized entries', async () => {
+    // The route filters on stalenessSeconds === Infinity, but listMetas
+    // caps never-synthesized at MAX_STALENESS_SECONDS (finite). So
+    // neverSynthesized=false returns all entries (none have Infinity).
+    const ownerSynth = join(listRoot, 'synth');
+    const ownerFresh = join(listRoot, 'fresh');
+    const pathSynth = createMeta(ownerSynth, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: '2026-03-01T00:00:00Z',
+    });
+    const pathFresh = createMeta(ownerFresh, {
+      _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+    });
+    const watcher = makeWatcher([pathSynth, pathFresh]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    // neverSynthesized=false filters to entries where stalenessSeconds !== Infinity
+    // Since listMetas caps at finite MAX_STALENESS_SECONDS, all entries pass
+    const res = await app.inject({
+      method: 'GET',
+      url: '/metas?neverSynthesized=false',
+    });
+    const body = res.json<{ summary: { total: number }; metas: unknown[] }>();
+
+    expect(body.metas).toHaveLength(2);
+    expect(body.summary.total).toBe(2);
+  });
+
+  it('field projection with custom fields query param', async () => {
+    const owner = join(listRoot, 'proj');
+    const path = createMeta(owner, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: '2026-03-01T00:00:00Z',
+      _architectTokens: 100,
+    });
+    const watcher = makeWatcher([path]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/metas?fields=path,hasError',
+    });
+    const body = res.json<{ metas: Array<Record<string, unknown>> }>();
+
+    expect(body.metas).toHaveLength(1);
+    const meta = body.metas[0];
+    expect(Object.keys(meta)).toEqual(['path', 'hasError']);
+  });
+
+  it('default field projection matches expected keys', async () => {
+    const owner = join(listRoot, 'defaults');
+    const path = createMeta(owner, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: '2026-03-01T00:00:00Z',
+    });
+    const watcher = makeWatcher([path]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    const res = await app.inject({ method: 'GET', url: '/metas' });
+    const body = res.json<{ metas: Array<Record<string, unknown>> }>();
+
+    const expectedKeys = [
+      'path',
+      'depth',
+      'emphasis',
+      'stalenessSeconds',
+      'lastSynthesized',
+      'hasError',
+      'locked',
+      'architectTokens',
+      'builderTokens',
+      'criticTokens',
+    ];
+    expect(Object.keys(body.metas[0]).sort()).toEqual(expectedKeys.sort());
+  });
+});
 
 describe('GET /metas/:path — crossRefs status', () => {
   let app: FastifyInstance;
