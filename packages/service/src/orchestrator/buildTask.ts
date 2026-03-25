@@ -11,6 +11,10 @@
 import Handlebars from 'handlebars';
 
 import type { MetaContext } from '../interfaces/index.js';
+import {
+  DEFAULT_ARCHITECT_PROMPT,
+  DEFAULT_CRITIC_PROMPT,
+} from '../prompts/index.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
 import { condenseScopeFiles } from './contextPackage.js';
 
@@ -134,7 +138,7 @@ export function buildArchitectTask(
   config: MetaConfig,
 ): string {
   const sections = [
-    meta._architect ?? config.defaultArchitect,
+    meta._architect ?? config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
     '',
     '## SCOPE',
     `Path: ${ctx.path}`,
@@ -255,7 +259,7 @@ export function buildCriticTask(
   config: MetaConfig,
 ): string {
   const sections = [
-    meta._critic ?? config.defaultCritic,
+    meta._critic ?? config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
     '',
     '## SYNTHESIS TO EVALUATE',
     meta._content ?? '(No content produced)',

@@ -43,11 +43,11 @@ export const metaConfigSchema = z.object({
   /** Thinking level for spawned synthesis sessions. */
   thinking: z.string().default('low'),
 
-  /** Resolved architect system prompt text. */
-  defaultArchitect: z.string(),
+  /** Resolved architect system prompt text. Falls back to built-in default. */
+  defaultArchitect: z.string().optional(),
 
-  /** Resolved critic system prompt text. */
-  defaultCritic: z.string(),
+  /** Resolved critic system prompt text. Falls back to built-in default. */
+  defaultCritic: z.string().optional(),
 
   /** Skip unchanged candidates, bump _generatedAt. */
   skipUnchanged: z.boolean().default(true),
