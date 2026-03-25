@@ -46,13 +46,14 @@ describe('metaConfigSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects missing defaultArchitect', () => {
+  it('accepts missing defaultArchitect and defaultCritic (optional, built-in defaults)', () => {
     const partial = {
       watcherUrl: validConfig.watcherUrl,
-      defaultCritic: validConfig.defaultCritic,
     };
     const result = metaConfigSchema.safeParse(partial);
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    expect(result.data?.defaultArchitect).toBeUndefined();
+    expect(result.data?.defaultCritic).toBeUndefined();
   });
 
   it('rejects architectTimeout below minimum (30)', () => {

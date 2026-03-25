@@ -133,6 +133,86 @@ describe('buildCriticTask', () => {
   });
 });
 
+describe('Handlebars template compilation in prompts', () => {
+  it('resolves config values in architect prompt via {{config.*}}', () => {
+    const configWithTemplate: MetaConfig = {
+      ...sampleConfig,
+      defaultArchitect:
+        'Timeout is {{config.builderTimeout}}s. Max {{config.maxLines}} lines.',
+    };
+    const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
+    expect(task).toContain('Timeout is 600s');
+    expect(task).toContain('Max 500 lines');
+  });
+
+  it('resolves scope values via {{scope.*}}', () => {
+    const configWithTemplate: MetaConfig = {
+      ...sampleConfig,
+      defaultArchitect:
+        'Files: {{scope.fileCount}}, delta: {{scope.deltaCount}}',
+    };
+    const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
+    expect(task).toContain('Files: 3');
+    expect(task).toContain('delta: 1');
+  });
+
+  it('resolves meta values via {{meta.*}}', () => {
+    const meta: MetaJson = { ...sampleMeta, _depth: 3, _emphasis: 2 };
+    const configWithTemplate: MetaConfig = {
+      ...sampleConfig,
+      defaultArchitect: 'Depth: {{meta._depth}}, emphasis: {{meta._emphasis}}',
+    };
+    const task = buildArchitectTask(sampleCtx, meta, configWithTemplate);
+    expect(task).toContain('Depth: 3');
+    expect(task).toContain('emphasis: 2');
+  });
+
+  it('escaped \\{{...}} passes through as literal {{...}} for architect output', () => {
+    const configWithTemplate: MetaConfig = {
+      ...sampleConfig,
+      defaultArchitect: 'Use \\{{config.builderTimeout}} in your brief.',
+    };
+    const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
+    // Architect sees literal {{config.builderTimeout}} in its instructions
+    expect(task).toContain('Use {{config.builderTimeout}} in your brief.');
+  });
+
+  it('architect-written template expressions resolve in builder prompt', () => {
+    // Architect wrote {{config.builderTimeout}} into _builder
+    const meta: MetaJson = {
+      ...sampleMeta,
+      _builder: 'You have {{config.builderTimeout}} seconds to complete.',
+    };
+    const task = buildBuilderTask(sampleCtx, meta, sampleConfig);
+    // Builder sees the resolved value
+    expect(task).toContain('You have 600 seconds to complete.');
+    expect(task).not.toContain('{{config.builderTimeout}}');
+  });
+
+  it('template compilation gracefully handles invalid expressions', () => {
+    const configWithBadTemplate: MetaConfig = {
+      ...sampleConfig,
+      defaultArchitect: 'Valid text with {{#if broken',
+    };
+    // Should not throw — returns original text on compilation failure
+    const task = buildArchitectTask(
+      sampleCtx,
+      sampleMeta,
+      configWithBadTemplate,
+    );
+    expect(task).toContain('Valid text with');
+  });
+
+  it('critic prompt also resolves template variables', () => {
+    const configWithTemplate: MetaConfig = {
+      ...sampleConfig,
+      defaultCritic: 'Max lines: {{config.maxLines}}',
+    };
+    const task = buildCriticTask(sampleCtx, sampleMeta, configWithTemplate);
+    expect(task).toContain('Max lines: 500');
+  });
+});
+
 describe('cross-referenced metas in prompts', () => {
   const ctxWithCrossRefs: MetaContext = {
     ...sampleCtx,

@@ -13,6 +13,7 @@
 import type { WatcherClient } from '../interfaces/index.js';
 import type { MinimalLogger } from '../logger/index.js';
 import { filterModifiedAfter } from '../mtimeFilter.js';
+import { normalizePath } from '../normalizePath.js';
 import type { MetaNode } from './types.js';
 
 /**
@@ -75,7 +76,8 @@ export async function getScopeFiles(
   logger?: MinimalLogger,
 ): Promise<ScopeFilesResult> {
   const walkStart = Date.now();
-  const allFiles = await watcher.walk([`${node.ownerPath}/**`]);
+  const rawFiles = await watcher.walk([`${node.ownerPath}/**`]);
+  const allFiles = rawFiles.map(normalizePath);
   const scopeFiles = filterInScope(node, allFiles);
   logger?.debug(
     {

@@ -1,9 +1,0 @@
-{
-  "workspaces": {
-    "packages/service": {},
-    "packages/openclaw": {}
-  },
-  "ignoreBinaries": [
-    "plantuml"
-  ]
-}

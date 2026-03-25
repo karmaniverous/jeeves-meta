@@ -3,6 +3,7 @@ import jsonPlugin from '@rollup/plugin-json';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import typescriptPlugin from '@rollup/plugin-typescript';
 import type { RollupOptions } from 'rollup';
+import copyPlugin from 'rollup-plugin-copy';
 import dtsPlugin from 'rollup-plugin-dts';
 
 const typescript = typescriptPlugin({
@@ -24,6 +25,7 @@ const buildLibrary: RollupOptions = {
     'commander',
     'croner',
     'fastify',
+    'handlebars',
     'pino',
     'pino/file',
     'zod',
@@ -34,7 +36,15 @@ const buildLibrary: RollupOptions = {
     'node:url',
   ],
   output: [{ dir: 'dist', extend: true, format: 'esm' }],
-  plugins: [commonjsPlugin(), jsonPlugin(), nodeResolve(), typescript],
+  plugins: [
+    commonjsPlugin(),
+    jsonPlugin(),
+    nodeResolve(),
+    typescript,
+    copyPlugin({
+      targets: [{ src: 'src/prompts/*.md', dest: 'dist/prompts' }],
+    }),
+  ],
 };
 
 const buildTypes: RollupOptions = {
@@ -49,6 +59,7 @@ const buildCli: RollupOptions = {
     'commander',
     'croner',
     'fastify',
+    'handlebars',
     'pino',
     'pino/file',
     'zod',
@@ -78,6 +89,11 @@ const buildCli: RollupOptions = {
       noEmit: false,
       declaration: false,
       incremental: false,
+    }),
+    copyPlugin({
+      targets: [
+        { src: 'src/prompts/*.md', dest: 'dist/cli/jeeves-meta' },
+      ],
     }),
   ],
 };
