@@ -134,6 +134,46 @@ describe('getScopeFiles', () => {
     expect(result.allFiles).toEqual(allFiles);
     expect(result.scopeFiles).toEqual(['j:/domains/email/data.json']);
   });
+
+  it('normalizes backslash paths from watcher walk (#77)', async () => {
+    // Watcher may return backslash-separated paths on Windows
+    const backslashFiles = [
+      'j:\\domains\\email\\data.json',
+      'j:\\domains\\email\\.meta\\meta.json',
+    ];
+    const { watcher } = mockWatcher(backslashFiles);
+    const node = makeNode('j:/domains/email');
+
+    const result = await getScopeFiles(node, watcher);
+    // allFiles should be normalized to forward slashes
+    expect(result.allFiles).toEqual([
+      'j:/domains/email/data.json',
+      'j:/domains/email/.meta/meta.json',
+    ]);
+    // scopeFiles should correctly filter (exclude .meta/)
+    expect(result.scopeFiles).toEqual(['j:/domains/email/data.json']);
+  });
+
+  it('handles paths with spaces and special characters (#77)', async () => {
+    const backslashFiles = [
+      'j:\\veterancrowd\\calendar\\bob@vc.com\\Bob Louthan\\event.json',
+      "j:\\veterancrowd\\calendar\\bob@vc.com\\Men's Basketball\\event.json",
+      'j:\\veterancrowd\\calendar\\bob@vc.com\\Bob Louthan\\.meta\\meta.json',
+    ];
+    const { watcher } = mockWatcher(backslashFiles);
+    const child = makeChild(
+      'j:/veterancrowd/calendar/bob@vc.com/Bob Louthan',
+    );
+    const node = makeNode('j:/veterancrowd/calendar/bob@vc.com', [child]);
+
+    const result = await getScopeFiles(node, watcher);
+    expect(result.allFiles).toHaveLength(3);
+    // Child subtree excluded except child meta.json
+    expect(result.scopeFiles).toEqual([
+      "j:/veterancrowd/calendar/bob@vc.com/Men's Basketball/event.json",
+      'j:/veterancrowd/calendar/bob@vc.com/Bob Louthan/.meta/meta.json',
+    ]);
+  });
 });
 
 // ── getDeltaFiles ──
