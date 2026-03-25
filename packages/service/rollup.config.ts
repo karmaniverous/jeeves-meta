@@ -91,9 +91,7 @@ const buildCli: RollupOptions = {
       incremental: false,
     }),
     copyPlugin({
-      targets: [
-        { src: 'src/prompts/*.md', dest: 'dist/cli/jeeves-meta' },
-      ],
+      targets: [{ src: 'src/prompts/*.md', dest: 'dist/cli/jeeves-meta' }],
     }),
   ],
 };
