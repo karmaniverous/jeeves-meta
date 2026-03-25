@@ -10,6 +10,7 @@
 
 import { dirname } from 'node:path';
 
+import { escapeGlob } from '../escapeGlob.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import { normalizePath } from '../normalizePath.js';
 import type { MetaNode } from './types.js';
@@ -35,7 +36,7 @@ export async function buildMinimalNode(
   // We include only *direct* children (nearest descendants in the ownership tree)
   // to match the ownership semantics used elsewhere.
   const rawMetaJsonPaths = await watcher.walk([
-    `${ownerPath}/**/.meta/meta.json`,
+    `${escapeGlob(ownerPath)}/**/.meta/meta.json`,
   ]);
 
   const candidateMetaPaths = [
