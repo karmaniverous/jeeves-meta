@@ -1,12 +1,60 @@
 /**
  * Build task prompts for each synthesis step.
  *
+ * Prompts are compiled as Handlebars templates with access to config,
+ * meta, and scope context. The architect can write template expressions
+ * into its _builder output; these resolve when the builder task is compiled.
+ *
  * @module orchestrator/buildTask
  */
+
+import Handlebars from 'handlebars';
 
 import type { MetaContext } from '../interfaces/index.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
 import { condenseScopeFiles } from './contextPackage.js';
+
+/** Template context available to all prompt templates. */
+interface TemplateContext {
+  config: MetaConfig;
+  meta: MetaJson;
+  scope: {
+    fileCount: number;
+    deltaCount: number;
+    childCount: number;
+    crossRefCount: number;
+  };
+}
+
+/** Build the template context from synthesis inputs. */
+function buildTemplateContext(
+  ctx: MetaContext,
+  meta: MetaJson,
+  config: MetaConfig,
+): TemplateContext {
+  return {
+    config,
+    meta,
+    scope: {
+      fileCount: ctx.scopeFiles.length,
+      deltaCount: ctx.deltaFiles.length,
+      childCount: Object.keys(ctx.childMetas).length,
+      crossRefCount: Object.keys(ctx.crossRefMetas).length,
+    },
+  };
+}
+
+/**
+ * Compile a string as a Handlebars template with the given context.
+ * Returns the original string unchanged if compilation fails.
+ */
+function compileTemplate(text: string, context: TemplateContext): string {
+  try {
+    return Handlebars.compile(text, { noEscape: true })(context);
+  } catch {
+    return text;
+  }
+}
 
 /** Append a keyed record of meta outputs as subsections, if non-empty. */
 function appendMetaSections(
@@ -113,7 +161,10 @@ export function buildArchitectTask(
     );
   }
 
-  return sections.join('\n');
+  return compileTemplate(
+    sections.join('\n'),
+    buildTemplateContext(ctx, meta, config),
+  );
 }
 
 /**
@@ -184,7 +235,10 @@ export function buildBuilderTask(
     'PlantUML is rendered natively by the serving infrastructure. NEVER use ASCII art diagrams.',
   );
 
-  return sections.join('\n');
+  return compileTemplate(
+    sections.join('\n'),
+    buildTemplateContext(ctx, meta, config),
+  );
 }
 
 /**
@@ -224,5 +278,8 @@ export function buildCriticTask(
     'Return your evaluation as Markdown text. Be specific and actionable.',
   );
 
-  return sections.join('\n');
+  return compileTemplate(
+    sections.join('\n'),
+    buildTemplateContext(ctx, meta, config),
+  );
 }

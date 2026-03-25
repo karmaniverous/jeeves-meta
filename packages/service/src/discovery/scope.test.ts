@@ -161,9 +161,7 @@ describe('getScopeFiles', () => {
       'j:\\veterancrowd\\calendar\\bob@vc.com\\Bob Louthan\\.meta\\meta.json',
     ];
     const { watcher } = mockWatcher(backslashFiles);
-    const child = makeChild(
-      'j:/veterancrowd/calendar/bob@vc.com/Bob Louthan',
-    );
+    const child = makeChild('j:/veterancrowd/calendar/bob@vc.com/Bob Louthan');
     const node = makeNode('j:/veterancrowd/calendar/bob@vc.com', [child]);
 
     const result = await getScopeFiles(node, watcher);
