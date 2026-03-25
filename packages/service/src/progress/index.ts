@@ -47,27 +47,49 @@ function titleCasePhase(phase: ProgressPhase): string {
   return phase.charAt(0).toUpperCase() + phase.slice(1);
 }
 
-/** Build a link to the entity's meta.json output file. */
-function buildEntityLink(path: string, serverBaseUrl?: string): string {
-  // Normalize backslashes, then convert drive letter to URL path segment
+/**
+ * URL-encode each path segment individually so that spaces and special
+ * characters are safe while preserving the `/` separators.
+ */
+function encodePathSegments(p: string): string {
+  return p
+    .split('/')
+    .map((seg) => encodeURIComponent(seg))
+    .join('/');
+}
+
+/** Build a link (or plain path) to the owner directory. */
+function buildDirectoryLink(path: string, serverBaseUrl?: string): string {
+  const normalized = normalizePath(path).replace(/^([A-Za-z]):/, '/$1');
+  const encoded = encodePathSegments(normalized);
+
+  if (!serverBaseUrl) return normalized;
+
+  const base = serverBaseUrl.replace(/\/+$/, '');
+  return `${base}/path${encoded}`;
+}
+
+/** Build a link (or plain path) to the entity's meta.json output file. */
+function buildMetaJsonLink(path: string, serverBaseUrl?: string): string {
   const normalized = normalizePath(path).replace(/^([A-Za-z]):/, '/$1');
   const metaJsonPath = `${normalized}/.meta/meta.json`;
+  const encoded = encodePathSegments(metaJsonPath);
 
   if (!serverBaseUrl) return metaJsonPath;
 
   const base = serverBaseUrl.replace(/\/+$/, '');
-  return `${base}/path${metaJsonPath}`;
+  return `${base}/path${encoded}`;
 }
 
 export function formatProgressEvent(
   event: ProgressEvent,
   serverBaseUrl?: string,
 ): string {
-  const pathDisplay = buildEntityLink(event.path, serverBaseUrl);
-
   switch (event.type) {
-    case 'synthesis_start':
-      return `🔬 Started meta synthesis: ${pathDisplay}`;
+    case 'synthesis_start': {
+      const dirLink = buildDirectoryLink(event.path, serverBaseUrl);
+      return `🔬 Started meta synthesis: ${dirLink}`;
+    }
 
     case 'phase_start': {
       if (!event.phase) {
@@ -85,18 +107,20 @@ export function formatProgressEvent(
     }
 
     case 'synthesis_complete': {
+      const metaLink = buildMetaJsonLink(event.path, serverBaseUrl);
       const tokens = event.tokens ?? 0;
       const duration =
         event.durationMs !== undefined
           ? formatSeconds(event.durationMs)
           : '0.0s';
-      return `✅ Completed: ${pathDisplay} (${formatNumber(tokens)} tokens / ${duration})`;
+      return `✅ Completed: ${metaLink} (${formatNumber(tokens)} tokens / ${duration})`;
     }
 
     case 'error': {
+      const dirLink = buildDirectoryLink(event.path, serverBaseUrl);
       const phase = event.phase ? `${titleCasePhase(event.phase)} ` : '';
       const error = event.error ?? 'Unknown error';
-      return `❌ Synthesis failed at ${phase}phase: ${pathDisplay}\n   Error: ${error}`;
+      return `❌ Synthesis failed at ${phase}phase: ${dirLink}\n   Error: ${error}`;
     }
 
     default: {

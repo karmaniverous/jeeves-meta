@@ -197,7 +197,11 @@ describe('orchestrate', () => {
 
     const metaJsonPath =
       testRoot.replaceAll('\\', '/') + '/domain/.meta/meta.json';
-    const watcher = createMockWatcher(['test-file.md'], [metaJsonPath]);
+    const ownerPath = testRoot.replaceAll('\\', '/') + '/domain';
+    const watcher = createMockWatcher(
+      [`${ownerPath}/test-file.md`],
+      [metaJsonPath],
+    );
     const executor: MetaExecutor = {
       spawn: vi.fn().mockImplementation((task: string) => {
         if (task.includes('TASK BRIEF')) {

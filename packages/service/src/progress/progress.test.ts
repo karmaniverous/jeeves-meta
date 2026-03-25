@@ -14,11 +14,9 @@ function createLogger() {
 }
 
 describe('formatProgressEvent', () => {
-  it('formats synthesis_start', () => {
+  it('formats synthesis_start with directory path', () => {
     const e: ProgressEvent = { type: 'synthesis_start', path: 'x' };
-    expect(formatProgressEvent(e)).toBe(
-      '🔬 Started meta synthesis: x/.meta/meta.json',
-    );
+    expect(formatProgressEvent(e)).toBe('🔬 Started meta synthesis: x');
   });
 
   it('formats phase_start', () => {
@@ -55,7 +53,7 @@ describe('formatProgressEvent', () => {
     );
   });
 
-  it('formats error', () => {
+  it('formats error with directory path', () => {
     const e: ProgressEvent = {
       type: 'error',
       path: 'x',
@@ -63,22 +61,21 @@ describe('formatProgressEvent', () => {
       error: 'boom',
     };
     expect(formatProgressEvent(e)).toBe(
-      '❌ Synthesis failed at Critic phase: x/.meta/meta.json\n   Error: boom',
+      '❌ Synthesis failed at Critic phase: x\n   Error: boom',
     );
   });
 
-  it('constructs server links in synthesis_start when serverBaseUrl is set', () => {
+  it('constructs directory link in synthesis_start when serverBaseUrl is set', () => {
     const e: ProgressEvent = {
       type: 'synthesis_start',
       path: 'D:\\domains\\github\\org',
     };
     const result = formatProgressEvent(e, 'http://localhost:1938');
-    expect(result).toContain(
-      'http://localhost:1938/path/D/domains/github/org/.meta/meta.json',
-    );
+    expect(result).toContain('http://localhost:1938/path/D/domains/github/org');
+    expect(result).not.toContain('meta.json');
   });
 
-  it('constructs server links in synthesis_complete when serverBaseUrl is set', () => {
+  it('constructs meta.json link in synthesis_complete when serverBaseUrl is set', () => {
     const e: ProgressEvent = {
       type: 'synthesis_complete',
       path: 'j:/domains/github/org',
@@ -91,10 +88,34 @@ describe('formatProgressEvent', () => {
     );
   });
 
-  it('uses meta.json path when serverBaseUrl is not set', () => {
+  it('uses plain directory path when serverBaseUrl is not set', () => {
     const e: ProgressEvent = { type: 'synthesis_start', path: 'x' };
     const result = formatProgressEvent(e);
-    expect(result).toBe('🔬 Started meta synthesis: x/.meta/meta.json');
+    expect(result).toBe('🔬 Started meta synthesis: x');
+  });
+
+  it('URL-encodes path segments with special characters', () => {
+    const e: ProgressEvent = {
+      type: 'synthesis_start',
+      path: 'j:/domains/slack/dm-Bob Louthan (D123)',
+    };
+    const result = formatProgressEvent(e, 'http://localhost:1934');
+    expect(result).toContain(
+      'http://localhost:1934/path/j/domains/slack/dm-Bob%20Louthan%20(D123)',
+    );
+  });
+
+  it('URL-encodes meta.json link in synthesis_complete', () => {
+    const e: ProgressEvent = {
+      type: 'synthesis_complete',
+      path: 'j:/domains/slack/dm-Bob Louthan (D123)',
+      tokens: 50,
+      durationMs: 1000,
+    };
+    const result = formatProgressEvent(e, 'http://localhost:1934');
+    expect(result).toContain(
+      'http://localhost:1934/path/j/domains/slack/dm-Bob%20Louthan%20(D123)/.meta/meta.json',
+    );
   });
 });
 
