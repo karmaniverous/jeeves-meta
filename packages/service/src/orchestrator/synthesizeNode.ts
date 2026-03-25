@@ -50,6 +50,20 @@ export async function synthesizeNode(
   // Step 7: Compute context (includes scope files and delta files)
   const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
+  // Skip empty-scope entities that have no prior content.
+  // Without scope files, child metas, or cross-refs there is nothing for
+  // the architect/builder to work with and the cycle will either time out
+  // or produce empty output.
+  const hasScope =
+    ctx.scopeFiles.length > 0 ||
+    Object.keys(ctx.childMetas).length > 0 ||
+    Object.keys(ctx.crossRefMetas).length > 0;
+
+  if (!hasScope && !currentMeta._content) {
+    logger?.debug({ path: node.ownerPath }, 'Skipping empty-scope entity');
+    return { synthesized: false };
+  }
+
   // Step 5 (deferred): Structure hash from context scope files
   const newStructureHash = computeStructureHash(ctx.scopeFiles);
   const structureChanged = newStructureHash !== currentMeta._structureHash;
