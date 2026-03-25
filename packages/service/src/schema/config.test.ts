@@ -18,9 +18,9 @@ describe('metaConfigSchema', () => {
       skipUnchanged: true,
       maxArchive: 20,
       maxLines: 500,
-      architectTimeout: 120,
-      builderTimeout: 600,
-      criticTimeout: 300,
+      architectTimeout: 180,
+      builderTimeout: 360,
+      criticTimeout: 240,
     });
   });
 

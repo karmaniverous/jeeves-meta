@@ -32,13 +32,13 @@ export const metaConfigSchema = z.object({
   maxLines: z.number().int().min(50).default(500),
 
   /** Architect subprocess timeout in seconds. */
-  architectTimeout: z.number().int().min(30).default(120),
+  architectTimeout: z.number().int().min(30).default(180),
 
   /** Builder subprocess timeout in seconds. */
-  builderTimeout: z.number().int().min(60).default(600),
+  builderTimeout: z.number().int().min(60).default(360),
 
   /** Critic subprocess timeout in seconds. */
-  criticTimeout: z.number().int().min(30).default(300),
+  criticTimeout: z.number().int().min(30).default(240),
 
   /** Thinking level for spawned synthesis sessions. */
   thinking: z.string().default('low'),
