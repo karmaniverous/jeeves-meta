@@ -4,7 +4,7 @@
  * @module orchestrator/synthesizeNode
  */
 
-import { writeFile } from 'node:fs/promises';
+import { copyFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { readLatestArchive } from '../archive/index.js';
@@ -65,11 +65,12 @@ export async function synthesizeNode(
   if (!hasScope && !currentMeta._content) {
     // Bump _generatedAt so this entity doesn't keep winning the staleness
     // race every cycle. It will be re-evaluated when files appear.
+    // Uses lock-staging for atomic write consistency.
     currentMeta._generatedAt = new Date().toISOString();
-    await writeFile(
-      join(node.metaPath, 'meta.json'),
-      JSON.stringify(currentMeta, null, 2),
-    );
+    const lockPath = join(node.metaPath, '.lock');
+    const metaJsonPath = join(node.metaPath, 'meta.json');
+    await writeFile(lockPath, JSON.stringify(currentMeta, null, 2));
+    await copyFile(lockPath, metaJsonPath);
     logger?.debug({ path: node.ownerPath }, 'Skipping empty-scope entity');
     return { synthesized: false };
   }
