@@ -9,7 +9,6 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "test": "npm run test --workspace=packages/openclaw && npm run test --workspace=packages/service",
-    "knip": "knip",
     "typecheck": "npm run typecheck --workspace=packages/openclaw && npm run typecheck --workspace=packages/service",
     "docs": "typedoc"
   },
