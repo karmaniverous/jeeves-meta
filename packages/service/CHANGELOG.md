@@ -2,12 +2,22 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.11.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.10.1...0.11.0)
+#### [0.11.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.0...0.11.1)
+
+- fix: escape glob metacharacters in watcher walk, fix skip reporting loop [`#80`](https://github.com/karmaniverous/jeeves-meta/pull/80)
+- fix: escape glob metacharacters in watcher walk paths, suppress completion for skipped entities, bump _generatedAt on empty-scope skip [`76ff9d1`](https://github.com/karmaniverous/jeeves-meta/commit/76ff9d1636e4cab58dd32919ea1774568fcbd8ba)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.8.2 [`bcc3027`](https://github.com/karmaniverous/jeeves-meta/commit/bcc302730c089d413c88076d5bb760a827b81959)
+- fix: use lock-staged write for empty-scope _generatedAt bump [`bbcff74`](https://github.com/karmaniverous/jeeves-meta/commit/bbcff74bc7747e4ec4e01ae508641c1962dc813d)
+
+#### [service/0.11.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.10.1...service/0.11.0)
+
+> 25 March 2026
 
 - feat: differentiate progress report links for STARTED vs COMPLETED [`#79`](https://github.com/karmaniverous/jeeves-meta/pull/79)
 - feat: differentiate STARTED (directory) and COMPLETED (meta.json) links in progress reports, add URL encoding [`99e9402`](https://github.com/karmaniverous/jeeves-meta/commit/99e9402f22c23274b80d5f446af9e1156257a593)
 - fix: pass phase to error progress events, skip empty-scope entities with no prior content [`b0071e8`](https://github.com/karmaniverous/jeeves-meta/commit/b0071e81cb8562948203b6319117ee59cefe59ff)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.8.1 [`77f7c81`](https://github.com/karmaniverous/jeeves-meta/commit/77f7c811bf69cc950a8aef6d4cc41cf96e41ad60)
+- chore: release @karmaniverous/jeeves-meta v0.11.0 [`1ae68c6`](https://github.com/karmaniverous/jeeves-meta/commit/1ae68c669d7711294d5c9b049fb9af282f1cce02)
 - feat: update timeout defaults to 180/360/240 based on operational data [`d17a5d6`](https://github.com/karmaniverous/jeeves-meta/commit/d17a5d624e2989987c156ad70718ec3fe3ea92b0)
 - chore: update @karmaniverous/jeeves to 0.3.1 [`3b622c2`](https://github.com/karmaniverous/jeeves-meta/commit/3b622c28fd707174d29493e52c62433f6a068598)
 - ci: add permissions block to Deploy Docs caller workflow [`9f96e8f`](https://github.com/karmaniverous/jeeves-meta/commit/9f96e8fcce1e545bdb2569f027bb68d90dcb846c)
