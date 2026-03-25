@@ -2,13 +2,28 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.8.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.0...0.8.1)
+#### [0.8.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.1...0.8.2)
+
+- feat: differentiate progress report links for STARTED vs COMPLETED [`#79`](https://github.com/karmaniverous/jeeves-meta/pull/79)
+- feat: differentiate STARTED (directory) and COMPLETED (meta.json) links in progress reports, add URL encoding [`99e9402`](https://github.com/karmaniverous/jeeves-meta/commit/99e9402f22c23274b80d5f446af9e1156257a593)
+- fix: pass phase to error progress events, skip empty-scope entities with no prior content [`b0071e8`](https://github.com/karmaniverous/jeeves-meta/commit/b0071e81cb8562948203b6319117ee59cefe59ff)
+- chore: release @karmaniverous/jeeves-meta v0.11.0 [`1ae68c6`](https://github.com/karmaniverous/jeeves-meta/commit/1ae68c669d7711294d5c9b049fb9af282f1cce02)
+- feat: update timeout defaults to 180/360/240 based on operational data [`d17a5d6`](https://github.com/karmaniverous/jeeves-meta/commit/d17a5d624e2989987c156ad70718ec3fe3ea92b0)
+- chore: update @karmaniverous/jeeves to 0.3.1 [`3b622c2`](https://github.com/karmaniverous/jeeves-meta/commit/3b622c28fd707174d29493e52c62433f6a068598)
+- ci: add permissions block to Deploy Docs caller workflow [`9f96e8f`](https://github.com/karmaniverous/jeeves-meta/commit/9f96e8fcce1e545bdb2569f027bb68d90dcb846c)
+- chore: trigger CI [`f2503d8`](https://github.com/karmaniverous/jeeves-meta/commit/f2503d8ac12c28efb6e9d162f76759cc1d74d3df)
+- chore: remove stray rollup temp file [`530ff8e`](https://github.com/karmaniverous/jeeves-meta/commit/530ff8ed0e79561f39ca1363d785ddddcf8f8632)
+
+#### [openclaw/0.8.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.0...openclaw/0.8.1)
+
+> 25 March 2026
 
 - fix: normalize watcher walk paths in getScopeFiles (#77) [`#78`](https://github.com/karmaniverous/jeeves-meta/pull/78)
 - feat: ship built-in default prompts, make defaultArchitect/defaultCritic optional in config [`ed1209c`](https://github.com/karmaniverous/jeeves-meta/commit/ed1209cbc162b7e51b6f7dc83e4f66606a5973ae)
 - test: cover Handlebars escaping and template resolution in prompt builders [`240e30e`](https://github.com/karmaniverous/jeeves-meta/commit/240e30e05132424bdfd3d5e0debcb305ad91ccea)
 - feat: Handlebars template compilation for prompts, progressive synthesis guidance (#77) [`9c4774f`](https://github.com/karmaniverous/jeeves-meta/commit/9c4774fdfa7aba23d319858a67ab43e27d27499d)
 - docs: sync all docs with built-in prompts, optional config, Handlebars templates [`1b59b85`](https://github.com/karmaniverous/jeeves-meta/commit/1b59b85f74cfd2d9ebd7abb81b4371cd292c02f4)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.8.1 [`77f7c81`](https://github.com/karmaniverous/jeeves-meta/commit/77f7c811bf69cc950a8aef6d4cc41cf96e41ad60)
 - chore: release @karmaniverous/jeeves-meta v0.10.1 [`b85e0e2`](https://github.com/karmaniverous/jeeves-meta/commit/b85e0e23873ce0f997770ba4db6deb4ce8d478fe)
 - chore: remove root-level knip (per-package knip configs are authoritative) [`119fe89`](https://github.com/karmaniverous/jeeves-meta/commit/119fe89f7f35ed2ed3eea5da2d83bda379fbb858)
 - lintfix [`bfa8cf8`](https://github.com/karmaniverous/jeeves-meta/commit/bfa8cf8d49458754d58f470360cb79b304d2cb37)
