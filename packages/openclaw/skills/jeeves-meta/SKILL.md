@@ -209,10 +209,14 @@ properties.
 }
 ```
 
-### Prompt Customization
+### Prompt System
 
-Default prompts live at `J:\config\jeeves-meta\prompts\{architect,critic}.md`,
-referenced via `@file:` in the config:
+The service ships with built-in default architect and critic prompts. Most
+installations need no prompt configuration at all.
+
+**Overriding defaults:** Set `defaultArchitect` and/or `defaultCritic` in the
+config to replace the built-in prompts. Supports `@file:` references resolved
+relative to the config file's directory:
 
 ```json
 {
@@ -221,29 +225,36 @@ referenced via `@file:` in the config:
 }
 ```
 
-`@file:` paths are resolved relative to the config file's directory.
-
 **Per-meta overrides:** Set `_architect` or `_critic` directly in a `meta.json`
 to override the defaults for that specific entity.
 
+**Template variables:** All prompts (default, config-overridden, and per-meta)
+are compiled as Handlebars templates at synthesis time with access to:
+
+- `{{config.builderTimeout}}`, `{{config.maxLines}}`, `{{config.architectEvery}}`, etc.
+- `{{scope.fileCount}}`, `{{scope.deltaCount}}`, `{{scope.childCount}}`, `{{scope.crossRefCount}}`
+- `{{meta._depth}}`, `{{meta._emphasis}}`
+
+The architect prompt can write template expressions into its `_builder` output
+using escaped syntax (`\{{config.builderTimeout}}`). These pass through the
+architect compilation as literal `{{...}}` text and resolve when the builder
+prompt is compiled.
+
 ### Minimal Config Example
 
-A minimum viable config file requires only `watcherUrl`, `defaultArchitect`,
-and `defaultCritic`:
+A minimum viable config file requires only `watcherUrl`:
 
 ```json
 {
   "watcherUrl": "http://localhost:1936",
   "gatewayUrl": "http://127.0.0.1:18789",
-  "gatewayApiKey": "your-api-key",
-  "defaultArchitect": "@file:prompts/architect.md",
-  "defaultCritic": "@file:prompts/critic.md"
+  "gatewayApiKey": "your-api-key"
 }
 ```
 
 All other fields use sensible defaults (port 1938, schedule every 30 min,
-depth weight 0.5, etc). Add `reportChannel`, `metaProperty`, `logging`,
-etc. as needed.
+depth weight 0.5, built-in prompts, etc). Add `reportChannel`, `metaProperty`,
+`logging`, etc. as needed.
 
 ### Adding New Metas
 
@@ -387,11 +398,11 @@ Before the synthesis engine can operate:
 
 4. **Config file** must exist at the path specified by `JEEVES_META_CONFIG`
    - Must contain valid `watcherUrl`
-   - Must contain `defaultArchitect` and `defaultCritic` (or `@file:` refs)
+   - `defaultArchitect` and `defaultCritic` are optional (built-in defaults
+     ship with the package). Set them only to override the defaults.
 
-5. **Prompt files** must exist if using `@file:` references
-   - e.g. `J:\config\jeeves-meta\prompts\architect.md`
-   - e.g. `J:\config\jeeves-meta\prompts\critic.md`
+5. **Prompt files** must exist only if using `@file:` references in config
+   - Not needed if using the built-in defaults (most installations)
 
 6. **`.meta/` directories** must exist and be within paths the watcher indexes
    - Seed new metas: `jeeves-meta seed <path>`
@@ -608,8 +619,12 @@ not yet indexed new files
 - First-run quality is lower — the feedback loop needs 2-3 cycles to calibrate.
 - Changing `metaProperty` requires both a meta service restart AND a watcher reindex.
   The service restart re-registers virtual rules; the reindex retags existing points.
-- The `@file:` prefix in `defaultArchitect`/`defaultCritic` is resolved relative
-  to the config file's directory, not the working directory.
+- `defaultArchitect`/`defaultCritic` are optional — built-in defaults ship with
+  the package. The `@file:` prefix (when used) is resolved relative to the config
+  file's directory, not the working directory.
+- All prompts are compiled as Handlebars templates. Avoid using `{{` in prompt
+  overrides unless you intend template variable resolution. Escape with `\{{`
+  for literal double-braces.
 - The synthesis queue is single-threaded: one synthesis at a time. HTTP-triggered
   syntheses get priority over scheduler-triggered ones.
 - The scheduler uses adaptive backoff: if no stale candidates are found, it

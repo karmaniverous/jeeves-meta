@@ -16,6 +16,8 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Virtual rule registration** — registers 3 watcher inference rules at startup with retry
 - **Progress reporting** — real-time synthesis events via gateway channel messages
 - **Graceful shutdown** — stop scheduler, release locks, close server
+- **Built-in prompts** — default architect and critic prompts ship with the package; optional config overrides via `@file:` or inline strings
+- **Handlebars templates** — prompts compiled with `{ config, meta, scope }` context; architect can write template expressions into builder briefs
 - **Config hot-reload** — all synthesis parameters reload without restart; restart-required fields (port, host, URLs) warn on change
 - **Auto-seed policy** — config-driven declarative `.meta/` creation via `autoSeed` rules
 - **Token tracking** — per-step counts with exponential moving averages
@@ -56,7 +58,7 @@ jeeves-meta service install --config /path/to/jeeves-meta.config.json
 | GET | `/metas/:path` | Single meta detail with optional archive |
 | GET | `/preview` | Dry-run: preview inputs for next synthesis |
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
-| POST | `/seed` | Create `.meta/` directory + meta.json (optional `crossRefs`) |
+| POST | `/seed` | Create `.meta/` directory + meta.json (optional `crossRefs`, `steer`) |
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 

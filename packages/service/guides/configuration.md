@@ -9,8 +9,8 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `watcherUrl` | string (URL) | — | Watcher service base URL (required) |
 | `gatewayUrl` | string (URL) | `http://127.0.0.1:18789` | OpenClaw gateway URL |
 | `gatewayApiKey` | string | — | Gateway authentication key |
-| `defaultArchitect` | string | — | Architect system prompt (required). Supports `@file:` references |
-| `defaultCritic` | string | — | Critic system prompt (required). Supports `@file:` references |
+| `defaultArchitect` | string | (built-in) | Architect system prompt override. Supports `@file:` references. Omit to use built-in default. |
+| `defaultCritic` | string | (built-in) | Critic system prompt override. Supports `@file:` references. Omit to use built-in default. |
 | `architectEvery` | integer | `10` | Run architect every N cycles per meta |
 | `depthWeight` | number | `0.5` | Exponent for depth weighting in staleness formula |
 | `maxArchive` | integer | `20` | Maximum archive snapshots per meta |
@@ -59,11 +59,15 @@ Config values support `${VAR}` substitution from environment variables. Example:
 { "gatewayApiKey": "${OPENCLAW_API_KEY}" }
 ```
 
-## File References
+## Prompt System
 
-`defaultArchitect` and `defaultCritic` support `@file:` references resolved relative to the config file:
+The service ships with built-in default architect and critic prompts. `defaultArchitect` and `defaultCritic` are optional — set them only to override the built-in defaults.
+
+When set, they support `@file:` references resolved relative to the config file:
 
 ```json
 { "defaultArchitect": "@file:prompts/architect.md" }
 ```
+
+All prompts (built-in, config-overridden, and per-meta `_architect`/`_critic`) are compiled as Handlebars templates at synthesis time. Available variables include `{{config.*}}` (all config fields), `{{scope.*}}` (fileCount, deltaCount, childCount, crossRefCount), and `{{meta.*}}` (per-meta fields). Escape with `\{{` for literal double-braces.
 
