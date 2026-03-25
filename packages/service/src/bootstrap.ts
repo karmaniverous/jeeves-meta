@@ -119,6 +119,12 @@ export async function startService(
       const result = results[0];
       const durationMs = Date.now() - startMs;
 
+      if (!result.synthesized) {
+        // Entity was skipped (e.g. empty scope) — no progress to report.
+        logger.debug({ path: ownerPath }, 'Synthesis skipped');
+        return;
+      }
+
       // Update stats
       stats.totalSyntheses++;
       stats.lastCycleDurationMs = durationMs;

@@ -10,6 +10,7 @@
  * @module discovery/scope
  */
 
+import { escapeGlob } from '../escapeGlob.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import type { MinimalLogger } from '../logger/index.js';
 import { filterModifiedAfter } from '../mtimeFilter.js';
@@ -76,7 +77,7 @@ export async function getScopeFiles(
   logger?: MinimalLogger,
 ): Promise<ScopeFilesResult> {
   const walkStart = Date.now();
-  const rawFiles = await watcher.walk([`${node.ownerPath}/**`]);
+  const rawFiles = await watcher.walk([`${escapeGlob(node.ownerPath)}/**`]);
   const allFiles = rawFiles.map(normalizePath);
   const scopeFiles = filterInScope(node, allFiles);
   logger?.debug(

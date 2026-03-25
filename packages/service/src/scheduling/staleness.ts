@@ -7,6 +7,7 @@
  * @module scheduling/staleness
  */
 
+import { escapeGlob } from '../escapeGlob.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import { hasModifiedAfter } from '../mtimeFilter.js';
 import type { MetaJson } from '../schema/index.js';
@@ -30,7 +31,7 @@ export async function isStale(
 ): Promise<boolean> {
   if (!meta._generatedAt) return true; // Never synthesized = stale
 
-  const files = await watcher.walk([`${scopePrefix}/**`]);
+  const files = await watcher.walk([`${escapeGlob(scopePrefix)}/**`]);
   return hasModifiedAfter(files, new Date(meta._generatedAt).getTime());
 }
 

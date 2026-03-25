@@ -4,6 +4,9 @@
  * @module orchestrator/synthesizeNode
  */
 
+import { writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import { readLatestArchive } from '../archive/index.js';
 import type { MetaNode } from '../discovery/index.js';
 import { toMetaError } from '../errors.js';
@@ -60,6 +63,13 @@ export async function synthesizeNode(
     Object.keys(ctx.crossRefMetas).length > 0;
 
   if (!hasScope && !currentMeta._content) {
+    // Bump _generatedAt so this entity doesn't keep winning the staleness
+    // race every cycle. It will be re-evaluated when files appear.
+    currentMeta._generatedAt = new Date().toISOString();
+    await writeFile(
+      join(node.metaPath, 'meta.json'),
+      JSON.stringify(currentMeta, null, 2),
+    );
     logger?.debug({ path: node.ownerPath }, 'Skipping empty-scope entity');
     return { synthesized: false };
   }
