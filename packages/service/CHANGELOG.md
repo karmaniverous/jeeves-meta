@@ -2,7 +2,22 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.10.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.9.0...0.10.0)
+#### [0.10.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.10.0...0.10.1)
+
+- fix: normalize watcher walk paths in getScopeFiles (#77) [`#78`](https://github.com/karmaniverous/jeeves-meta/pull/78)
+- feat: ship built-in default prompts, make defaultArchitect/defaultCritic optional in config [`ed1209c`](https://github.com/karmaniverous/jeeves-meta/commit/ed1209cbc162b7e51b6f7dc83e4f66606a5973ae)
+- test: cover Handlebars escaping and template resolution in prompt builders [`240e30e`](https://github.com/karmaniverous/jeeves-meta/commit/240e30e05132424bdfd3d5e0debcb305ad91ccea)
+- feat: Handlebars template compilation for prompts, progressive synthesis guidance (#77) [`9c4774f`](https://github.com/karmaniverous/jeeves-meta/commit/9c4774fdfa7aba23d319858a67ab43e27d27499d)
+- docs: sync all docs with built-in prompts, optional config, Handlebars templates [`1b59b85`](https://github.com/karmaniverous/jeeves-meta/commit/1b59b85f74cfd2d9ebd7abb81b4371cd292c02f4)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.8.0 [`9c143c8`](https://github.com/karmaniverous/jeeves-meta/commit/9c143c889bd5679af3dd690d8e7e4a8de99a3b6c)
+- chore: remove root-level knip (per-package knip configs are authoritative) [`119fe89`](https://github.com/karmaniverous/jeeves-meta/commit/119fe89f7f35ed2ed3eea5da2d83bda379fbb858)
+- lintfix [`bfa8cf8`](https://github.com/karmaniverous/jeeves-meta/commit/bfa8cf8d49458754d58f470360cb79b304d2cb37)
+- fix: flatten CLI prompt copy dest to match import.meta.url resolution [`acc3e25`](https://github.com/karmaniverous/jeeves-meta/commit/acc3e2507542cd3b79b4c754949d4e6c3c6a0f97)
+- fix: externalize handlebars in rollup config [`aa24b46`](https://github.com/karmaniverous/jeeves-meta/commit/aa24b464b26c5d327032440eb1fbe74ee5668ea9)
+
+#### [service/0.10.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.9.0...service/0.10.0)
+
+> 24 March 2026
 
 - fix: MinimalLogger.warn signature in verify.ts [`#76`](https://github.com/karmaniverous/jeeves-meta/pull/76)
 - docs: update documentation for v0.10.0 [`#75`](https://github.com/karmaniverous/jeeves-meta/pull/75)
@@ -18,6 +33,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - feat: thread pino logger through synthesis pipeline (#27) [`12b5a9c`](https://github.com/karmaniverous/jeeves-meta/commit/12b5a9c5ed012dff683d49ac6ec72f30106f274d)
 - feat: link to meta.json in progress reports, support insider links (#37) [`b93eee5`](https://github.com/karmaniverous/jeeves-meta/commit/b93eee5933a3cc1e52bcf69d2c19b7f80b091262)
 - fix: neverSynthesized filter checks lastSynthesized instead of Infinity [`9ec7fb6`](https://github.com/karmaniverous/jeeves-meta/commit/9ec7fb6f66134dcea5e45aac1ff58f192b5eb11f)
+- chore: release @karmaniverous/jeeves-meta v0.10.0 [`0f81316`](https://github.com/karmaniverous/jeeves-meta/commit/0f81316f5cbe234ba832ed7a4f65659e27b0f10e)
 - refactor: address Gemini review — parallel prune, idiomatic dirname, clarify hot-reload [`4f39def`](https://github.com/karmaniverous/jeeves-meta/commit/4f39deff800495f0bcaa0585a824ac248dbe18a1)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.7.0 [`d694381`](https://github.com/karmaniverous/jeeves-meta/commit/d6943813e6ec4f9431df0762dd4609babe468128)
 - fix: MinimalLogger.warn signature in verify.ts (requires obj + msg args) [`4bf1310`](https://github.com/karmaniverous/jeeves-meta/commit/4bf131085ce12039cd2a4f59622cb1bdebd16bc1)
