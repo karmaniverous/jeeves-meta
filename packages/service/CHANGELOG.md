@@ -2,11 +2,19 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.11.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.0...0.11.1)
+#### [0.11.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.1...0.11.2)
+
+- fix: use character-class glob escaping instead of backslash (Windows) [`#82`](https://github.com/karmaniverous/jeeves-meta/pull/82)
+- fix: use character-class glob escaping instead of backslash (Windows-compatible) [`2e648f5`](https://github.com/karmaniverous/jeeves-meta/commit/2e648f5e78d47837646cd9a6a72d267a78996c35)
+
+#### [service/0.11.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.0...service/0.11.1)
+
+> 25 March 2026
 
 - fix: escape glob metacharacters in watcher walk, fix skip reporting loop [`#80`](https://github.com/karmaniverous/jeeves-meta/pull/80)
 - fix: escape glob metacharacters in watcher walk paths, suppress completion for skipped entities, bump _generatedAt on empty-scope skip [`76ff9d1`](https://github.com/karmaniverous/jeeves-meta/commit/76ff9d1636e4cab58dd32919ea1774568fcbd8ba)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.8.2 [`bcc3027`](https://github.com/karmaniverous/jeeves-meta/commit/bcc302730c089d413c88076d5bb760a827b81959)
+- chore: release @karmaniverous/jeeves-meta v0.11.1 [`b152f37`](https://github.com/karmaniverous/jeeves-meta/commit/b152f37139eb313b61daaa17c1cece281888aa2d)
 - fix: use lock-staged write for empty-scope _generatedAt bump [`bbcff74`](https://github.com/karmaniverous/jeeves-meta/commit/bbcff74bc7747e4ec4e01ae508641c1962dc813d)
 
 #### [service/0.11.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.10.1...service/0.11.0)
