@@ -8,7 +8,7 @@
  * @module discovery/buildMinimalNode
  */
 
-import { dirname } from 'node:path';
+import { posix } from 'node:path';
 
 import { escapeGlob } from '../escapeGlob.js';
 import type { WatcherClient } from '../interfaces/index.js';
@@ -30,7 +30,7 @@ export async function buildMinimalNode(
   watcher: WatcherClient,
 ): Promise<MetaNode> {
   const normalized = normalizePath(metaPath);
-  const ownerPath = normalizePath(dirname(metaPath));
+  const ownerPath = posix.dirname(normalized);
 
   // Find child metas using watcher walk.
   // We include only *direct* children (nearest descendants in the ownership tree)
@@ -40,11 +40,11 @@ export async function buildMinimalNode(
   ]);
 
   const candidateMetaPaths = [
-    ...new Set(rawMetaJsonPaths.map((p) => normalizePath(dirname(p)))),
+    ...new Set(rawMetaJsonPaths.map((p) => posix.dirname(normalizePath(p)))),
   ].filter((p) => p !== normalized);
 
   const candidates = candidateMetaPaths
-    .map((mp) => ({ metaPath: mp, ownerPath: normalizePath(dirname(mp)) }))
+    .map((mp) => ({ metaPath: mp, ownerPath: posix.dirname(mp) }))
     .sort((a, b) => a.ownerPath.length - b.ownerPath.length);
 
   const directChildren: Array<{ metaPath: string; ownerPath: string }> = [];
