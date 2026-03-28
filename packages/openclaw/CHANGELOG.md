@@ -2,11 +2,31 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.8.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.1...0.8.2)
+#### [0.8.3](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.2...0.8.3)
+
+- fix: use character-class glob escaping for Windows compatibility [`#81`](https://github.com/karmaniverous/jeeves-meta/pull/81)
+- fix: use character-class glob escaping instead of backslash (Windows) [`#82`](https://github.com/karmaniverous/jeeves-meta/pull/82)
+- fix: escape glob metacharacters in watcher walk, fix skip reporting loop [`#80`](https://github.com/karmaniverous/jeeves-meta/pull/80)
+- fix: escape glob metacharacters in watcher walk paths, suppress completion for skipped entities, bump _generatedAt on empty-scope skip [`76ff9d1`](https://github.com/karmaniverous/jeeves-meta/commit/76ff9d1636e4cab58dd32919ea1774568fcbd8ba)
+- npm audit fix [`8247c0e`](https://github.com/karmaniverous/jeeves-meta/commit/8247c0e5d7d6a4435d29eeae22c88050317b89c5)
+- fix: use character-class glob escaping instead of backslash (Windows-compatible) [`2e648f5`](https://github.com/karmaniverous/jeeves-meta/commit/2e648f5e78d47837646cd9a6a72d267a78996c35)
+- chore: release @karmaniverous/jeeves-meta v0.11.3 [`c62d389`](https://github.com/karmaniverous/jeeves-meta/commit/c62d3896f8cfc9baa968082ab17c2bbf6a7092a8)
+- Merge pull request #83 from karmaniverous/fix/linux-path-dirname [`6263b1a`](https://github.com/karmaniverous/jeeves-meta/commit/6263b1a55ffce68eaf061fbb8378a52df5bea035)
+- fix: use character-class glob escaping instead of backslash escaping for Windows compatibility [`5f8bc9a`](https://github.com/karmaniverous/jeeves-meta/commit/5f8bc9a2cf7a3d4d4b0d8d899c6edc0339ce54e1)
+- ci: add linux-compat workflow via shared gha-workflows [`816f0c6`](https://github.com/karmaniverous/jeeves-meta/commit/816f0c6611de8977d9419a4b024740efd9da94fd)
+- chore: release @karmaniverous/jeeves-meta v0.11.1 [`b152f37`](https://github.com/karmaniverous/jeeves-meta/commit/b152f37139eb313b61daaa17c1cece281888aa2d)
+- chore: release @karmaniverous/jeeves-meta v0.11.2 [`5c0b906`](https://github.com/karmaniverous/jeeves-meta/commit/5c0b9066e063d043b6c5145eab285663b248138b)
+- fix: use lock-staged write for empty-scope _generatedAt bump [`bbcff74`](https://github.com/karmaniverous/jeeves-meta/commit/bbcff74bc7747e4ec4e01ae508641c1962dc813d)
+- fix: use path.posix.dirname on normalized paths for Linux compatibility [`886cc4d`](https://github.com/karmaniverous/jeeves-meta/commit/886cc4d76be5a45dd63c16c2bb8ad334c5491c3f)
+
+#### [openclaw/0.8.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.1...openclaw/0.8.2)
+
+> 25 March 2026
 
 - feat: differentiate progress report links for STARTED vs COMPLETED [`#79`](https://github.com/karmaniverous/jeeves-meta/pull/79)
 - feat: differentiate STARTED (directory) and COMPLETED (meta.json) links in progress reports, add URL encoding [`99e9402`](https://github.com/karmaniverous/jeeves-meta/commit/99e9402f22c23274b80d5f446af9e1156257a593)
 - fix: pass phase to error progress events, skip empty-scope entities with no prior content [`b0071e8`](https://github.com/karmaniverous/jeeves-meta/commit/b0071e81cb8562948203b6319117ee59cefe59ff)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.8.2 [`bcc3027`](https://github.com/karmaniverous/jeeves-meta/commit/bcc302730c089d413c88076d5bb760a827b81959)
 - chore: release @karmaniverous/jeeves-meta v0.11.0 [`1ae68c6`](https://github.com/karmaniverous/jeeves-meta/commit/1ae68c669d7711294d5c9b049fb9af282f1cce02)
 - feat: update timeout defaults to 180/360/240 based on operational data [`d17a5d6`](https://github.com/karmaniverous/jeeves-meta/commit/d17a5d624e2989987c156ad70718ec3fe3ea92b0)
 - chore: update @karmaniverous/jeeves to 0.3.1 [`3b622c2`](https://github.com/karmaniverous/jeeves-meta/commit/3b622c28fd707174d29493e52c62433f6a068598)
