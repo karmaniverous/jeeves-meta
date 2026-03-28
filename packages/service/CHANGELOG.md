@@ -2,10 +2,22 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.11.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.1...0.11.2)
+#### [0.11.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.2...0.11.3)
+
+- fix: use character-class glob escaping for Windows compatibility [`#81`](https://github.com/karmaniverous/jeeves-meta/pull/81)
+- npm audit fix [`8247c0e`](https://github.com/karmaniverous/jeeves-meta/commit/8247c0e5d7d6a4435d29eeae22c88050317b89c5)
+- Merge pull request #83 from karmaniverous/fix/linux-path-dirname [`6263b1a`](https://github.com/karmaniverous/jeeves-meta/commit/6263b1a55ffce68eaf061fbb8378a52df5bea035)
+- fix: use character-class glob escaping instead of backslash escaping for Windows compatibility [`5f8bc9a`](https://github.com/karmaniverous/jeeves-meta/commit/5f8bc9a2cf7a3d4d4b0d8d899c6edc0339ce54e1)
+- ci: add linux-compat workflow via shared gha-workflows [`816f0c6`](https://github.com/karmaniverous/jeeves-meta/commit/816f0c6611de8977d9419a4b024740efd9da94fd)
+- fix: use path.posix.dirname on normalized paths for Linux compatibility [`886cc4d`](https://github.com/karmaniverous/jeeves-meta/commit/886cc4d76be5a45dd63c16c2bb8ad334c5491c3f)
+
+#### [service/0.11.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.1...service/0.11.2)
+
+> 26 March 2026
 
 - fix: use character-class glob escaping instead of backslash (Windows) [`#82`](https://github.com/karmaniverous/jeeves-meta/pull/82)
 - fix: use character-class glob escaping instead of backslash (Windows-compatible) [`2e648f5`](https://github.com/karmaniverous/jeeves-meta/commit/2e648f5e78d47837646cd9a6a72d267a78996c35)
+- chore: release @karmaniverous/jeeves-meta v0.11.2 [`5c0b906`](https://github.com/karmaniverous/jeeves-meta/commit/5c0b9066e063d043b6c5145eab285663b248138b)
 
 #### [service/0.11.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.0...service/0.11.1)
 
