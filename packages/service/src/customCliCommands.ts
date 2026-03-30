@@ -12,9 +12,9 @@ import { type Command } from 'commander';
 
 import { DEFAULT_PORT_STR } from './constants.js';
 
-/** Build the full API URL for a given port and path. */
-function apiUrl(port: number, path: string): string {
-  return `http://127.0.0.1:${String(port)}${path}`;
+/** Build the full API URL for a given port string and path. */
+function apiUrl(port: string, apiPath: string): string {
+  return `http://127.0.0.1:${port}${apiPath}`;
 }
 
 /** Wrap an async CLI action with consistent error handling. */
@@ -43,7 +43,7 @@ export function registerCustomCliCommands(program: Command): void {
     .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (opts: { port: string }) => {
       await withErrorHandling(async () => {
-        const data = await fetchJson(apiUrl(parseInt(opts.port, 10), '/metas'));
+        const data = await fetchJson(apiUrl(opts.port, '/metas'));
         printJson(data);
       }, 'Error');
     });
@@ -56,9 +56,7 @@ export function registerCustomCliCommands(program: Command): void {
     .action(async (metaPath: string, opts: { port: string }) => {
       await withErrorHandling(async () => {
         const encoded = encodeURIComponent(metaPath);
-        const data = await fetchJson(
-          apiUrl(parseInt(opts.port, 10), `/metas/${encoded}`),
-        );
+        const data = await fetchJson(apiUrl(opts.port, `/metas/${encoded}`));
         printJson(data);
       }, 'Error');
     });
@@ -72,9 +70,7 @@ export function registerCustomCliCommands(program: Command): void {
     .action(async (opts: { port: string; path?: string }) => {
       await withErrorHandling(async () => {
         const qs = opts.path ? '?path=' + encodeURIComponent(opts.path) : '';
-        const data = await fetchJson(
-          apiUrl(parseInt(opts.port, 10), '/preview' + qs),
-        );
+        const data = await fetchJson(apiUrl(opts.port, '/preview' + qs));
         printJson(data);
       }, 'Error');
     });
@@ -88,10 +84,7 @@ export function registerCustomCliCommands(program: Command): void {
     .action(async (opts: { port: string; path?: string }) => {
       await withErrorHandling(async () => {
         const body = opts.path ? { path: opts.path } : {};
-        const data = await postJson(
-          apiUrl(parseInt(opts.port, 10), '/synthesize'),
-          body,
-        );
+        const data = await postJson(apiUrl(opts.port, '/synthesize'), body);
         printJson(data);
       }, 'Error');
     });
@@ -103,7 +96,7 @@ export function registerCustomCliCommands(program: Command): void {
     .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (metaPath: string, opts: { port: string }) => {
       await withErrorHandling(async () => {
-        const data = await postJson(apiUrl(parseInt(opts.port, 10), '/seed'), {
+        const data = await postJson(apiUrl(opts.port, '/seed'), {
           path: metaPath,
         });
         printJson(data);
@@ -117,10 +110,9 @@ export function registerCustomCliCommands(program: Command): void {
     .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (metaPath: string, opts: { port: string }) => {
       await withErrorHandling(async () => {
-        const data = await postJson(
-          apiUrl(parseInt(opts.port, 10), '/unlock'),
-          { path: metaPath },
-        );
+        const data = await postJson(apiUrl(opts.port, '/unlock'), {
+          path: metaPath,
+        });
         printJson(data);
       }, 'Error');
     });
@@ -132,10 +124,7 @@ export function registerCustomCliCommands(program: Command): void {
     .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (opts: { port: string }) => {
       await withErrorHandling(async () => {
-        const data = await postJson(
-          apiUrl(parseInt(opts.port, 10), '/synthesize/abort'),
-          {},
-        );
+        const data = await postJson(apiUrl(opts.port, '/synthesize/abort'), {});
         printJson(data);
       }, 'Error');
     });
@@ -147,10 +136,7 @@ export function registerCustomCliCommands(program: Command): void {
     .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (opts: { port: string }) => {
       await withErrorHandling(async () => {
-        const data = await postJson(
-          apiUrl(parseInt(opts.port, 10), '/archive/prune'),
-          {},
-        );
+        const data = await postJson(apiUrl(opts.port, '/archive/prune'), {});
         printJson(data);
       }, 'Error');
     });
@@ -166,7 +152,7 @@ export function registerCustomCliCommands(program: Command): void {
     .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (opts: { port: string }) => {
       await withErrorHandling(async () => {
-        const data = await fetchJson(apiUrl(parseInt(opts.port, 10), '/queue'));
+        const data = await fetchJson(apiUrl(opts.port, '/queue'));
         printJson(data);
       }, 'Error');
     });
@@ -177,10 +163,7 @@ export function registerCustomCliCommands(program: Command): void {
     .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
     .action(async (opts: { port: string }) => {
       await withErrorHandling(async () => {
-        const data = await postJson(
-          apiUrl(parseInt(opts.port, 10), '/queue/clear'),
-          {},
-        );
+        const data = await postJson(apiUrl(opts.port, '/queue/clear'), {});
         printJson(data);
       }, 'Error');
     });
