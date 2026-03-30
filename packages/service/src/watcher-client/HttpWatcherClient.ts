@@ -7,7 +7,12 @@
  * @module watcher-client/HttpWatcherClient
  */
 
-import type { InferenceRuleSpec, WatcherClient } from '../interfaces/index.js';
+import type {
+  InferenceRuleSpec,
+  WatcherClient,
+  WatcherScanRequest,
+  WatcherScanResult,
+} from '../interfaces/index.js';
 import { sleep } from '../sleep.js';
 
 /** Default retry configuration. */
@@ -99,5 +104,21 @@ export class HttpWatcherClient implements WatcherClient {
       unknown
     >;
     return (raw.paths ?? []) as string[];
+  }
+
+  async scan(request: WatcherScanRequest): Promise<WatcherScanResult> {
+    const raw = (await this.post('/scan', request)) as Record<string, unknown>;
+    return {
+      points: ((raw.points ?? []) as WatcherScanResult['points']).map(
+        (point) => ({
+          id: point.id,
+          payload: point.payload ?? {},
+        }),
+      ),
+      cursor:
+        typeof raw.cursor === 'string' || raw.cursor === null
+          ? raw.cursor
+          : null,
+    };
   }
 }

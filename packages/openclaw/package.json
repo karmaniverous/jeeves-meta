@@ -80,7 +80,7 @@
     "test": "vitest run",
     "typecheck": "tsc",
     "diagrams": "cd diagrams && plantuml -tpng -o ../assets -r .",
-    "build:plugin": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "build:plugin": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.mjs",
     "build:skills": "node scripts/build-skills.mjs",
     "build:content": "node scripts/copy-content.mjs"
   },

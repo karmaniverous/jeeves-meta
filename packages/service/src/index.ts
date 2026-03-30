@@ -74,6 +74,9 @@ export type {
   MetaSpawnOptions,
   MetaSpawnResult,
   WatcherClient,
+  WatcherScanPoint,
+  WatcherScanRequest,
+  WatcherScanResult,
 } from './interfaces/index.js';
 
 // ── Logger ──

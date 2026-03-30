@@ -69,7 +69,7 @@
     "vitest": "^4.1.0"
   },
   "scripts": {
-    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.mjs",
     "knip": "knip",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",

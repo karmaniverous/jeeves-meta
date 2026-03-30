@@ -140,3 +140,44 @@ describe('HttpWatcherClient.walk', () => {
     expect(result).toEqual(['a.txt']);
   });
 });
+
+describe('HttpWatcherClient.scan', () => {
+  it('sends POST /scan and maps points/cursor', async () => {
+    const client = new HttpWatcherClient({ baseUrl: 'http://localhost:1936' });
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse({
+        points: [
+          {
+            id: 'p1',
+            payload: { file_path: 'j:/domains/email/.meta/archive/a.json' },
+          },
+        ],
+        cursor: 'next-cursor',
+      }),
+    );
+
+    const result = await client.scan({
+      filter: { must: [{ key: '_meta', match: { value: 'archive' } }] },
+      limit: 25,
+      fields: ['file_path', '_id'],
+    });
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('http://localhost:1936/scan');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({
+      filter: { must: [{ key: '_meta', match: { value: 'archive' } }] },
+      limit: 25,
+      fields: ['file_path', '_id'],
+    });
+    expect(result).toEqual({
+      points: [
+        {
+          id: 'p1',
+          payload: { file_path: 'j:/domains/email/.meta/archive/a.json' },
+        },
+      ],
+      cursor: 'next-cursor',
+    });
+  });
+});

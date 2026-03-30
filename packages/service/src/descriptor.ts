@@ -12,25 +12,16 @@ import {
   jeevesComponentDescriptorSchema,
 } from '@karmaniverous/jeeves';
 
+import {
+  applyHotReloadedConfig,
+  RESTART_REQUIRED_FIELDS,
+} from './configHotReload.js';
 import { loadServiceConfig } from './configLoader.js';
 import { SERVICE_VERSION } from './constants.js';
 import { type ServiceConfig, serviceConfigSchema } from './schema/config.js';
 
-/**
- * Fields that require a service restart to take effect.
- *
- * Shared between the descriptor's `onConfigApply` and the file-watcher
- * hot-reload in `bootstrap.ts`.
- */
-export const RESTART_REQUIRED_FIELDS = [
-  'port',
-  'host',
-  'watcherUrl',
-  'gatewayUrl',
-  'gatewayApiKey',
-  'defaultArchitect',
-  'defaultCritic',
-] as const;
+// Re-export for consumers that import from descriptor
+export { RESTART_REQUIRED_FIELDS };
 
 /**
  * Parsed jeeves-meta component descriptor.
@@ -51,11 +42,8 @@ export const metaDescriptor: JeevesComponentDescriptor =
         watcherUrl: 'http://127.0.0.1:1936',
       }) as unknown as Record<string, unknown>,
     onConfigApply: (merged: Record<string, unknown>) => {
-      // Validate the incoming merged config
-      serviceConfigSchema.parse(merged);
-
-      // Full hot-reload logic will be wired in later phases when the
-      // config-apply route is added. For now, validation is sufficient.
+      const parsed = serviceConfigSchema.parse(merged);
+      applyHotReloadedConfig(parsed);
       return Promise.resolve();
     },
     startCommand: (configPath: string) => [

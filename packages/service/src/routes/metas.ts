@@ -15,6 +15,7 @@ import { listArchiveFiles } from '../archive/index.js';
 import { computeSummary } from '../discovery/computeSummary.js';
 import { getScopeFiles } from '../discovery/index.js';
 import { findNode, listMetas } from '../discovery/index.js';
+import type { WatcherClient, WatcherScanPoint } from '../interfaces/index.js';
 import { normalizePath } from '../normalizePath.js';
 import { computeStalenessScore } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
@@ -50,6 +51,104 @@ const metaDetailQuerySchema = z.object({
     ])
     .optional(),
 });
+
+function buildArchiveScanFilter(
+  metaPath: string,
+  metaArchiveProperty: Record<string, unknown>,
+): Record<string, unknown> {
+  const must: Array<Record<string, unknown>> = [
+    {
+      key: 'file_path',
+      match: { text: normalizePath(join(metaPath, 'archive')) },
+    },
+  ];
+
+  for (const [key, value] of Object.entries(metaArchiveProperty)) {
+    must.push({ key, match: { value } });
+  }
+
+  return { must };
+}
+
+function getArchiveFilePath(point: WatcherScanPoint): string {
+  const value = point.payload?.file_path;
+  return typeof value === 'string' ? value : '';
+}
+
+function projectArchivePayload(
+  point: WatcherScanPoint,
+  projectMeta: (m: Record<string, unknown>) => Record<string, unknown>,
+): Record<string, unknown> | null {
+  const payload = point.payload ?? {};
+  if (Object.keys(payload).length === 0) return null;
+
+  const archiveMeta = { ...payload };
+  delete archiveMeta.file_path;
+  delete archiveMeta.chunk_text;
+  delete archiveMeta.chunk_index;
+  delete archiveMeta.total_chunks;
+  delete archiveMeta.content_hash;
+  delete archiveMeta.matched_rules;
+
+  return projectMeta(archiveMeta);
+}
+
+async function readArchiveFromWatcher(
+  watcher: WatcherClient,
+  metaPath: string,
+  metaArchiveProperty: Record<string, unknown>,
+  limit: number | undefined,
+  projectMeta: (m: Record<string, unknown>) => Record<string, unknown>,
+): Promise<Array<Record<string, unknown>>> {
+  if (limit === 0) return [];
+
+  if (!watcher.scan) {
+    throw new Error('Watcher scan not available');
+  }
+
+  const points: WatcherScanPoint[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const result = await watcher.scan({
+      filter: buildArchiveScanFilter(metaPath, metaArchiveProperty),
+      limit: 100,
+      cursor,
+    });
+
+    points.push(...result.points);
+    cursor = result.cursor ?? undefined;
+  } while (cursor);
+
+  const sorted = points.sort((a, b) =>
+    getArchiveFilePath(a).localeCompare(getArchiveFilePath(b)),
+  );
+
+  return sorted
+    .slice(limit ? -limit : 0)
+    .reverse()
+    .map((point) => projectArchivePayload(point, projectMeta))
+    .filter((value): value is Record<string, unknown> => value !== null);
+}
+
+async function readArchiveFromDisk(
+  metaPath: string,
+  limit: number | undefined,
+  projectMeta: (m: Record<string, unknown>) => Record<string, unknown>,
+): Promise<Array<Record<string, unknown>>> {
+  if (limit === 0) return [];
+
+  const archiveFiles = listArchiveFiles(metaPath);
+  const selected = (
+    limit ? archiveFiles.slice(-limit) : archiveFiles
+  ).reverse();
+  return Promise.all(
+    selected.map(async (archiveFile) => {
+      const raw = await readFile(archiveFile, 'utf8');
+      return projectMeta(JSON.parse(raw) as Record<string, unknown>);
+    }),
+  );
+}
 
 export function registerMetasRoutes(
   app: FastifyInstance,
@@ -234,18 +333,26 @@ export function registerMetasRoutes(
 
       // Archive
       if (query.includeArchive) {
-        const archiveFiles = listArchiveFiles(targetNode.metaPath);
         const limit =
           typeof query.includeArchive === 'number'
             ? query.includeArchive
-            : archiveFiles.length;
-        const selected = archiveFiles.slice(-limit).reverse();
-        response.archive = await Promise.all(
-          selected.map(async (af) => {
-            const raw = await readFile(af, 'utf8');
-            return projectMeta(JSON.parse(raw) as Record<string, unknown>);
-          }),
-        );
+            : undefined;
+
+        try {
+          response.archive = await readArchiveFromWatcher(
+            watcher,
+            targetNode.metaPath,
+            config.metaArchiveProperty,
+            limit,
+            projectMeta,
+          );
+        } catch {
+          response.archive = await readArchiveFromDisk(
+            targetNode.metaPath,
+            limit,
+            projectMeta,
+          );
+        }
       }
 
       return response;
