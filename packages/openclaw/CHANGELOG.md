@@ -2,17 +2,35 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.8.3](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.2...0.8.3)
+#### [0.9.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.3...0.9.0)
+
+- chore: update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6 [`#85`](https://github.com/karmaniverous/jeeves-meta/pull/85)
+- chore: update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6, typedoc 0.28.18, typescript-eslint 8.57.2 [`09ebc21`](https://github.com/karmaniverous/jeeves-meta/commit/09ebc219e8daf5d7f44b8bb8be891e7b5b047f5a)
+- feat: Phase 3 — service CLI + plugin toolset + plugin CLI (M3, M4, M7, M7b) [`b89655e`](https://github.com/karmaniverous/jeeves-meta/commit/b89655e1e4487278137d2329855ceaf252ecca29)
+- feat: Phase 2 — config apply, status handler, queue management, archive watcher scan (M5, M5b, M7c) [`0f9d7f0`](https://github.com/karmaniverous/jeeves-meta/commit/0f9d7f0732cffd8f01cca1d4a4be4cbcd1a81400)
+- feat: Phase 1 — config migration, descriptor, bind address (M1, M2, M6) [`0ab7ba5`](https://github.com/karmaniverous/jeeves-meta/commit/0ab7ba59071fa76930024d04552a8cbafdac7339)
+- refactor: tighten SOLID and DRY in service routes [`baf74d2`](https://github.com/karmaniverous/jeeves-meta/commit/baf74d25d7006fac24f3e1744e3757610c9f339d)
+- test: add configHotReload coverage (12 tests) [`7215b13`](https://github.com/karmaniverous/jeeves-meta/commit/7215b13b16c6fa50a078c7b3097a98e93365aa16)
+- docs: add front matter to guides (title + children pattern from jeeves-server) [`c5408ad`](https://github.com/karmaniverous/jeeves-meta/commit/c5408adbd972102680eaeac0db9f679da024f8fc)
+- docs: sync tools, guides, and READMEs with implementation [`d8838f8`](https://github.com/karmaniverous/jeeves-meta/commit/d8838f8d167ee487f842a792321ae19e2fabecab)
+- chore: release @karmaniverous/jeeves-meta v0.12.0 [`52c13c2`](https://github.com/karmaniverous/jeeves-meta/commit/52c13c29f7f118d62eef44749409597c38ff3091)
+- ci: add cloud sync workflow (matches jeeves-watcher/runner) [`6187592`](https://github.com/karmaniverous/jeeves-meta/commit/6187592b59ef0a430277f96d730ce0e55858fc5a)
+- fix: handle invalid JSON in crossRefs parameter (PR review feedback) [`16cdcc3`](https://github.com/karmaniverous/jeeves-meta/commit/16cdcc34f16d9936615b06cde39d543c62e589b7)
+
+#### [openclaw/0.8.3](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.8.2...openclaw/0.8.3)
+
+> 28 March 2026
 
 - fix: use character-class glob escaping for Windows compatibility [`#81`](https://github.com/karmaniverous/jeeves-meta/pull/81)
 - fix: use character-class glob escaping instead of backslash (Windows) [`#82`](https://github.com/karmaniverous/jeeves-meta/pull/82)
 - fix: escape glob metacharacters in watcher walk, fix skip reporting loop [`#80`](https://github.com/karmaniverous/jeeves-meta/pull/80)
 - fix: escape glob metacharacters in watcher walk paths, suppress completion for skipped entities, bump _generatedAt on empty-scope skip [`76ff9d1`](https://github.com/karmaniverous/jeeves-meta/commit/76ff9d1636e4cab58dd32919ea1774568fcbd8ba)
 - npm audit fix [`8247c0e`](https://github.com/karmaniverous/jeeves-meta/commit/8247c0e5d7d6a4435d29eeae22c88050317b89c5)
-- fix: use character-class glob escaping instead of backslash (Windows-compatible) [`2e648f5`](https://github.com/karmaniverous/jeeves-meta/commit/2e648f5e78d47837646cd9a6a72d267a78996c35)
+- fix: use character-class glob escaping instead of backslash escaping for Windows compatibility [`5f8bc9a`](https://github.com/karmaniverous/jeeves-meta/commit/5f8bc9a2cf7a3d4d4b0d8d899c6edc0339ce54e1)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.8.3 [`e9a9fdb`](https://github.com/karmaniverous/jeeves-meta/commit/e9a9fdbf1139a0d4114de89b60ee8e8a3325d2e1)
 - chore: release @karmaniverous/jeeves-meta v0.11.3 [`c62d389`](https://github.com/karmaniverous/jeeves-meta/commit/c62d3896f8cfc9baa968082ab17c2bbf6a7092a8)
 - Merge pull request #83 from karmaniverous/fix/linux-path-dirname [`6263b1a`](https://github.com/karmaniverous/jeeves-meta/commit/6263b1a55ffce68eaf061fbb8378a52df5bea035)
-- fix: use character-class glob escaping instead of backslash escaping for Windows compatibility [`5f8bc9a`](https://github.com/karmaniverous/jeeves-meta/commit/5f8bc9a2cf7a3d4d4b0d8d899c6edc0339ce54e1)
+- fix: use character-class glob escaping instead of backslash (Windows-compatible) [`2e648f5`](https://github.com/karmaniverous/jeeves-meta/commit/2e648f5e78d47837646cd9a6a72d267a78996c35)
 - ci: add linux-compat workflow via shared gha-workflows [`816f0c6`](https://github.com/karmaniverous/jeeves-meta/commit/816f0c6611de8977d9419a4b024740efd9da94fd)
 - chore: release @karmaniverous/jeeves-meta v0.11.1 [`b152f37`](https://github.com/karmaniverous/jeeves-meta/commit/b152f37139eb313b61daaa17c1cece281888aa2d)
 - chore: release @karmaniverous/jeeves-meta v0.11.2 [`5c0b906`](https://github.com/karmaniverous/jeeves-meta/commit/5c0b9066e063d043b6c5145eab285663b248138b)
