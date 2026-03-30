@@ -202,7 +202,15 @@ function buildMetaSeedTool(
     execute: async (_id: string, params: Record<string, unknown>) => {
       let crossRefs: string[] | undefined;
       if (typeof params.crossRefs === 'string' && params.crossRefs) {
-        crossRefs = JSON.parse(params.crossRefs) as string[];
+        try {
+          crossRefs = JSON.parse(params.crossRefs) as string[];
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          return ok({
+            error: 'Invalid JSON in crossRefs parameter.',
+            details: message,
+          });
+        }
       }
       return wrap(baseUrl, () => client.seed(params.path as string, crossRefs));
     },
