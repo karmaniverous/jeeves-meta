@@ -6,7 +6,7 @@
  * @module configLoader
  */
 
-import { readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { type ServiceConfig, serviceConfigSchema } from './schema/config.js';
@@ -54,6 +54,36 @@ function resolveFileRef(value: string, baseDir: string): string {
   if (!value.startsWith('@file:')) return value;
   const filePath = join(baseDir, value.slice(6));
   return readFileSync(filePath, 'utf8');
+}
+
+/**
+ * Migrate legacy config path to the new canonical location.
+ *
+ * If the old path `{configRoot}/jeeves-meta.config.json` exists and the new
+ * path `{configRoot}/jeeves-meta/config.json` does NOT exist, copies the file
+ * to the new location and logs a warning.
+ *
+ * @param configRoot - Root directory for configuration files.
+ * @param warn - Optional callback for logging the migration warning.
+ */
+export function migrateConfigPath(
+  configRoot: string,
+  warn?: (msg: string) => void,
+): void {
+  const oldPath = join(configRoot, 'jeeves-meta.config.json');
+  const newDir = join(configRoot, 'jeeves-meta');
+  const newPath = join(newDir, 'config.json');
+
+  if (existsSync(oldPath) && !existsSync(newPath)) {
+    mkdirSync(newDir, { recursive: true });
+    copyFileSync(oldPath, newPath);
+    const message = `Migrated config from ${oldPath} to ${newPath}. The old file can be removed.`;
+    if (warn) {
+      warn(message);
+    } else {
+      console.warn(`[jeeves-meta] ${message}`);
+    }
+  }
 }
 
 /**

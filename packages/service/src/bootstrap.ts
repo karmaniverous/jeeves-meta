@@ -6,6 +6,8 @@
 
 import { watchFile } from 'node:fs';
 
+import { getBindAddress } from '@karmaniverous/jeeves';
+
 import { loadServiceConfig } from './configLoader.js';
 import { listMetas } from './discovery/index.js';
 import { GatewayExecutor } from './executor/index.js';
@@ -77,9 +79,10 @@ export async function startService(
   });
 
   // Start HTTP server
+  const bindAddress = getBindAddress('meta');
   try {
-    await server.listen({ port: config.port, host: config.host });
-    logger.info({ port: config.port, host: config.host }, 'Service listening');
+    await server.listen({ port: config.port, host: bindAddress });
+    logger.info({ port: config.port, host: bindAddress }, 'Service listening');
   } catch (err) {
     logger.error(err, 'Failed to start service');
     process.exit(1);

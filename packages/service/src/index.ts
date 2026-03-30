@@ -20,8 +20,15 @@ export {
   SERVICE_VERSION,
 } from './constants.js';
 
+// ── Descriptor ──
+export { metaDescriptor, RESTART_REQUIRED_FIELDS } from './descriptor.js';
+
 // ── Config ──
-export { loadServiceConfig, resolveConfigPath } from './configLoader.js';
+export {
+  loadServiceConfig,
+  migrateConfigPath,
+  resolveConfigPath,
+} from './configLoader.js';
 
 // ── Discovery ──
 export {

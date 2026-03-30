@@ -15,6 +15,8 @@ import {
   createAsyncContentCache,
   createComponentWriter,
   init,
+  type JeevesComponentDescriptor,
+  jeevesComponentDescriptorSchema,
   type PluginApi,
   resolveWorkspacePath,
 } from '@karmaniverous/jeeves';
@@ -22,10 +24,6 @@ import {
 import { getConfigRoot, getServiceUrl } from './helpers.js';
 import { generateMetaMenu } from './promptInjection.js';
 import { MetaServiceClient } from './serviceClient.js';
-import {
-  createPluginCommands,
-  createServiceCommands,
-} from './serviceCommands.js';
 import { registerMetaTools } from './tools.js';
 
 /** Plugin version derived from package.json. */
@@ -59,17 +57,32 @@ export default function register(api: PluginApi): void {
       'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
   });
 
-  const writer = createComponentWriter({
-    name: 'meta',
-    version: PLUGIN_VERSION,
-    sectionId: 'Meta',
-    refreshIntervalSeconds: 73,
-    generateToolsContent: getContent,
-    serviceCommands: createServiceCommands(client),
-    pluginCommands: createPluginCommands(),
-    servicePackage: '@karmaniverous/jeeves-meta',
-    pluginPackage: '@karmaniverous/jeeves-meta-openclaw',
-  });
+  const descriptor: JeevesComponentDescriptor =
+    jeevesComponentDescriptorSchema.parse({
+      name: 'meta',
+      version: PLUGIN_VERSION,
+      servicePackage: '@karmaniverous/jeeves-meta',
+      pluginPackage: '@karmaniverous/jeeves-meta-openclaw',
+      defaultPort: 1938,
+      // The runtime Zod custom validator only checks for a .parse() method.
+      // Use unknown cast to bridge the Zod v4 (service) → v3 (core SDK) type gap.
+      configSchema: { parse: (v: unknown) => v } as unknown,
+      configFileName: 'config.json',
+      initTemplate: () => ({}),
+      startCommand: (configPath: string) => [
+        'node',
+        'dist/cli.js',
+        'start',
+        '-c',
+        configPath,
+      ],
+      sectionId: 'Meta',
+      refreshIntervalSeconds: 73,
+      generateToolsContent: getContent,
+      dependencies: { hard: ['watcher'], soft: [] },
+    });
+
+  const writer = createComponentWriter(descriptor);
 
   writer.start();
 }
