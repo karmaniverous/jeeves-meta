@@ -196,6 +196,11 @@ function buildMetaSeedTool(
           description:
             'JSON array of cross-ref owner paths (e.g. \'["j:/path/a","j:/path/b"]\').',
         },
+        steer: {
+          type: 'string',
+          description:
+            'Steering prompt written as _steer in the initial meta.json.',
+        },
       },
       required: ['path'],
     },
@@ -212,7 +217,13 @@ function buildMetaSeedTool(
           });
         }
       }
-      return wrap(baseUrl, () => client.seed(params.path as string, crossRefs));
+      const steer =
+        typeof params.steer === 'string' && params.steer
+          ? params.steer
+          : undefined;
+      return wrap(baseUrl, () =>
+        client.seed(params.path as string, crossRefs, steer),
+      );
     },
   };
 }

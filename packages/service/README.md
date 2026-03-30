@@ -4,7 +4,7 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 
 ## Features
 
-- **Fastify HTTP API** — `/status`, `/metas`, `/preview`, `/synthesize`, `/seed`, `/unlock`, `/config`
+- **Fastify HTTP API** — `/status`, `/metas`, `/preview`, `/synthesize`, `/synthesize/abort`, `/seed`, `/unlock`, `/config`, `/config/apply`, `/queue`, `/queue/clear`
 - **Built-in scheduler** — croner-based cron with adaptive backoff
 - **Synthesis queue** — single-threaded, priority-aware, deduplicated
 - **Three-step orchestration** — architect, builder, critic with conditional re-architecture
@@ -58,9 +58,13 @@ jeeves-meta service install --config /path/to/jeeves-meta.config.json
 | GET | `/metas/:path` | Single meta detail with optional archive |
 | GET | `/preview` | Dry-run: preview inputs for next synthesis |
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
+| POST | `/synthesize/abort` | Abort the currently running synthesis |
 | POST | `/seed` | Create `.meta/` directory + meta.json (optional `crossRefs`, `steer`) |
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
+| POST | `/config/apply` | Apply a config patch (merge or replace) |
+| GET | `/queue` | Current queue state (current, pending, stats) |
+| POST | `/queue/clear` | Remove all pending queue items |
 
 ## Configuration
 

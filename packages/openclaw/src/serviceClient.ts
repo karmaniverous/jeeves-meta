@@ -151,9 +151,14 @@ export class MetaServiceClient {
   }
 
   /** POST /seed — create .meta/ for a path. */
-  public async seed(path: string, crossRefs?: string[]): Promise<unknown> {
+  public async seed(
+    path: string,
+    crossRefs?: string[],
+    steer?: string,
+  ): Promise<unknown> {
     const body: Record<string, unknown> = { path };
     if (crossRefs !== undefined) body.crossRefs = crossRefs;
+    if (steer !== undefined) body.steer = steer;
     return this.post('/seed', body);
   }
 

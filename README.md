@@ -65,17 +65,30 @@ jeeves-meta service start|stop|status|install|remove
 
 ### As an OpenClaw plugin
 
-Install the plugin package. Seven tools become available to the agent:
+Install the plugin package. Eight tools become available to the agent:
 
 - `meta_list` — list metas with summary stats and filtering
 - `meta_detail` — full detail for a single meta with optional archive history
 - `meta_trigger` — manually trigger synthesis (enqueues work)
 - `meta_preview` — dry-run showing what inputs would be gathered
-- `meta_seed` — create `.meta/` directory for a new path (with optional cross-refs)
+- `meta_seed` — create `.meta/` directory for a new path (with optional cross-refs and steer)
 - `meta_unlock` — remove stale `.lock` from a meta entity
 - `meta_config` — query service configuration with optional JSONPath
+- `meta_queue` — queue management: list pending, clear queue, abort current synthesis
 
 ## Configuration
+
+Minimal config (built-in prompts, default schedule):
+
+```json
+{
+  "watcherUrl": "http://localhost:1936",
+  "gatewayUrl": "http://127.0.0.1:18789",
+  "gatewayApiKey": "your-api-key"
+}
+```
+
+Full example with all optional fields:
 
 ```json
 {
