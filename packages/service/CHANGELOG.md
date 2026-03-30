@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.12.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.3...0.12.0)
+#### [0.12.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.0...0.12.1)
+
+- fix: correct startCommand path in service descriptor [`#86`](https://github.com/karmaniverous/jeeves-meta/pull/86)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.9.0 [`3063f49`](https://github.com/karmaniverous/jeeves-meta/commit/3063f492ccad7b5f6aea65388b62215b815fd457)
+- fix: correct startCommand path in descriptor (dist/cli.js → dist/cli/jeeves-meta/index.js) [`061fac5`](https://github.com/karmaniverous/jeeves-meta/commit/061fac5c8541733f81365a4b76c315b59c38f779)
+
+#### [service/0.12.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.3...service/0.12.0)
+
+> 30 March 2026
 
 - chore: update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6 [`#85`](https://github.com/karmaniverous/jeeves-meta/pull/85)
 - chore: update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6, typedoc 0.28.18, typescript-eslint 8.57.2 [`09ebc21`](https://github.com/karmaniverous/jeeves-meta/commit/09ebc219e8daf5d7f44b8bb8be891e7b5b047f5a)
@@ -14,6 +22,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - docs: add front matter to guides (title + children pattern from jeeves-server) [`c5408ad`](https://github.com/karmaniverous/jeeves-meta/commit/c5408adbd972102680eaeac0db9f679da024f8fc)
 - docs: sync tools, guides, and READMEs with implementation [`d8838f8`](https://github.com/karmaniverous/jeeves-meta/commit/d8838f8d167ee487f842a792321ae19e2fabecab)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.8.3 [`e9a9fdb`](https://github.com/karmaniverous/jeeves-meta/commit/e9a9fdbf1139a0d4114de89b60ee8e8a3325d2e1)
+- chore: release @karmaniverous/jeeves-meta v0.12.0 [`52c13c2`](https://github.com/karmaniverous/jeeves-meta/commit/52c13c29f7f118d62eef44749409597c38ff3091)
 - ci: add cloud sync workflow (matches jeeves-watcher/runner) [`6187592`](https://github.com/karmaniverous/jeeves-meta/commit/6187592b59ef0a430277f96d730ce0e55858fc5a)
 - fix: handle invalid JSON in crossRefs parameter (PR review feedback) [`16cdcc3`](https://github.com/karmaniverous/jeeves-meta/commit/16cdcc34f16d9936615b06cde39d543c62e589b7)
 
