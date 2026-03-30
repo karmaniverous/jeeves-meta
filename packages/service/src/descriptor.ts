@@ -49,7 +49,7 @@ export const metaDescriptor: JeevesComponentDescriptor =
     },
     startCommand: (configPath: string) => [
       'node',
-      'dist/cli.js',
+      'dist/cli/jeeves-meta/index.js',
       'start',
       '-c',
       configPath,
