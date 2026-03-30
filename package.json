@@ -13,6 +13,7 @@
     "docs": "typedoc"
   },
   "devDependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
     "@eslint/js": "^9.39.3",
     "@vitest/eslint-plugin": "^1.6.9",
     "eslint": "^9.39.3",

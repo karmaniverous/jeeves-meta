@@ -167,4 +167,19 @@ export class MetaServiceClient {
     const qs = path ? '?path=' + encodeURIComponent(path) : '';
     return this.get('/config' + qs);
   }
+
+  /** GET /queue — current queue state. */
+  public async queue(): Promise<unknown> {
+    return this.get('/queue');
+  }
+
+  /** POST /queue/clear — remove all pending queue items. */
+  public async clearQueue(): Promise<unknown> {
+    return this.post('/queue/clear', {});
+  }
+
+  /** POST /synthesize/abort — abort current synthesis. */
+  public async abort(): Promise<unknown> {
+    return this.post('/synthesize/abort', {});
+  }
 }

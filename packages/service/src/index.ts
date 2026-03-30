@@ -20,6 +20,9 @@ export {
   SERVICE_VERSION,
 } from './constants.js';
 
+// ── Custom CLI Commands ──
+export { registerCustomCliCommands } from './customCliCommands.js';
+
 // ── Descriptor ──
 export { metaDescriptor, RESTART_REQUIRED_FIELDS } from './descriptor.js';
 

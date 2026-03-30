@@ -43,8 +43,6 @@ const PLUGIN_VERSION: string = (() => {
 export default function register(api: PluginApi): void {
   const client = new MetaServiceClient({ apiUrl: getServiceUrl(api) });
 
-  registerMetaTools(api, client);
-
   init({
     workspacePath: resolveWorkspacePath(api),
     configRoot: getConfigRoot(api),
@@ -81,6 +79,8 @@ export default function register(api: PluginApi): void {
       generateToolsContent: getContent,
       dependencies: { hard: ['watcher'], soft: [] },
     });
+
+  registerMetaTools(api, client, descriptor);
 
   const writer = createComponentWriter(descriptor);
 

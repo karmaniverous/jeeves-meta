@@ -18,6 +18,7 @@ import {
 } from './configHotReload.js';
 import { loadServiceConfig } from './configLoader.js';
 import { SERVICE_VERSION } from './constants.js';
+import { registerCustomCliCommands } from './customCliCommands.js';
 import { type ServiceConfig, serviceConfigSchema } from './schema/config.js';
 
 // Re-export for consumers that import from descriptor
@@ -57,6 +58,7 @@ export const metaDescriptor: JeevesComponentDescriptor =
     refreshIntervalSeconds: 73,
     generateToolsContent: () => '',
     dependencies: { hard: ['watcher'], soft: [] },
+    customCliCommands: registerCustomCliCommands,
   });
 
 // Re-export for convenience

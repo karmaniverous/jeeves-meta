@@ -57,6 +57,7 @@
     "tagPrefix": "openclaw/"
   },
   "devDependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
     "@dotenvx/dotenvx": "^1.55.1",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^16.0.3",

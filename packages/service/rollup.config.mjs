@@ -5,10 +5,11 @@ import typescriptPlugin from '@rollup/plugin-typescript';
 import copyPlugin from 'rollup-plugin-copy';
 import dtsPlugin from 'rollup-plugin-dts';
 
-function onwarn(warning, warn) {
+/** @type {import('rollup').RollupOptions['onwarn']} */
+const onwarn = (warning, warn) => {
   if (warning?.code === 'CIRCULAR_DEPENDENCY') return;
   warn(warning);
-}
+};
 
 const typescript = typescriptPlugin({
   tsconfig: './tsconfig.json',
