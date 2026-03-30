@@ -1,3 +1,7 @@
+---
+title: CLI Reference
+---
+
 # CLI Reference
 
 All commands support `-p, --port <port>` to specify the service port (default: 1938).

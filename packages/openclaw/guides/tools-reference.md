@@ -1,3 +1,7 @@
+---
+title: Tools Reference
+---
+
 # Tools Reference
 
 All tools delegate to the jeeves-meta HTTP service.

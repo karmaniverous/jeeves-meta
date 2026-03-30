@@ -1,3 +1,7 @@
+---
+title: Scheduling
+---
+
 # Scheduling
 
 ## Weighted Staleness Formula

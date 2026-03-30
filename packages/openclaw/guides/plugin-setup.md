@@ -1,3 +1,7 @@
+---
+title: Plugin Setup
+---
+
 # Plugin Setup
 
 ## Installation

@@ -1,3 +1,7 @@
+---
+title: Configuration
+---
+
 # Configuration
 
 The service reads a JSON config file specified via `--config` flag or `JEEVES_META_CONFIG` environment variable.
