@@ -57,6 +57,7 @@
     "tagPrefix": "openclaw/"
   },
   "devDependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
     "@dotenvx/dotenvx": "^1.55.1",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^16.0.3",
@@ -80,7 +81,7 @@
     "test": "vitest run",
     "typecheck": "tsc",
     "diagrams": "cd diagrams && plantuml -tpng -o ../assets -r .",
-    "build:plugin": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "build:plugin": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.mjs",
     "build:skills": "node scripts/build-skills.mjs",
     "build:content": "node scripts/copy-content.mjs"
   },
@@ -119,6 +120,6 @@
     }
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.3.0"
+    "@karmaniverous/jeeves": "^0.4.4"
   }
 }

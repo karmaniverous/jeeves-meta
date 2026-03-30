@@ -1,3 +1,7 @@
+---
+title: TOOLS.md Injection
+---
+
 # TOOLS.md Injection
 
 The plugin uses `ComponentWriter` from `@karmaniverous/jeeves` to periodically write a `## Meta` section into the workspace `TOOLS.md` file. The OpenClaw gateway reads this file fresh on each new session, making synthesis stats available in the agent's system prompt.

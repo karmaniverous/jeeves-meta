@@ -11,7 +11,10 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { listArchiveFiles } from '../archive/index.js';
+import {
+  readArchiveFromDisk,
+  readArchiveFromWatcher,
+} from '../archive/readArchive.js';
 import { computeSummary } from '../discovery/computeSummary.js';
 import { getScopeFiles } from '../discovery/index.js';
 import { findNode, listMetas } from '../discovery/index.js';
@@ -234,18 +237,26 @@ export function registerMetasRoutes(
 
       // Archive
       if (query.includeArchive) {
-        const archiveFiles = listArchiveFiles(targetNode.metaPath);
         const limit =
           typeof query.includeArchive === 'number'
             ? query.includeArchive
-            : archiveFiles.length;
-        const selected = archiveFiles.slice(-limit).reverse();
-        response.archive = await Promise.all(
-          selected.map(async (af) => {
-            const raw = await readFile(af, 'utf8');
-            return projectMeta(JSON.parse(raw) as Record<string, unknown>);
-          }),
-        );
+            : undefined;
+
+        try {
+          response.archive = await readArchiveFromWatcher(
+            watcher,
+            targetNode.metaPath,
+            config.metaArchiveProperty,
+            limit,
+            projectMeta,
+          );
+        } catch {
+          response.archive = await readArchiveFromDisk(
+            targetNode.metaPath,
+            limit,
+            projectMeta,
+          );
+        }
       }
 
       return response;

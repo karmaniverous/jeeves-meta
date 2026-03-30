@@ -1,11 +1,13 @@
 /**
  * GET /status — service health and status overview.
  *
- * On-demand dependency health checks (lightweight ping).
+ * Uses the core SDK's `createStatusHandler` factory with a custom
+ * `getHealth` callback that preserves all existing health details.
  *
  * @module routes/status
  */
 
+import { createStatusHandler } from '@karmaniverous/jeeves';
 import type { FastifyInstance } from 'fastify';
 
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
@@ -61,62 +63,45 @@ export function registerStatusRoute(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  app.get('/status', async () => {
-    const { config, queue, scheduler, stats } = deps;
+  const statusHandler = createStatusHandler({
+    name: SERVICE_NAME,
+    version: SERVICE_VERSION,
+    getHealth: async () => {
+      const { config, queue, scheduler, stats } = deps;
 
-    // On-demand dependency checks
-    const [watcherHealth, gatewayHealth] = await Promise.all([
-      checkWatcher(config.watcherUrl),
-      checkDependency(config.gatewayUrl, '/status'),
-    ]);
+      // On-demand dependency checks
+      const [watcherHealth, gatewayHealth] = await Promise.all([
+        checkWatcher(config.watcherUrl),
+        checkDependency(config.gatewayUrl, '/status'),
+      ]);
 
-    const degraded =
-      (watcherHealth.status !== 'ok' && watcherHealth.status !== 'indexing') ||
-      gatewayHealth.status !== 'ok';
-    const indexing = watcherHealth.status === 'indexing';
-
-    // Determine status
-    let status: string;
-    if (deps.shuttingDown) {
-      status = 'stopping';
-    } else if (queue.current) {
-      status = 'synthesizing';
-    } else if (degraded) {
-      status = 'degraded';
-    } else if (indexing) {
-      status = 'waiting';
-    } else {
-      status = 'idle';
-    }
-
-    // Metas summary is expensive (watcher walk + disk reads).
-    // Use GET /metas for full inventory; status is a lightweight health check.
-
-    return {
-      service: SERVICE_NAME,
-      version: SERVICE_VERSION,
-      uptime: process.uptime(),
-      status,
-      currentTarget: queue.current?.path ?? null,
-      queue: queue.getState(),
-      stats: {
-        totalSyntheses: stats.totalSyntheses,
-        totalTokens: stats.totalTokens,
-        totalErrors: stats.totalErrors,
-        lastCycleDurationMs: stats.lastCycleDurationMs,
-        lastCycleAt: stats.lastCycleAt,
-      },
-      schedule: {
-        expression: config.schedule,
-        nextAt: scheduler?.nextRunAt?.toISOString() ?? null,
-      },
-      dependencies: {
-        watcher: {
-          ...watcherHealth,
-          rulesRegistered: deps.registrar?.isRegistered ?? false,
+      return {
+        currentTarget: queue.current?.path ?? null,
+        queue: queue.getState(),
+        stats: {
+          totalSyntheses: stats.totalSyntheses,
+          totalTokens: stats.totalTokens,
+          totalErrors: stats.totalErrors,
+          lastCycleDurationMs: stats.lastCycleDurationMs,
+          lastCycleAt: stats.lastCycleAt,
         },
-        gateway: gatewayHealth,
-      },
-    };
+        schedule: {
+          expression: config.schedule,
+          nextAt: scheduler?.nextRunAt?.toISOString() ?? null,
+        },
+        dependencies: {
+          watcher: {
+            ...watcherHealth,
+            rulesRegistered: deps.registrar?.isRegistered ?? false,
+          },
+          gateway: gatewayHealth,
+        },
+      };
+    },
+  });
+
+  app.get('/status', async (_request, reply) => {
+    const result = await statusHandler();
+    return reply.status(result.status).send(result.body);
   });
 }

@@ -66,10 +66,14 @@ function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
   };
 }
 
-function makeWatcher(metaJsonPaths: string[]): WatcherClient {
+function makeWatcher(
+  metaJsonPaths: string[],
+  scan = vi.fn().mockResolvedValue({ points: [], cursor: null }),
+): WatcherClient {
   return {
     walk: vi.fn().mockResolvedValue(metaJsonPaths),
     registerRules: vi.fn().mockResolvedValue(undefined),
+    scan,
   };
 }
 
@@ -430,5 +434,108 @@ describe('GET /metas/:path — crossRefs status', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json<Record<string, unknown>>();
     expect(body).not.toHaveProperty('crossRefs');
+  });
+});
+
+describe('GET /metas/:path — archive reads', () => {
+  let app: FastifyInstance;
+  let ownerDir: string;
+  let metaDir: string;
+  const root = join(
+    tmpdir(),
+    `jeeves-meta-metas-archive-${Date.now().toString()}`,
+  );
+
+  beforeEach(() => {
+    ownerDir = join(root, `owner-${Date.now().toString()}`);
+    metaDir = join(ownerDir, '.meta');
+    mkdirSync(join(metaDir, 'archive'), { recursive: true });
+    writeFileSync(
+      join(metaDir, 'meta.json'),
+      JSON.stringify({
+        _id: '550e8400-e29b-41d4-a716-446655440010',
+        _generatedAt: '2026-03-08T07:00:00Z',
+      }),
+    );
+    writeFileSync(
+      join(metaDir, 'archive', '2026-03-08T07-00-00.000Z.json'),
+      JSON.stringify({ _id: 'a', archived: 'disk-a' }),
+    );
+    writeFileSync(
+      join(metaDir, 'archive', '2026-03-09T07-00-00.000Z.json'),
+      JSON.stringify({ _id: 'b', archived: 'disk-b' }),
+    );
+  });
+
+  afterEach(async () => {
+    await app.close();
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  it('prefers watcher scan for archive history', async () => {
+    const scan = vi.fn().mockResolvedValue({
+      points: [
+        {
+          payload: {
+            file_path: `${normalizePath(metaDir)}/archive/2026-03-08T07-00-00.000Z.json`,
+            _id: 'a',
+            archived: 'watcher-a',
+          },
+        },
+        {
+          payload: {
+            file_path: `${normalizePath(metaDir)}/archive/2026-03-09T07-00-00.000Z.json`,
+            _id: 'b',
+            archived: 'watcher-b',
+          },
+        },
+      ],
+      cursor: null,
+    });
+
+    const watcher = makeWatcher([join(metaDir, 'meta.json')], scan);
+    app = Fastify();
+    registerMetasRoutes(
+      app,
+      makeDeps({ watcher: watcher as unknown as RouteDeps['watcher'] }),
+    );
+    await app.ready();
+
+    const encoded = encodeURIComponent(normalizePath(ownerDir));
+    const res = await app.inject({
+      method: 'GET',
+      url: `/metas/${encoded}?includeArchive=true`,
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ archive: Array<{ archived: string }> }>();
+    expect(scan).toHaveBeenCalledTimes(1);
+    expect(body.archive.map((entry) => entry.archived)).toEqual([
+      'watcher-b',
+      'watcher-a',
+    ]);
+  });
+
+  it('falls back to disk reads when watcher scan fails', async () => {
+    const watcher = makeWatcher(
+      [join(metaDir, 'meta.json')],
+      vi.fn().mockRejectedValue(new Error('watcher down')),
+    );
+    app = Fastify();
+    registerMetasRoutes(
+      app,
+      makeDeps({ watcher: watcher as unknown as RouteDeps['watcher'] }),
+    );
+    await app.ready();
+
+    const encoded = encodeURIComponent(normalizePath(ownerDir));
+    const res = await app.inject({
+      method: 'GET',
+      url: `/metas/${encoded}?includeArchive=1`,
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{ archive: Array<{ archived: string }> }>();
+    expect(body.archive.map((entry) => entry.archived)).toEqual(['disk-b']);
   });
 });

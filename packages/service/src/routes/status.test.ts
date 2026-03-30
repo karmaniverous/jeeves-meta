@@ -66,31 +66,33 @@ function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
 }
 
 interface StatusResponse {
-  service: string;
+  name: string;
   version: string;
   uptime: number;
-  status: string;
-  currentTarget: string | null;
-  queue: { depth: number; items: unknown[] };
-  stats: {
-    totalSyntheses: number;
-    totalTokens: number;
-    totalErrors: number;
-    lastCycleDurationMs: number | null;
-    lastCycleAt: string | null;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  health: {
+    currentTarget: string | null;
+    queue: { depth: number; items: unknown[] };
+    stats: {
+      totalSyntheses: number;
+      totalTokens: number;
+      totalErrors: number;
+      lastCycleDurationMs: number | null;
+      lastCycleAt: string | null;
+    };
+    schedule: {
+      expression: string;
+      nextAt: string | null;
+    };
+    dependencies: Record<string, unknown>;
   };
-  schedule: {
-    expression: string;
-    nextAt: string | null;
-  };
-  dependencies: Record<string, unknown>;
 }
 
 describe('GET /status', () => {
-  let app: FastifyInstance;
+  let app: FastifyInstance | undefined;
 
   afterEach(async () => {
-    await app.close();
+    await app?.close();
   });
 
   it('returns service name, version, uptime', async () => {
@@ -103,13 +105,13 @@ describe('GET /status', () => {
     expect(res.statusCode).toBe(200);
     const body = res.json<StatusResponse>();
 
-    expect(body.service).toBe('jeeves-meta');
+    expect(body.name).toBe('jeeves-meta');
     expect(typeof body.version).toBe('string');
     expect(typeof body.uptime).toBe('number');
-    expect(body.uptime).toBeGreaterThan(0);
+    expect(body.uptime).toBeGreaterThanOrEqual(0);
   });
 
-  it('reports status as idle when no synthesis running and deps unreachable', async () => {
+  it('returns SDK status and nested dependency health', async () => {
     const deps = makeDeps();
     app = Fastify();
     registerStatusRoute(app, deps);
@@ -118,9 +120,9 @@ describe('GET /status', () => {
     const res = await app.inject({ method: 'GET', url: '/status' });
     const body = res.json<StatusResponse>();
 
-    // Dependencies are unreachable in test (no real watcher/gateway)
-    // so status will be 'degraded' since health checks fail
-    expect(['idle', 'degraded']).toContain(body.status);
+    expect(body.status).toBe('healthy');
+    expect(body.health.dependencies).toHaveProperty('watcher');
+    expect(body.health.dependencies).toHaveProperty('gateway');
   });
 
   it('includes queue state', async () => {
@@ -137,9 +139,9 @@ describe('GET /status', () => {
     const res = await app.inject({ method: 'GET', url: '/status' });
     const body = res.json<StatusResponse>();
 
-    expect(body.queue).toBeDefined();
-    expect(body.queue.depth).toBe(2);
-    expect(body.queue.items).toHaveLength(2);
+    expect(body.health.queue).toBeDefined();
+    expect(body.health.queue.depth).toBe(2);
+    expect(body.health.queue.items).toHaveLength(2);
   });
 
   it('includes stats (totalSyntheses, totalTokens, etc.)', async () => {
@@ -151,11 +153,11 @@ describe('GET /status', () => {
     const res = await app.inject({ method: 'GET', url: '/status' });
     const body = res.json<StatusResponse>();
 
-    expect(body.stats.totalSyntheses).toBe(5);
-    expect(body.stats.totalTokens).toBe(12000);
-    expect(body.stats.totalErrors).toBe(1);
-    expect(body.stats.lastCycleDurationMs).toBe(45000);
-    expect(body.stats.lastCycleAt).toBe('2026-03-24T08:00:00Z');
+    expect(body.health.stats.totalSyntheses).toBe(5);
+    expect(body.health.stats.totalTokens).toBe(12000);
+    expect(body.health.stats.totalErrors).toBe(1);
+    expect(body.health.stats.lastCycleDurationMs).toBe(45000);
+    expect(body.health.stats.lastCycleAt).toBe('2026-03-24T08:00:00Z');
   });
 
   it('includes schedule info (expression, nextAt)', async () => {
@@ -167,16 +169,15 @@ describe('GET /status', () => {
     const res = await app.inject({ method: 'GET', url: '/status' });
     const body = res.json<StatusResponse>();
 
-    expect(body.schedule.expression).toBe('*/30 * * * *');
-    // No scheduler mock, so nextAt is null
-    expect(body.schedule.nextAt).toBeNull();
+    expect(body.health.schedule.expression).toBe('*/30 * * * *');
+    expect(body.health.schedule.nextAt).toBeNull();
   });
 
-  it('shows synthesizing status when queue has current item', async () => {
+  it('shows currentTarget in nested health when synthesis is active', async () => {
     const logger = makeLogger();
     const queue = new SynthesisQueue(logger);
     queue.enqueue('/meta/active');
-    queue.dequeue(); // moves to current
+    queue.dequeue();
 
     const deps = makeDeps({ queue });
     app = Fastify();
@@ -186,9 +187,7 @@ describe('GET /status', () => {
     const res = await app.inject({ method: 'GET', url: '/status' });
     const body = res.json<StatusResponse>();
 
-    // Status should be synthesizing (or degraded+synthesizing depending on deps)
-    // Since deps are unreachable, queue.current is checked before degraded
-    expect(body.status).toBe('synthesizing');
-    expect(body.currentTarget).toBe('/meta/active');
+    expect(body.status).toBe('healthy');
+    expect(body.health.currentTarget).toBe('/meta/active');
   });
 });

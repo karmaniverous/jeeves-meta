@@ -22,25 +22,10 @@ import type {
 export async function generateMetaMenu(
   client: MetaServiceClient,
 ): Promise<string> {
-  let status: StatusResponse;
-  let metas: MetasResponse;
-
-  try {
-    status = await client.status();
-    metas = await client.listMetas();
-  } catch {
-    return [
-      '> **ACTION REQUIRED: jeeves-meta service is unreachable.**',
-      '> The service API is down or not configured.',
-      '>',
-      '> **Troubleshooting:**',
-      '> - Verify the service is installed: `npm list -g @karmaniverous/jeeves-meta`',
-      '> - Check if running: `curl http://localhost:1938/status`',
-      '> - Verify `apiUrl` in plugin config if using a non-default port',
-      '>',
-      "> **Read the `jeeves-meta` skill's Bootstrapping section** for full setup guidance.",
-    ].join('\n');
-  }
+  const [status, metas]: [StatusResponse, MetasResponse] = await Promise.all([
+    client.status(),
+    client.listMetas(),
+  ]);
 
   if (metas.summary.total === 0) {
     return [

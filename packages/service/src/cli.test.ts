@@ -1,6 +1,20 @@
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
-import { loadServiceConfig, resolveConfigPath } from './configLoader.js';
+import {
+  loadServiceConfig,
+  migrateConfigPath,
+  resolveConfigPath,
+} from './configLoader.js';
 
 describe('resolveConfigPath', () => {
   it('returns --config flag value when present', () => {
@@ -88,5 +102,69 @@ describe('resolveConfigPath', () => {
 describe('loadServiceConfig', () => {
   it('throws on missing file', () => {
     expect(() => loadServiceConfig('/nonexistent/config.json')).toThrow();
+  });
+});
+
+describe('migrateConfigPath', () => {
+  const testRoot = join(
+    tmpdir(),
+    `jeeves-meta-migrate-test-${Date.now().toString()}`,
+  );
+
+  function cleanup() {
+    rmSync(testRoot, { recursive: true, force: true });
+  }
+
+  it('copies old config to new location when new does not exist', () => {
+    cleanup();
+    mkdirSync(testRoot, { recursive: true });
+
+    const oldPath = join(testRoot, 'jeeves-meta.config.json');
+    const newPath = join(testRoot, 'jeeves-meta', 'config.json');
+    const content = JSON.stringify({ watcherUrl: 'http://127.0.0.1:1936' });
+    writeFileSync(oldPath, content, 'utf8');
+
+    const warnings: string[] = [];
+    migrateConfigPath(testRoot, (msg) => warnings.push(msg));
+
+    expect(existsSync(newPath)).toBe(true);
+    expect(readFileSync(newPath, 'utf8')).toBe(content);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('Migrated config');
+
+    cleanup();
+  });
+
+  it('does not overwrite existing new config', () => {
+    cleanup();
+    mkdirSync(join(testRoot, 'jeeves-meta'), { recursive: true });
+
+    const oldPath = join(testRoot, 'jeeves-meta.config.json');
+    const newPath = join(testRoot, 'jeeves-meta', 'config.json');
+    writeFileSync(oldPath, '{"old":true}', 'utf8');
+    writeFileSync(newPath, '{"new":true}', 'utf8');
+
+    const warnings: string[] = [];
+    migrateConfigPath(testRoot, (msg) => warnings.push(msg));
+
+    expect(readFileSync(newPath, 'utf8')).toBe('{"new":true}');
+    expect(warnings).toHaveLength(0);
+
+    cleanup();
+  });
+
+  it('does nothing when old config does not exist', () => {
+    cleanup();
+    mkdirSync(testRoot, { recursive: true });
+
+    const warnings: string[] = [];
+    migrateConfigPath(testRoot, (msg) => warnings.push(msg));
+
+    expect(existsSync(join(testRoot, 'jeeves-meta', 'config.json'))).toBe(
+      false,
+    );
+    expect(warnings).toHaveLength(0);
+
+    cleanup();
   });
 });

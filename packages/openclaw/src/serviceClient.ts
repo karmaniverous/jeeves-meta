@@ -151,9 +151,14 @@ export class MetaServiceClient {
   }
 
   /** POST /seed — create .meta/ for a path. */
-  public async seed(path: string, crossRefs?: string[]): Promise<unknown> {
+  public async seed(
+    path: string,
+    crossRefs?: string[],
+    steer?: string,
+  ): Promise<unknown> {
     const body: Record<string, unknown> = { path };
     if (crossRefs !== undefined) body.crossRefs = crossRefs;
+    if (steer !== undefined) body.steer = steer;
     return this.post('/seed', body);
   }
 
@@ -166,5 +171,20 @@ export class MetaServiceClient {
   public async config(path?: string): Promise<unknown> {
     const qs = path ? '?path=' + encodeURIComponent(path) : '';
     return this.get('/config' + qs);
+  }
+
+  /** GET /queue — current queue state. */
+  public async queue(): Promise<unknown> {
+    return this.get('/queue');
+  }
+
+  /** POST /queue/clear — remove all pending queue items. */
+  public async clearQueue(): Promise<unknown> {
+    return this.post('/queue/clear', {});
+  }
+
+  /** POST /synthesize/abort — abort current synthesis. */
+  public async abort(): Promise<unknown> {
+    return this.post('/synthesize/abort', {});
   }
 }

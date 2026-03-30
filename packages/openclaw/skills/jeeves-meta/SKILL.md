@@ -86,6 +86,17 @@ filtering to extract specific settings. Sensitive fields (e.g.
 - `path` (optional): JSONPath expression (e.g. `$.schedule`). If omitted,
   returns the full sanitized config.
 
+### meta_queue
+Queue management: list pending items, clear the queue, or abort current
+synthesis. The synthesis queue is single-threaded; use this tool to inspect
+what's running, clear queued work, or abort a stuck synthesis.
+
+**Parameters:**
+- `action` (required): One of `list`, `clear`, `abort`.
+  - `list`: Show current queue state (current synthesis, pending items).
+  - `clear`: Remove all pending queue items.
+  - `abort`: Stop the currently running synthesis and release its lock.
+
 ## When to Use
 
 - **Checking synthesis health:** `meta_list`
@@ -99,6 +110,9 @@ filtering to extract specific settings. Sensitive fields (e.g.
 - **Checking cross-ref health:** `meta_detail` with path — `crossRefs` array shows resolved/missing status
 - **Clearing a stuck lock:** `meta_unlock` with path
 - **Inspecting service config:** `meta_config` with optional JSONPath
+- **Checking queue state:** `meta_queue` with action `list`
+- **Clearing queued work:** `meta_queue` with action `clear`
+- **Aborting stuck synthesis:** `meta_queue` with action `abort`
 - **Reading synthesis output:** Use `watcher_search` filtered by the properties
   configured in `metaProperty` (e.g. `{ "domains": ["meta"] }` in production).
   The default properties are `{ _meta: "current" }` for live metas and
@@ -490,9 +504,13 @@ The service exposes these endpoints (default port 1938):
 | GET | `/metas/:path` | Single meta detail with optional archive |
 | GET | `/preview` | Dry-run next synthesis candidate |
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
+| POST | `/synthesize/abort` | Abort the currently running synthesis |
 | POST | `/seed` | Create `.meta/` directory + meta.json |
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
+| POST | `/config/apply` | Apply a config patch (merge or replace) |
+| GET | `/queue` | Current queue state (current, pending, stats) |
+| POST | `/queue/clear` | Remove all pending queue items |
 
 All endpoints return JSON. The OpenClaw plugin tools are thin wrappers
 around these endpoints.

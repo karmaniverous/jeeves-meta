@@ -154,7 +154,7 @@ export async function synthesizeNode(
 
   // Step 9: Builder
   const metaForBuilder: MetaJson = { ...currentMeta, _builder: builderBrief };
-  let builderOutput: BuilderOutput | null = null;
+  let builderOutput: BuilderOutput;
   try {
     await onProgress?.({
       type: 'phase_start',

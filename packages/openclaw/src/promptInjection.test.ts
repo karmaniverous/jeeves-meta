@@ -111,13 +111,12 @@ describe('generateMetaMenu', () => {
     expect(menu).not.toContain('Watcher rules not registered');
   });
 
-  it('returns ACTION REQUIRED when service is unreachable', async () => {
+  it('throws when service is unreachable', async () => {
     const client = {
       status: vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
       listMetas: vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
     } as unknown as MetaServiceClient;
-    const menu = await generateMetaMenu(client);
-    expect(menu).toContain('ACTION REQUIRED');
+    await expect(generateMetaMenu(client)).rejects.toThrow('ECONNREFUSED');
   });
 
   it('returns ACTION REQUIRED when no entities found', async () => {

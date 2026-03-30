@@ -6,5 +6,6 @@
 
 export { listArchiveFiles } from './listArchive.js';
 export { pruneArchive } from './prune.js';
+export { readArchiveFromDisk, readArchiveFromWatcher } from './readArchive.js';
 export { readLatestArchive } from './readLatest.js';
 export { createSnapshot } from './snapshot.js';

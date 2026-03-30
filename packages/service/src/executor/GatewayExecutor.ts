@@ -19,6 +19,7 @@ import type {
   MetaSpawnResult,
 } from '../interfaces/index.js';
 import { sleep } from '../sleep.js';
+import { SpawnAbortedError } from './SpawnAbortedError.js';
 import { SpawnTimeoutError } from './SpawnTimeoutError.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 5000;
@@ -70,6 +71,7 @@ export class GatewayExecutor implements MetaExecutor {
   private readonly apiKey: string | undefined;
   private readonly pollIntervalMs: number;
   private readonly workspaceDir: string;
+  private controller: AbortController = new AbortController();
 
   constructor(options: GatewayExecutorOptions = {}) {
     this.gatewayUrl = (options.gatewayUrl ?? 'http://127.0.0.1:18789').replace(
@@ -79,6 +81,15 @@ export class GatewayExecutor implements MetaExecutor {
     this.apiKey = options.apiKey;
     this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
     this.workspaceDir = options.workspaceDir ?? join(tmpdir(), 'jeeves-meta');
+  }
+
+  /** Remove a temp output file if it exists. */
+  private cleanupOutputFile(outputPath: string): void {
+    try {
+      if (existsSync(outputPath)) unlinkSync(outputPath);
+    } catch {
+      /* best-effort cleanup */
+    }
   }
 
   /** Invoke a gateway tool via the /tools/invoke HTTP endpoint. */
@@ -137,10 +148,18 @@ export class GatewayExecutor implements MetaExecutor {
     }
   }
 
+  /** Abort the currently running spawn, if any. */
+  abort(): void {
+    this.controller.abort();
+  }
+
   async spawn(
     task: string,
     options?: MetaSpawnOptions,
   ): Promise<MetaSpawnResult> {
+    // Fresh controller for each spawn call
+    this.controller = new AbortController();
+
     const timeoutSeconds = options?.timeout ?? DEFAULT_TIMEOUT_MS / 1000;
     const timeoutMs = timeoutSeconds * 1000;
     const deadline = Date.now() + timeoutMs;
@@ -192,6 +211,12 @@ export class GatewayExecutor implements MetaExecutor {
     await sleep(3000);
 
     while (Date.now() < deadline) {
+      // Check for abort before each poll iteration
+      if (this.controller.signal.aborted) {
+        this.cleanupOutputFile(outputPath);
+        throw new SpawnAbortedError();
+      }
+
       try {
         const historyResult = await this.invoke('sessions_history', {
           sessionKey,

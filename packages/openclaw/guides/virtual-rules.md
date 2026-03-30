@@ -1,3 +1,7 @@
+---
+title: Virtual Rules
+---
+
 # Virtual Rules
 
 The jeeves-meta **service** registers three virtual inference rules with jeeves-watcher at startup. The plugin does not register rules.

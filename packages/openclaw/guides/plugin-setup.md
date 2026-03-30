@@ -1,3 +1,7 @@
+---
+title: Plugin Setup
+---
+
 # Plugin Setup
 
 ## Installation
@@ -47,7 +51,7 @@ The `configRoot` tells `@karmaniverous/jeeves` core where to find the platform c
 On gateway startup:
 
 1. Plugin calls `init({ workspacePath, configRoot })` from `@karmaniverous/jeeves`
-2. Registers 7 tools (`meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_config`)
+2. Registers 8 tools (`meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_config`, `meta_queue`)
 3. Creates a `ComponentWriter` via `createComponentWriter()` with a 73-second prime refresh interval
 4. `ComponentWriter` manages TOOLS.md section writing (section ordering, version stamps, locking) and platform content maintenance (SOUL.md/AGENTS.md)
 

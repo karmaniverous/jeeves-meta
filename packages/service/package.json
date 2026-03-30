@@ -41,7 +41,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.3.0",
+    "@karmaniverous/jeeves": "^0.4.4",
     "commander": "^14",
     "croner": "^10",
     "fastify": "^5.8",
@@ -51,6 +51,7 @@
     "zod": "^4.3"
   },
   "devDependencies": {
+    "@commander-js/extra-typings": "^14.0.0",
     "@dotenvx/dotenvx": "^1.55.1",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-json": "^6.1.0",
@@ -69,7 +70,7 @@
     "vitest": "^4.1.0"
   },
   "scripts": {
-    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.mjs",
     "knip": "knip",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",

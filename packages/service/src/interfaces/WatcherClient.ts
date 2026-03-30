@@ -1,8 +1,9 @@
 /**
  * Abstraction over the jeeves-watcher HTTP API.
  *
- * The service uses this for filesystem enumeration (POST /walk)
- * and virtual rule registration (POST /rules/register).
+ * The service uses this for filesystem enumeration (POST /walk),
+ * virtual rule registration (POST /rules/register), and archive reads
+ * via filter-only point scans (POST /scan).
  *
  * @module interfaces/WatcherClient
  */
@@ -23,6 +24,27 @@ export interface InferenceRuleSpec {
   template?: string;
   /** Render output format. */
   renderAs?: string;
+}
+
+/** Request shape for watcher scan queries. */
+export interface WatcherScanRequest {
+  filter: Record<string, unknown>;
+  limit?: number;
+  cursor?: string;
+  fields?: string[];
+  countOnly?: boolean;
+}
+
+/** A single point returned from watcher scan. */
+export interface WatcherScanPoint {
+  id?: string | number;
+  payload?: Record<string, unknown>;
+}
+
+/** Response shape for watcher scan queries. */
+export interface WatcherScanResult {
+  points: WatcherScanPoint[];
+  cursor: string | null;
 }
 
 /**
@@ -46,4 +68,15 @@ export interface WatcherClient {
    * @returns Promise resolving to array of matching file paths.
    */
   walk(globs: string[]): Promise<string[]>;
+
+  /**
+   * Run a filter-only point scan against the watcher index.
+   *
+   * Optional so narrow test doubles do not need to implement archive-read
+   * support unless a test exercises that path.
+   *
+   * @param request - Scan filter, pagination, and projection options.
+   * @returns Matching points and the next cursor.
+   */
+  scan?(request: WatcherScanRequest): Promise<WatcherScanResult>;
 }

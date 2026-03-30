@@ -1,3 +1,7 @@
+---
+title: Orchestration
+---
+
 # Orchestration
 
 The `orchestrate()` function runs a single synthesis cycle in 13 steps:

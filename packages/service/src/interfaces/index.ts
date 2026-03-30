@@ -10,4 +10,10 @@ export type {
   MetaSpawnOptions,
   MetaSpawnResult,
 } from './MetaExecutor.js';
-export type { InferenceRuleSpec, WatcherClient } from './WatcherClient.js';
+export type {
+  InferenceRuleSpec,
+  WatcherClient,
+  WatcherScanPoint,
+  WatcherScanRequest,
+  WatcherScanResult,
+} from './WatcherClient.js';

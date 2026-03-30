@@ -7,14 +7,17 @@
 import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
+import type { GatewayExecutor } from '../executor/index.js';
+import type { WatcherClient } from '../interfaces/index.js';
 import type { SynthesisQueue } from '../queue/index.js';
 import type { RuleRegistrar } from '../rules/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 import type { ServiceConfig } from '../schema/config.js';
-import type { HttpWatcherClient } from '../watcher-client/index.js';
 import { registerConfigRoute } from './config.js';
+import { registerConfigApplyRoute } from './configApply.js';
 import { registerMetasRoutes } from './metas.js';
 import { registerPreviewRoute } from './preview.js';
+import { registerQueueRoutes } from './queue.js';
 import { registerSeedRoute } from './seed.js';
 import { registerStatusRoute } from './status.js';
 import { registerSynthesizeRoute } from './synthesize.js';
@@ -34,11 +37,13 @@ export interface RouteDeps {
   config: ServiceConfig;
   logger: Logger;
   queue: SynthesisQueue;
-  watcher: HttpWatcherClient;
+  watcher: WatcherClient;
   scheduler: Scheduler | null;
   stats: ServiceStats;
   /** Rule registrar for reporting registration state in /status. */
   registrar?: RuleRegistrar;
+  /** Executor instance for abort support. */
+  executor?: Pick<GatewayExecutor, 'abort'>;
   /** Set to true during graceful shutdown. */
   shuttingDown?: boolean;
 }
@@ -76,4 +81,6 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
   registerSeedRoute(app, deps);
   registerUnlockRoute(app, deps);
   registerConfigRoute(app, deps);
+  registerConfigApplyRoute(app);
+  registerQueueRoutes(app, deps);
 }

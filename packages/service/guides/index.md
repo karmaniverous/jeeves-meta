@@ -1,9 +1,21 @@
+---
+title: Service Guides
+children:
+  - ./concepts.md
+  - ./configuration.md
+  - ./orchestration.md
+  - ./scheduling.md
+  - ./architecture.md
+  - ./cli.md
+  - ../CHANGELOG.md
+---
+
 # Service Guides
 
-- **[Concepts](concepts.md)** — meta entities, ownership trees, synthesis cycles
-- **[Configuration](configuration.md)** — all config fields with defaults
-- **[Orchestration](orchestration.md)** — the 13-step synthesis cycle
-- **[Scheduling](scheduling.md)** — weighted staleness formula and backoff
-- **[Architecture](architecture.md)** — service components and data flow
-- **[CLI Reference](cli.md)** — all commands with usage
-
+- [Concepts](./concepts.md) — Meta entities, ownership trees, synthesis cycles, cross-references, and progressive synthesis.
+- [Configuration](./configuration.md) — All config fields with defaults, hot-reload behavior, environment variable substitution, and prompt system.
+- [Orchestration](./orchestration.md) — The 13-step synthesis cycle, module structure, error handling, and lock staging.
+- [Scheduling](./scheduling.md) — Weighted staleness formula, adaptive backoff, and queue processing.
+- [Architecture](./architecture.md) — Service components, data flow, virtual rules, and port allocation.
+- [CLI Reference](./cli.md) — All commands with usage.
+- [Changelog](../CHANGELOG.md) — Release history for `@karmaniverous/jeeves-meta`.

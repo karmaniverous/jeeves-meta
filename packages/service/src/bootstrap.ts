@@ -6,6 +6,12 @@
 
 import { watchFile } from 'node:fs';
 
+import { getBindAddress } from '@karmaniverous/jeeves';
+
+import {
+  applyHotReloadedConfig,
+  registerConfigHotReloadRuntime,
+} from './configHotReload.js';
 import { loadServiceConfig } from './configLoader.js';
 import { listMetas } from './discovery/index.js';
 import { GatewayExecutor } from './executor/index.js';
@@ -69,7 +75,14 @@ export async function startService(
     watcher,
     scheduler,
     stats,
+    executor,
   };
+
+  registerConfigHotReloadRuntime({
+    config,
+    logger,
+    scheduler,
+  });
 
   const server = createServer({
     logger,
@@ -77,9 +90,10 @@ export async function startService(
   });
 
   // Start HTTP server
+  const bindAddress = getBindAddress('meta');
   try {
-    await server.listen({ port: config.port, host: config.host });
-    logger.info({ port: config.port, host: config.host }, 'Service listening');
+    await server.listen({ port: config.port, host: bindAddress });
+    logger.info({ port: config.port, host: bindAddress }, 'Service listening');
   } catch (err) {
     logger.error(err, 'Failed to start service');
     process.exit(1);
@@ -196,66 +210,10 @@ export async function startService(
   healthCheck.start();
 
   // Config hot-reload (gap #12, expanded #32)
-  // Fields requiring a service restart to take effect
-  const restartRequiredFields = [
-    'port',
-    'host',
-    'watcherUrl',
-    'gatewayUrl',
-    'gatewayApiKey',
-    'defaultArchitect',
-    'defaultCritic',
-  ] as const;
-
   if (configPath) {
     watchFile(configPath, { interval: 5000 }, () => {
       try {
-        const newConfig = loadServiceConfig(configPath);
-
-        // Warn about restart-required field changes
-        for (const field of restartRequiredFields) {
-          const oldVal = config[field];
-          const newVal = newConfig[field];
-          if (oldVal !== newVal) {
-            logger.warn(
-              { field, oldValue: oldVal, newValue: newVal },
-              'Config field changed but requires restart to take effect',
-            );
-          }
-        }
-
-        // Hot-reload schedule
-        if (newConfig.schedule !== config.schedule) {
-          scheduler.updateSchedule(newConfig.schedule);
-          logger.info(
-            { schedule: newConfig.schedule },
-            'Schedule hot-reloaded',
-          );
-        }
-
-        // Hot-reload logging level
-        if (newConfig.logging.level !== config.logging.level) {
-          logger.level = newConfig.logging.level;
-          logger.info(
-            { level: newConfig.logging.level },
-            'Log level hot-reloaded',
-          );
-        }
-
-        // Merge all non-restart-required fields into shared config ref.
-        // newConfig is Zod-parsed, so removed fields get defaults — no deletion needed.
-        const restartSet = new Set<string>(restartRequiredFields);
-        for (const key of Object.keys(newConfig)) {
-          if (restartSet.has(key) || key === 'logging') continue;
-
-          const oldVal = (config as Record<string, unknown>)[key];
-          const newVal = (newConfig as Record<string, unknown>)[key];
-
-          if (JSON.stringify(oldVal) !== JSON.stringify(newVal)) {
-            (config as Record<string, unknown>)[key] = newVal;
-            logger.info({ field: key }, 'Config field hot-reloaded');
-          }
-        }
+        applyHotReloadedConfig(loadServiceConfig(configPath));
       } catch (err) {
         logger.warn({ err }, 'Config hot-reload failed');
       }

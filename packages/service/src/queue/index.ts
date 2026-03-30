@@ -137,6 +137,24 @@ export class SynthesisQueue {
     return [...this.queue];
   }
 
+  /** A shallow copy of the pending items (alias for items). */
+  get pending(): QueueItem[] {
+    return [...this.queue];
+  }
+
+  /**
+   * Remove all pending items from the queue.
+   *
+   * Does not affect the currently-running item.
+   *
+   * @returns The number of items removed.
+   */
+  clear(): number {
+    const count = this.queue.length;
+    this.queue = [];
+    return count;
+  }
+
   /**
    * Check whether a path is in the queue or currently being synthesized.
    *
