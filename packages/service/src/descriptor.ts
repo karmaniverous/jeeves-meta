@@ -7,11 +7,15 @@
  * @module descriptor
  */
 
+import { dirname } from 'node:path';
+
 import {
+  init,
   type JeevesComponentDescriptor,
   jeevesComponentDescriptorSchema,
 } from '@karmaniverous/jeeves';
 
+import { startService } from './bootstrap.js';
 import {
   applyHotReloadedConfig,
   RESTART_REQUIRED_FIELDS,
@@ -46,6 +50,14 @@ export const metaDescriptor: JeevesComponentDescriptor =
       const parsed = serviceConfigSchema.parse(merged);
       applyHotReloadedConfig(parsed);
       return Promise.resolve();
+    },
+    run: async (configPath: string) => {
+      init({
+        workspacePath: process.cwd(),
+        configRoot: dirname(configPath),
+      });
+      const config = loadServiceConfig(configPath);
+      await startService(config, configPath);
     },
     startCommand: (configPath: string) => [
       'node',
