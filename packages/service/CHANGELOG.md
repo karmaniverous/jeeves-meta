@@ -2,10 +2,45 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.11.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.2...0.11.3)
+#### [0.12.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.1...0.12.2)
+
+- feat: integrate core 0.4.5 — descriptor.run + start recursion fix [`#87`](https://github.com/karmaniverous/jeeves-meta/pull/87)
+- feat: integrate core 0.4.5 — add descriptor.run, fix start recursion [`62bbf9d`](https://github.com/karmaniverous/jeeves-meta/commit/62bbf9dd357aa0d5fda1251e573d83fe0ef84c47)
+
+#### [service/0.12.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.0...service/0.12.1)
+
+> 30 March 2026
+
+- fix: correct startCommand path in service descriptor [`#86`](https://github.com/karmaniverous/jeeves-meta/pull/86)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.9.0 [`3063f49`](https://github.com/karmaniverous/jeeves-meta/commit/3063f492ccad7b5f6aea65388b62215b815fd457)
+- chore: release @karmaniverous/jeeves-meta v0.12.1 [`9e7e7aa`](https://github.com/karmaniverous/jeeves-meta/commit/9e7e7aa378326ce57d95a45124042f914f95f8d9)
+- fix: correct startCommand path in descriptor (dist/cli.js → dist/cli/jeeves-meta/index.js) [`061fac5`](https://github.com/karmaniverous/jeeves-meta/commit/061fac5c8541733f81365a4b76c315b59c38f779)
+
+#### [service/0.12.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.3...service/0.12.0)
+
+> 30 March 2026
+
+- chore: update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6 [`#85`](https://github.com/karmaniverous/jeeves-meta/pull/85)
+- chore: update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6, typedoc 0.28.18, typescript-eslint 8.57.2 [`09ebc21`](https://github.com/karmaniverous/jeeves-meta/commit/09ebc219e8daf5d7f44b8bb8be891e7b5b047f5a)
+- feat: Phase 3 — service CLI + plugin toolset + plugin CLI (M3, M4, M7, M7b) [`b89655e`](https://github.com/karmaniverous/jeeves-meta/commit/b89655e1e4487278137d2329855ceaf252ecca29)
+- feat: Phase 2 — config apply, status handler, queue management, archive watcher scan (M5, M5b, M7c) [`0f9d7f0`](https://github.com/karmaniverous/jeeves-meta/commit/0f9d7f0732cffd8f01cca1d4a4be4cbcd1a81400)
+- feat: Phase 1 — config migration, descriptor, bind address (M1, M2, M6) [`0ab7ba5`](https://github.com/karmaniverous/jeeves-meta/commit/0ab7ba59071fa76930024d04552a8cbafdac7339)
+- refactor: tighten SOLID and DRY in service routes [`baf74d2`](https://github.com/karmaniverous/jeeves-meta/commit/baf74d25d7006fac24f3e1744e3757610c9f339d)
+- test: add configHotReload coverage (12 tests) [`7215b13`](https://github.com/karmaniverous/jeeves-meta/commit/7215b13b16c6fa50a078c7b3097a98e93365aa16)
+- docs: add front matter to guides (title + children pattern from jeeves-server) [`c5408ad`](https://github.com/karmaniverous/jeeves-meta/commit/c5408adbd972102680eaeac0db9f679da024f8fc)
+- docs: sync tools, guides, and READMEs with implementation [`d8838f8`](https://github.com/karmaniverous/jeeves-meta/commit/d8838f8d167ee487f842a792321ae19e2fabecab)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.8.3 [`e9a9fdb`](https://github.com/karmaniverous/jeeves-meta/commit/e9a9fdbf1139a0d4114de89b60ee8e8a3325d2e1)
+- chore: release @karmaniverous/jeeves-meta v0.12.0 [`52c13c2`](https://github.com/karmaniverous/jeeves-meta/commit/52c13c29f7f118d62eef44749409597c38ff3091)
+- ci: add cloud sync workflow (matches jeeves-watcher/runner) [`6187592`](https://github.com/karmaniverous/jeeves-meta/commit/6187592b59ef0a430277f96d730ce0e55858fc5a)
+- fix: handle invalid JSON in crossRefs parameter (PR review feedback) [`16cdcc3`](https://github.com/karmaniverous/jeeves-meta/commit/16cdcc34f16d9936615b06cde39d543c62e589b7)
+
+#### [service/0.11.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.11.2...service/0.11.3)
+
+> 28 March 2026
 
 - fix: use character-class glob escaping for Windows compatibility [`#81`](https://github.com/karmaniverous/jeeves-meta/pull/81)
 - npm audit fix [`8247c0e`](https://github.com/karmaniverous/jeeves-meta/commit/8247c0e5d7d6a4435d29eeae22c88050317b89c5)
+- chore: release @karmaniverous/jeeves-meta v0.11.3 [`c62d389`](https://github.com/karmaniverous/jeeves-meta/commit/c62d3896f8cfc9baa968082ab17c2bbf6a7092a8)
 - Merge pull request #83 from karmaniverous/fix/linux-path-dirname [`6263b1a`](https://github.com/karmaniverous/jeeves-meta/commit/6263b1a55ffce68eaf061fbb8378a52df5bea035)
 - fix: use character-class glob escaping instead of backslash escaping for Windows compatibility [`5f8bc9a`](https://github.com/karmaniverous/jeeves-meta/commit/5f8bc9a2cf7a3d4d4b0d8d899c6edc0339ce54e1)
 - ci: add linux-compat workflow via shared gha-workflows [`816f0c6`](https://github.com/karmaniverous/jeeves-meta/commit/816f0c6611de8977d9419a4b024740efd9da94fd)
