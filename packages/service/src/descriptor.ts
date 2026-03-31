@@ -7,10 +7,7 @@
  * @module descriptor
  */
 
-import { dirname } from 'node:path';
-
 import {
-  init,
   type JeevesComponentDescriptor,
   jeevesComponentDescriptorSchema,
 } from '@karmaniverous/jeeves';
@@ -52,10 +49,6 @@ export const metaDescriptor: JeevesComponentDescriptor =
       return Promise.resolve();
     },
     run: async (configPath: string) => {
-      init({
-        workspacePath: process.cwd(),
-        configRoot: dirname(configPath),
-      });
       const config = loadServiceConfig(configPath);
       await startService(config, configPath);
     },
