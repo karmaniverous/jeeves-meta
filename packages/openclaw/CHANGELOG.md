@@ -2,11 +2,22 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.9.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.0...0.9.1)
+#### [0.9.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.1...0.9.2)
+
+- chore: integrate core 0.4.6 — remove init() workaround [`#89`](https://github.com/karmaniverous/jeeves-meta/pull/89)
+- chore: release @karmaniverous/jeeves-meta v0.12.3 [`6dbbcd4`](https://github.com/karmaniverous/jeeves-meta/commit/6dbbcd456c484bd6104ce0485bfbf9f0fca7739d)
+- chore: resolve merge conflicts with main, bump core to ^0.4.6 [`01cbb71`](https://github.com/karmaniverous/jeeves-meta/commit/01cbb71ee54032609175d6d135b93b449dfe0025)
+- feat: integrate core 0.4.5 — add descriptor.run, fix start recursion [`5e70b99`](https://github.com/karmaniverous/jeeves-meta/commit/5e70b9912784f25a9e9c9b830c85666c38ce126e)
+- chore: integrate core 0.4.6 — remove init() workaround from descriptor.run [`0bc089b`](https://github.com/karmaniverous/jeeves-meta/commit/0bc089bd35c849a41bb61370482696107493a6a3)
+
+#### [openclaw/0.9.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.0...openclaw/0.9.1)
+
+> 31 March 2026
 
 - feat: integrate core 0.4.5 — descriptor.run + start recursion fix [`#87`](https://github.com/karmaniverous/jeeves-meta/pull/87)
 - fix: correct startCommand path in service descriptor [`#86`](https://github.com/karmaniverous/jeeves-meta/pull/86)
 - feat: integrate core 0.4.5 — add descriptor.run, fix start recursion [`62bbf9d`](https://github.com/karmaniverous/jeeves-meta/commit/62bbf9dd357aa0d5fda1251e573d83fe0ef84c47)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.9.1 [`da6df48`](https://github.com/karmaniverous/jeeves-meta/commit/da6df48b373dff41c31a5b85f7a5861ba7d0c21a)
 - chore: release @karmaniverous/jeeves-meta v0.12.1 [`9e7e7aa`](https://github.com/karmaniverous/jeeves-meta/commit/9e7e7aa378326ce57d95a45124042f914f95f8d9)
 - chore: release @karmaniverous/jeeves-meta v0.12.2 [`1733c83`](https://github.com/karmaniverous/jeeves-meta/commit/1733c83a787cdf13fd4f1c9334869444ce2a316c)
 - fix: correct startCommand path in descriptor (dist/cli.js → dist/cli/jeeves-meta/index.js) [`061fac5`](https://github.com/karmaniverous/jeeves-meta/commit/061fac5c8541733f81365a4b76c315b59c38f779)
