@@ -32,7 +32,13 @@ export async function isStale(
   if (!meta._generatedAt) return true; // Never synthesized = stale
 
   const files = await watcher.walk([`${escapeGlob(scopePrefix)}/**`]);
-  return hasModifiedAfter(files, new Date(meta._generatedAt).getTime());
+
+  // Exclude .meta/ subtree — synthesis outputs must not trigger staleness.
+  // Handle both forward and back slashes for cross-platform compatibility.
+  const metaSep = /[/\\]\.meta(?:[/\\]|$)/;
+  const filtered = files.filter((f) => !metaSep.test(f));
+
+  return hasModifiedAfter(filtered, new Date(meta._generatedAt).getTime());
 }
 
 /** Maximum staleness for never-synthesized metas (1 year in seconds). */
