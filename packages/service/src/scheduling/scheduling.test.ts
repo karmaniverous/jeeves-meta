@@ -1,4 +1,4 @@
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -212,6 +212,77 @@ describe('isStale', () => {
     const meta = makeMeta({ _generatedAt: '2099-01-01T00:00:00Z' });
     const result = await isStale('.', meta, mockWatcher([file]));
     expect(result).toBe(false);
+  });
+
+  it('excludes .meta/ files from staleness check (forward slash)', async () => {
+    // Create real .meta/ files so statSync can read their mtimes
+    const base = join(tmpdir(), `meta-fwd-${String(Date.now())}`);
+    const metaDir = join(base, '.meta');
+    const archiveDir = join(metaDir, 'archive');
+    mkdirSync(archiveDir, { recursive: true });
+    const metaFile = join(metaDir, 'meta.json');
+    const archiveFile = join(archiveDir, 'snap.json');
+    writeFileSync(metaFile, '{}');
+    writeFileSync(archiveFile, '{}');
+
+    // Files were just created so their mtime is "now", but they live under .meta/
+    const meta = makeMeta({ _generatedAt: '2000-01-01T00:00:00Z' });
+    // Use forward-slash paths as watcher normalizes to forward slashes
+    const result = await isStale(
+      base.replace(/\\/g, '/'),
+      meta,
+      mockWatcher([
+        metaFile.replace(/\\/g, '/'),
+        archiveFile.replace(/\\/g, '/'),
+      ]),
+    );
+    expect(result).toBe(false);
+  });
+
+  it('excludes .meta/ files from staleness check (backslash)', async () => {
+    // Create real .meta/ files with backslash paths (Windows-style)
+    const base = join(tmpdir(), `meta-back-${String(Date.now())}`);
+    const metaDir = join(base, '.meta');
+    const archiveDir = join(metaDir, 'archive');
+    mkdirSync(archiveDir, { recursive: true });
+    const metaFile = join(metaDir, 'meta.json');
+    const archiveFile = join(archiveDir, 'snap.json');
+    writeFileSync(metaFile, '{}');
+    writeFileSync(archiveFile, '{}');
+
+    const meta = makeMeta({ _generatedAt: '2000-01-01T00:00:00Z' });
+    // Use backslash paths as they appear on Windows
+    const result = await isStale(
+      base.replace(/\//g, '\\'),
+      meta,
+      mockWatcher([
+        metaFile.replace(/\//g, '\\'),
+        archiveFile.replace(/\//g, '\\'),
+      ]),
+    );
+    expect(result).toBe(false);
+  });
+
+  it('still detects staleness for non-.meta/ files alongside .meta/ files', async () => {
+    // Create a real non-.meta file AND a real .meta file
+    const base = join(tmpdir(), `meta-mix-${String(Date.now())}`);
+    const metaDir = join(base, '.meta');
+    mkdirSync(metaDir, { recursive: true });
+    const metaFile = join(metaDir, 'meta.json');
+    const realFile = join(base, 'data.txt');
+    writeFileSync(metaFile, '{}');
+    writeFileSync(realFile, 'content');
+
+    const meta = makeMeta({ _generatedAt: '2000-01-01T00:00:00Z' });
+    const result = await isStale(
+      base.replace(/\\/g, '/'),
+      meta,
+      mockWatcher([
+        metaFile.replace(/\\/g, '/'),
+        realFile.replace(/\\/g, '/'), // real non-.meta file with recent mtime
+      ]),
+    );
+    expect(result).toBe(true);
   });
 });
 
