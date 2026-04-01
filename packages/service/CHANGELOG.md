@@ -2,9 +2,18 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.12.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.2...0.12.3)
+#### [0.12.4](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.3...0.12.4)
+
+- fix: exclude .meta/ from isStale() mtime check [`#96`](https://github.com/karmaniverous/jeeves-meta/pull/96)
+- fix: exclude .meta/ from isStale() mtime check (fixes #95) [`#95`](https://github.com/karmaniverous/jeeves-meta/issues/95)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.9.2 [`5b850dd`](https://github.com/karmaniverous/jeeves-meta/commit/5b850ddc8a938ca73c88d5c928fa96308a6cebb3)
+
+#### [service/0.12.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.2...service/0.12.3)
+
+> 31 March 2026
 
 - chore: integrate core 0.4.6 — remove init() workaround [`#89`](https://github.com/karmaniverous/jeeves-meta/pull/89)
+- chore: release @karmaniverous/jeeves-meta v0.12.3 [`6dbbcd4`](https://github.com/karmaniverous/jeeves-meta/commit/6dbbcd456c484bd6104ce0485bfbf9f0fca7739d)
 - chore: resolve merge conflicts with main, bump core to ^0.4.6 [`01cbb71`](https://github.com/karmaniverous/jeeves-meta/commit/01cbb71ee54032609175d6d135b93b449dfe0025)
 - feat: integrate core 0.4.5 — add descriptor.run, fix start recursion [`5e70b99`](https://github.com/karmaniverous/jeeves-meta/commit/5e70b9912784f25a9e9c9b830c85666c38ce126e)
 - chore: integrate core 0.4.6 — remove init() workaround from descriptor.run [`0bc089b`](https://github.com/karmaniverous/jeeves-meta/commit/0bc089bd35c849a41bb61370482696107493a6a3)
