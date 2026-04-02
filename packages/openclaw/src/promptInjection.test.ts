@@ -18,11 +18,14 @@ function mockClient(overrides?: {
   metasOverrides?: Partial<MetasResponse>;
 }): MetaServiceClient {
   const defaultStatus: StatusResponse = {
+    name: 'jeeves-meta',
     uptime: 3600,
-    status: 'idle',
-    dependencies: {
-      watcher: { status: 'ok', rulesRegistered: true },
-      gateway: { status: 'ok' },
+    status: 'healthy',
+    health: {
+      dependencies: {
+        watcher: { status: 'ok', rulesRegistered: true },
+        gateway: { status: 'ok' },
+      },
     },
   };
 
@@ -61,9 +64,11 @@ describe('generateMetaMenu', () => {
   it('shows warning when rulesRegistered is false', async () => {
     const client = mockClient({
       statusOverrides: {
-        dependencies: {
-          watcher: { status: 'ok', rulesRegistered: false },
-          gateway: { status: 'ok' },
+        health: {
+          dependencies: {
+            watcher: { status: 'ok', rulesRegistered: false },
+            gateway: { status: 'ok' },
+          },
         },
       },
     });
@@ -80,9 +85,11 @@ describe('generateMetaMenu', () => {
   it('shows watcher status warning when watcher is down', async () => {
     const client = mockClient({
       statusOverrides: {
-        dependencies: {
-          watcher: { status: 'unreachable', rulesRegistered: false },
-          gateway: { status: 'ok' },
+        health: {
+          dependencies: {
+            watcher: { status: 'unreachable', rulesRegistered: false },
+            gateway: { status: 'ok' },
+          },
         },
       },
     });
@@ -94,13 +101,15 @@ describe('generateMetaMenu', () => {
   it('shows indexing message when watcher is indexing', async () => {
     const client = mockClient({
       statusOverrides: {
-        dependencies: {
-          watcher: {
-            status: 'indexing',
-            rulesRegistered: true,
-            indexing: true,
+        health: {
+          dependencies: {
+            watcher: {
+              status: 'indexing',
+              rulesRegistered: true,
+              indexing: true,
+            },
+            gateway: { status: 'ok' },
           },
-          gateway: { status: 'ok' },
         },
       },
     });
@@ -143,9 +152,11 @@ describe('generateMetaMenu', () => {
   it('shows gateway warning when gateway is unreachable', async () => {
     const client = mockClient({
       statusOverrides: {
-        dependencies: {
-          watcher: { status: 'ok', rulesRegistered: true },
-          gateway: { status: 'unreachable' },
+        health: {
+          dependencies: {
+            watcher: { status: 'ok', rulesRegistered: true },
+            gateway: { status: 'unreachable' },
+          },
         },
       },
     });

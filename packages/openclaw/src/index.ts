@@ -74,6 +74,13 @@ export default function register(api: PluginApi): void {
         '-c',
         configPath,
       ],
+      // Plugin-side descriptor is only used by ComponentWriter for managed
+      // content. The real run callback lives in the service descriptor.
+      run: () => {
+        return Promise.reject(
+          new Error('run() is not available on the plugin-side descriptor'),
+        );
+      },
       sectionId: 'Meta',
       refreshIntervalSeconds: 73,
       generateToolsContent: getContent,

@@ -64,27 +64,29 @@ export async function generateMetaMenu(
     : 'n/a';
 
   // Service status + dependency health
+  // The core SDK's createStatusHandler nests getHealth() under `health`.
+  const { dependencies } = status.health;
   const depLines: string[] = [];
-  if (status.dependencies.watcher.status === 'indexing') {
+  if (dependencies.watcher.status === 'indexing') {
     depLines.push(
       '> ⏳ **Watcher indexing**: Initial filesystem scan in progress. Synthesis will resume when complete.',
     );
   } else if (
-    status.dependencies.watcher.status !== 'ok' &&
-    status.dependencies.watcher.status !== 'indexing'
+    dependencies.watcher.status !== 'ok' &&
+    dependencies.watcher.status !== 'indexing'
   ) {
-    depLines.push('> ⚠️ **Watcher**: ' + status.dependencies.watcher.status);
+    depLines.push('> ⚠️ **Watcher**: ' + dependencies.watcher.status);
   }
   if (
-    status.dependencies.watcher.rulesRegistered === false &&
-    status.dependencies.watcher.status === 'ok'
+    dependencies.watcher.rulesRegistered === false &&
+    dependencies.watcher.status === 'ok'
   ) {
     depLines.push(
       '> ⚠️ **Watcher rules not registered**: Meta files may not render properly in search/server.',
     );
   }
-  if (status.dependencies.gateway.status !== 'ok') {
-    depLines.push('> ⚠️ **Gateway**: ' + status.dependencies.gateway.status);
+  if (dependencies.gateway.status !== 'ok') {
+    depLines.push('> ⚠️ **Gateway**: ' + dependencies.gateway.status);
   }
 
   return [
