@@ -8,22 +8,40 @@
  * @module serviceClient
  */
 
-/** Service status response from GET /status. */
+/** Watcher dependency health within the status response. */
+export interface WatcherDepHealth {
+  status: string;
+  rulesRegistered?: boolean;
+  indexing?: boolean;
+}
+
+/** Gateway dependency health within the status response. */
+export interface GatewayDepHealth {
+  status: string;
+}
+
+/**
+ * Service status response from GET /status.
+ *
+ * The jeeves-core `createStatusHandler` wraps `getHealth()` output under
+ * a top-level `health` key. Dependency info lives at `health.dependencies`.
+ */
 export interface StatusResponse {
+  /** Service name. */
+  name: string;
   /** Service uptime in seconds. */
   uptime: number;
-  /** Current service status (idle, synthesizing, stopping, degraded). */
+  /** Overall status (healthy, degraded, unhealthy). */
   status: string;
   /** Service version. */
   version?: string;
-  /** Dependency health. */
-  dependencies: {
-    watcher: {
-      status: string;
-      rulesRegistered?: boolean;
-      indexing?: boolean;
+  /** Component-specific health details from getHealth(). */
+  health: {
+    dependencies: {
+      watcher: WatcherDepHealth;
+      gateway: GatewayDepHealth;
     };
-    gateway: { status: string };
+    [key: string]: unknown;
   };
 }
 
