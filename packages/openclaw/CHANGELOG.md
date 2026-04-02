@@ -2,9 +2,21 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.9.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.1...0.9.2)
+#### [0.9.3](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.2...0.9.3)
+
+- fix: plugin descriptor + StatusResponse alignment [`#99`](https://github.com/karmaniverous/jeeves-meta/pull/99)
+- fix: exclude .meta/ from isStale() mtime check [`#96`](https://github.com/karmaniverous/jeeves-meta/pull/96)
+- fix: align StatusResponse with actual /status shape, add run stub to descriptor [`#97`](https://github.com/karmaniverous/jeeves-meta/issues/97) [`#98`](https://github.com/karmaniverous/jeeves-meta/issues/98)
+- fix: exclude .meta/ from isStale() mtime check (fixes #95) [`#95`](https://github.com/karmaniverous/jeeves-meta/issues/95)
+- npm audit fix [`61c8760`](https://github.com/karmaniverous/jeeves-meta/commit/61c8760eff3a57fef36e571b76611b0cd85f4a6a)
+- chore: release @karmaniverous/jeeves-meta v0.12.4 [`4042093`](https://github.com/karmaniverous/jeeves-meta/commit/4042093e391bf94d93465954885989e0b4ebf92e)
+
+#### [openclaw/0.9.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.1...openclaw/0.9.2)
+
+> 31 March 2026
 
 - chore: integrate core 0.4.6 — remove init() workaround [`#89`](https://github.com/karmaniverous/jeeves-meta/pull/89)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.9.2 [`5b850dd`](https://github.com/karmaniverous/jeeves-meta/commit/5b850ddc8a938ca73c88d5c928fa96308a6cebb3)
 - chore: release @karmaniverous/jeeves-meta v0.12.3 [`6dbbcd4`](https://github.com/karmaniverous/jeeves-meta/commit/6dbbcd456c484bd6104ce0485bfbf9f0fca7739d)
 - chore: resolve merge conflicts with main, bump core to ^0.4.6 [`01cbb71`](https://github.com/karmaniverous/jeeves-meta/commit/01cbb71ee54032609175d6d135b93b449dfe0025)
 - feat: integrate core 0.4.5 — add descriptor.run, fix start recursion [`5e70b99`](https://github.com/karmaniverous/jeeves-meta/commit/5e70b9912784f25a9e9c9b830c85666c38ce126e)
