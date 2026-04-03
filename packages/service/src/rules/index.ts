@@ -147,7 +147,7 @@ function buildMetaRules(config: MetaConfig) {
         properties: {
           file: {
             properties: {
-              path: { type: 'string', glob: '**/jeeves-meta.config.json' },
+              path: { type: 'string', glob: '**/jeeves-meta{.config.json,/config.json}' },
             },
           },
         },
