@@ -91,9 +91,6 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   /** HTTP port for the service (default: 1938). */
   port: z.number().int().min(1).max(65535).default(1938),
 
-  /** Bind address for the HTTP server (default: 127.0.0.1). */
-  host: z.string().default('127.0.0.1'),
-
   /** Cron schedule for synthesis cycles (default: every 30 min). */
   schedule: z.string().default('*/30 * * * *'),
 

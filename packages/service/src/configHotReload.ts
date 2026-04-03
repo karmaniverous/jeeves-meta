@@ -20,7 +20,6 @@ import type { ServiceConfig } from './schema/config.js';
  */
 export const RESTART_REQUIRED_FIELDS = [
   'port',
-  'host',
   'watcherUrl',
   'gatewayUrl',
   'gatewayApiKey',
