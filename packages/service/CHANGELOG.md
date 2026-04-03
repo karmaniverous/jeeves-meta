@@ -2,11 +2,40 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.12.4](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.3...0.12.4)
+#### [0.13.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.4...0.13.0)
+
+- feat: core v0.5.1 adoption + housekeeping (service 0.13.0 / plugin 0.10.0) [`#101`](https://github.com/karmaniverous/jeeves-meta/pull/101)
+- fix: plugin descriptor + StatusResponse alignment [`#99`](https://github.com/karmaniverous/jeeves-meta/pull/99)
+- fix: align StatusResponse with actual /status shape, add run stub to descriptor [`#97`](https://github.com/karmaniverous/jeeves-meta/issues/97) [`#98`](https://github.com/karmaniverous/jeeves-meta/issues/98)
+- test: add tests for apiUrl helper and GatewayExecutor (spawn, timeout, abort) [`8c94e65`](https://github.com/karmaniverous/jeeves-meta/commit/8c94e65901a20b98700c0a8801f5536968a8438d)
+- docs: sync all guides, skills, and READMEs with implementation [`7500788`](https://github.com/karmaniverous/jeeves-meta/commit/75007886b79184ca9ba453fd4d0cd54dbc42586f)
+- feat: bump @karmaniverous/jeeves to ^0.5.1, Node &gt;=22 (M1, M2) [`4380cc8`](https://github.com/karmaniverous/jeeves-meta/commit/4380cc8654ffe00dd17c2e5a1463f7fbd62ecb4d)
+- feat: wire gatewayUrl for cleanup escalation, use getPackageVersion (M4, H4) [`81c32cf`](https://github.com/karmaniverous/jeeves-meta/commit/81c32cf099d3b404fa3d17b960f632f5aa122930)
+- refactor: adopt core fetchJson/postJson in MetaServiceClient (H6) [`a8b4b6a`](https://github.com/karmaniverous/jeeves-meta/commit/a8b4b6a4b5a916e7b92664bf71bcce43640be1b7)
+- docs: refresh READMEs for canonical config path and current tool surface [`8b4d690`](https://github.com/karmaniverous/jeeves-meta/commit/8b4d69032099b40dd89ad3971eb7e78cd9721325)
+- npm audit fix [`61c8760`](https://github.com/karmaniverous/jeeves-meta/commit/61c8760eff3a57fef36e571b76611b0cd85f4a6a)
+- refactor: replace local sleep with core sleepAsync, remove sleep.ts [`a3844b1`](https://github.com/karmaniverous/jeeves-meta/commit/a3844b1d15408347ff65a5d5f4d2a08fcad47381)
+- test: update service tests for host field removal [`3291ae1`](https://github.com/karmaniverous/jeeves-meta/commit/3291ae1465607e5e8b9016221e919cb33793343a)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.9.3 [`e9ba4eb`](https://github.com/karmaniverous/jeeves-meta/commit/e9ba4ebff72238e9cc3131bc15ae09086a73eb92)
+- ci: update linux-compat to test Node [22, 24] only (drop Node 20) [`67921bb`](https://github.com/karmaniverous/jeeves-meta/commit/67921bbe46c248f17dc21fac8adb619c905e7f30)
+- ci: remove Node 20 Linux compatibility check (engine is now &gt;=22) [`5ea73d1`](https://github.com/karmaniverous/jeeves-meta/commit/5ea73d152420c6b8c14df0ed83ae96bc5d2c669a)
+- docs: fix guide asset paths, update meta-config match and remove host [`448c8b7`](https://github.com/karmaniverous/jeeves-meta/commit/448c8b7c904753ca9663612a088b8dc516f02ab0)
+- fix: CLI commands use core getServiceUrl instead of hardcoded URL (H3) [`4bc124c`](https://github.com/karmaniverous/jeeves-meta/commit/4bc124ce38cc41289327be7eccba93c2aff1e953)
+- fix: use URL constructor for apiUrl, fix import sort in listMetas [`528e051`](https://github.com/karmaniverous/jeeves-meta/commit/528e051994ba89f0e4a84dcad69b929ac9b2cd72)
+- refactor: export MAX_STALENESS_SECONDS and reuse in listMetas [`e85ca34`](https://github.com/karmaniverous/jeeves-meta/commit/e85ca34218c6623a7d27827309ab05d5f1e67515)
+- style: fix prettier formatting on meta-config glob [`be3a148`](https://github.com/karmaniverous/jeeves-meta/commit/be3a148868390b44af02c4f9dfc65054f0e66ebb)
+- cleanup: remove dead host config field, getBindAddress() handles binding (H2) [`150dc33`](https://github.com/karmaniverous/jeeves-meta/commit/150dc33ef662d998d07e23bd4e094943c345b95f)
+- fix: meta-config rule glob matches both legacy and canonical config paths (H1) [`05edd1c`](https://github.com/karmaniverous/jeeves-meta/commit/05edd1c7a2083744afe95b3f3f90e1cf4816d923)
+- docs: export MAX_STALENESS_SECONDS so typedoc link resolves [`a7da5cc`](https://github.com/karmaniverous/jeeves-meta/commit/a7da5cca51f2e79f0bd0c8098b369c1144fadd6e)
+
+#### [service/0.12.4](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.3...service/0.12.4)
+
+> 1 April 2026
 
 - fix: exclude .meta/ from isStale() mtime check [`#96`](https://github.com/karmaniverous/jeeves-meta/pull/96)
 - fix: exclude .meta/ from isStale() mtime check (fixes #95) [`#95`](https://github.com/karmaniverous/jeeves-meta/issues/95)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.9.2 [`5b850dd`](https://github.com/karmaniverous/jeeves-meta/commit/5b850ddc8a938ca73c88d5c928fa96308a6cebb3)
+- chore: release @karmaniverous/jeeves-meta v0.12.4 [`4042093`](https://github.com/karmaniverous/jeeves-meta/commit/4042093e391bf94d93465954885989e0b4ebf92e)
 
 #### [service/0.12.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.2...service/0.12.3)
 
