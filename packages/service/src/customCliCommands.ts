@@ -7,14 +7,21 @@
  * @module customCliCommands
  */
 
-import { fetchJson, postJson } from '@karmaniverous/jeeves';
+import { fetchJson, getServiceUrl, postJson } from '@karmaniverous/jeeves';
 import { type Command } from 'commander';
 
 import { DEFAULT_PORT_STR } from './constants.js';
 
 /** Build the full API URL for a given port string and path. */
 function apiUrl(port: string, apiPath: string): string {
-  return `http://127.0.0.1:${port}${apiPath}`;
+  const url = new URL(getServiceUrl('meta'));
+  if (port !== DEFAULT_PORT_STR) {
+    url.port = port;
+  }
+  url.pathname = apiPath;
+  url.search = '';
+  url.hash = '';
+  return url.toString();
 }
 
 /** Wrap an async CLI action with consistent error handling. */
