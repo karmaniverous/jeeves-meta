@@ -119,6 +119,7 @@ export {
   hasSteerChanged,
   isArchitectTriggered,
   isStale,
+  MAX_STALENESS_SECONDS,
   selectCandidate,
   type StalenessCandidate,
 } from './scheduling/index.js';
