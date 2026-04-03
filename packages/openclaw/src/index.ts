@@ -7,18 +7,17 @@
  * @packageDocumentation
  */
 
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import {
   createAsyncContentCache,
   createComponentWriter,
+  getPackageVersion,
   init,
   type JeevesComponentDescriptor,
   jeevesComponentDescriptorSchema,
+  loadWorkspaceConfig,
   type PluginApi,
   resolveWorkspacePath,
+  WORKSPACE_CONFIG_DEFAULTS,
 } from '@karmaniverous/jeeves';
 
 import { getConfigRoot, getServiceUrl } from './helpers.js';
@@ -26,27 +25,20 @@ import { generateMetaMenu } from './promptInjection.js';
 import { MetaServiceClient } from './serviceClient.js';
 import { registerMetaTools } from './tools.js';
 
-/** Plugin version derived from package.json. */
-const PLUGIN_VERSION: string = (() => {
-  try {
-    const dir = dirname(fileURLToPath(import.meta.url));
-    const pkg = JSON.parse(
-      readFileSync(resolve(dir, '..', 'package.json'), 'utf8'),
-    ) as { version?: string };
-    return pkg.version ?? 'unknown';
-  } catch {
-    return 'unknown';
-  }
-})();
-
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
 export default function register(api: PluginApi): void {
   const client = new MetaServiceClient({ apiUrl: getServiceUrl(api) });
 
+  const workspacePath = resolveWorkspacePath(api);
+
   init({
-    workspacePath: resolveWorkspacePath(api),
+    workspacePath,
     configRoot: getConfigRoot(api),
   });
+
+  const gatewayUrl =
+    loadWorkspaceConfig(workspacePath)?.core?.gatewayUrl ??
+    WORKSPACE_CONFIG_DEFAULTS.core.gatewayUrl;
 
   const getContent = createAsyncContentCache({
     fetch: async () => generateMetaMenu(client),
@@ -58,7 +50,7 @@ export default function register(api: PluginApi): void {
   const descriptor: JeevesComponentDescriptor =
     jeevesComponentDescriptorSchema.parse({
       name: 'meta',
-      version: PLUGIN_VERSION,
+      version: getPackageVersion(import.meta.url),
       servicePackage: '@karmaniverous/jeeves-meta',
       pluginPackage: '@karmaniverous/jeeves-meta-openclaw',
       defaultPort: 1938,
@@ -89,7 +81,7 @@ export default function register(api: PluginApi): void {
 
   registerMetaTools(api, client, descriptor);
 
-  const writer = createComponentWriter(descriptor);
+  const writer = createComponentWriter(descriptor, { gatewayUrl });
 
   writer.start();
 }

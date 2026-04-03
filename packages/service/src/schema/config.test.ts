@@ -102,7 +102,6 @@ describe('serviceConfigSchema autoSeed', () => {
   const validServiceConfig = {
     ...validConfig,
     port: 1938,
-    host: '127.0.0.1',
     schedule: '*/30 * * * *',
   };
 

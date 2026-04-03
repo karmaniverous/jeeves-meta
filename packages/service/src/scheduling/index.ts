@@ -11,6 +11,7 @@ export {
   hasSteerChanged,
   isArchitectTriggered,
   isStale,
+  MAX_STALENESS_SECONDS,
 } from './staleness.js';
 export {
   computeEffectiveStaleness,

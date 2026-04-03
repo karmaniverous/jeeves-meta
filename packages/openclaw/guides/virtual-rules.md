@@ -26,7 +26,7 @@ Indexes archived snapshots with `archived` and `archived_at` flags. Renders the 
 
 ## meta-config
 
-Matches: `**/jeeves-meta.config.json`
+Matches: `**/jeeves-meta{.config.json,/config.json}`
 
 Indexes the service configuration file with key config fields in frontmatter.
 

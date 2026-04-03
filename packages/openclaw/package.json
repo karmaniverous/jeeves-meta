@@ -42,7 +42,7 @@
     "synthesis"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "openclaw": {
     "extensions": [
@@ -120,6 +120,6 @@
     }
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.4.6"
+    "@karmaniverous/jeeves": "^0.5.1"
   }
 }

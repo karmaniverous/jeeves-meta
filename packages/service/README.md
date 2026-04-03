@@ -18,10 +18,10 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Graceful shutdown** — stop scheduler, release locks, close server
 - **Built-in prompts** — default architect and critic prompts ship with the package; optional config overrides via `@file:` or inline strings
 - **Handlebars templates** — prompts compiled with `{ config, meta, scope }` context; architect can write template expressions into builder briefs
-- **Config hot-reload** — all synthesis parameters reload without restart; restart-required fields (port, host, URLs) warn on change
+- **Config hot-reload** — all synthesis parameters reload without restart; restart-required fields (port, URLs) warn on change
 - **Auto-seed policy** — config-driven declarative `.meta/` creation via `autoSeed` rules
 - **Token tracking** — per-step counts with exponential moving averages
-- **CLI** — `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `config`, `service` commands
+- **CLI** — `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `config`, `abort`, `prune`, `queue`, `service` commands
 - **Zod schemas** — validated meta.json and config with open schema support
 
 ## Install
@@ -34,7 +34,7 @@ npm install -g @karmaniverous/jeeves-meta
 
 ```bash
 # Start the service
-jeeves-meta start --config /path/to/jeeves-meta.config.json
+jeeves-meta start --config /path/to/jeeves-meta/config.json
 
 # Check status
 jeeves-meta status
@@ -46,7 +46,7 @@ jeeves-meta list
 jeeves-meta synthesize
 
 # Install as a system service (prints OS-specific instructions)
-jeeves-meta service install --config /path/to/jeeves-meta.config.json
+jeeves-meta service install --config /path/to/jeeves-meta/config.json
 ```
 
 ## HTTP API

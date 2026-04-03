@@ -35,7 +35,6 @@ function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
       metaProperty: {},
       metaArchiveProperty: {},
       port: 1938,
-      host: '127.0.0.1',
       schedule: '*/30 * * * *',
       watcherHealthIntervalMs: 60000,
       logging: { level: 'info' },

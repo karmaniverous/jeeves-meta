@@ -42,7 +42,7 @@ export async function isStale(
 }
 
 /** Maximum staleness for never-synthesized metas (1 year in seconds). */
-const MAX_STALENESS_SECONDS = 365 * 86_400;
+export const MAX_STALENESS_SECONDS = 365 * 86_400;
 
 /**
  * Compute actual staleness in seconds (now minus _generatedAt).

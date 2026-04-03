@@ -8,6 +8,8 @@
  * @module serviceClient
  */
 
+import { fetchJson, postJson } from '@karmaniverous/jeeves';
+
 /** Watcher dependency health within the status response. */
 export interface WatcherDepHealth {
   status: string;
@@ -89,30 +91,12 @@ export class MetaServiceClient {
 
   /** GET helper — returns parsed JSON. */
   private async get<T = unknown>(path: string): Promise<T> {
-    const res = await fetch(this.baseUrl + path);
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(
-        `META ${path} ${String(res.status)} ${res.statusText}: ${text}`,
-      );
-    }
-    return res.json() as Promise<T>;
+    return fetchJson(this.baseUrl + path) as Promise<T>;
   }
 
   /** POST helper — returns parsed JSON. */
   private async post<T = unknown>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(this.baseUrl + path, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(
-        `META ${path} ${String(res.status)} ${res.statusText}: ${text}`,
-      );
-    }
-    return res.json() as Promise<T>;
+    return postJson(this.baseUrl + path, body) as Promise<T>;
   }
 
   /** GET /status — service health + queue state. */

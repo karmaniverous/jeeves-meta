@@ -119,6 +119,7 @@ export {
   hasSteerChanged,
   isArchitectTriggered,
   isStale,
+  MAX_STALENESS_SECONDS,
   selectCandidate,
   type StalenessCandidate,
 } from './scheduling/index.js';
@@ -158,7 +159,7 @@ export { RuleRegistrar } from './rules/index.js';
 export { verifyRuleApplication } from './rules/verify.js';
 
 // ── Sleep ──
-export { sleep } from './sleep.js';
+export { sleepAsync as sleep } from '@karmaniverous/jeeves';
 
 // ── Server ──
 export type { ServerOptions } from './server.js';

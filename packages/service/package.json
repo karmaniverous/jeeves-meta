@@ -38,10 +38,10 @@
     "typescript"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.4.6",
+    "@karmaniverous/jeeves": "^0.5.1",
     "commander": "^14",
     "croner": "^10",
     "fastify": "^5.8",
