@@ -43,10 +43,10 @@ Metas can declare explicit cross-references (`_crossRefs`) to other metas, formi
 npm install -g @karmaniverous/jeeves-meta
 
 # Print NSSM/systemd/launchd install instructions
-jeeves-meta service install --config /path/to/jeeves-meta.config.json
+jeeves-meta service install --config /path/to/jeeves-meta/config.json
 
 # Or start directly
-jeeves-meta start --config /path/to/jeeves-meta.config.json
+jeeves-meta start --config /path/to/jeeves-meta/config.json
 ```
 
 ### CLI commands
@@ -65,15 +65,18 @@ jeeves-meta service start|stop|status|install|remove
 
 ### As an OpenClaw plugin
 
-Install the plugin package. Eight tools become available to the agent:
+Install the plugin package. Eleven tools become available to the agent:
 
+- `meta_status` — service health, version, uptime
+- `meta_config` — query service configuration with optional JSONPath
+- `meta_config_apply` — apply config patches to the running service
+- `meta_service` — manage the system service (install/start/stop/restart/status)
 - `meta_list` — list metas with summary stats and filtering
 - `meta_detail` — full detail for a single meta with optional archive history
 - `meta_trigger` — manually trigger synthesis (enqueues work)
 - `meta_preview` — dry-run showing what inputs would be gathered
 - `meta_seed` — create `.meta/` directory for a new path (with optional cross-refs and steer)
 - `meta_unlock` — remove stale `.lock` from a meta entity
-- `meta_config` — query service configuration with optional JSONPath
 - `meta_queue` — queue management: list pending, clear queue, abort current synthesis
 
 ## Configuration
