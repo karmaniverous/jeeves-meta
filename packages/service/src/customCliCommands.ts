@@ -13,7 +13,7 @@ import { type Command } from 'commander';
 import { DEFAULT_PORT_STR } from './constants.js';
 
 /** Build the full API URL for a given port string and path. */
-function apiUrl(port: string, apiPath: string): string {
+export function apiUrl(port: string, apiPath: string): string {
   const url = new URL(apiPath, getServiceUrl('meta'));
   if (port !== DEFAULT_PORT_STR) {
     url.port = port;
