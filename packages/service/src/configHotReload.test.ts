@@ -67,7 +67,6 @@ describe('applyHotReloadedConfig', () => {
   it('warns on each restart-required field that changed', () => {
     const config = makeConfig({
       port: 1938,
-      host: '127.0.0.1',
       watcherUrl: 'http://127.0.0.1:1936',
       gatewayUrl: 'http://127.0.0.1:18789',
     });
@@ -76,24 +75,22 @@ describe('applyHotReloadedConfig', () => {
 
     const newConfig = makeConfig({
       port: 2000,
-      host: '0.0.0.0',
       watcherUrl: 'http://127.0.0.1:1936', // unchanged
       gatewayUrl: 'http://127.0.0.1:18789', // unchanged
     });
     applyHotReloadedConfig(newConfig);
 
-    // port and host changed → 2 warnings
+    // port changed → 1 warning
     const warnCalls = logger.warn.mock.calls.filter(
       (c: unknown[]) =>
         typeof c[1] === 'string' && c[1].includes('requires restart'),
     );
-    expect(warnCalls).toHaveLength(2);
+    expect(warnCalls).toHaveLength(1);
 
     const warnedFields = warnCalls.map(
       (c: unknown[]) => (c[0] as { field: string }).field,
     );
     expect(warnedFields).toContain('port');
-    expect(warnedFields).toContain('host');
   });
 
   it('does not warn when restart-required fields are unchanged', () => {
@@ -235,7 +232,6 @@ describe('applyHotReloadedConfig', () => {
 describe('RESTART_REQUIRED_FIELDS', () => {
   it('contains the expected fields', () => {
     expect(RESTART_REQUIRED_FIELDS).toContain('port');
-    expect(RESTART_REQUIRED_FIELDS).toContain('host');
     expect(RESTART_REQUIRED_FIELDS).toContain('watcherUrl');
     expect(RESTART_REQUIRED_FIELDS).toContain('gatewayUrl');
     expect(RESTART_REQUIRED_FIELDS).toContain('gatewayApiKey');
