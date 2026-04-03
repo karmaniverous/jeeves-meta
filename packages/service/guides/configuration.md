@@ -19,9 +19,9 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `depthWeight` | number | `0.5` | Exponent for depth weighting in staleness formula |
 | `maxArchive` | integer | `20` | Maximum archive snapshots per meta |
 | `maxLines` | integer | `500` | Max context lines in subprocess prompts |
-| `architectTimeout` | integer | `120` | Architect subprocess timeout (seconds) |
-| `builderTimeout` | integer | `600` | Builder subprocess timeout (seconds) |
-| `criticTimeout` | integer | `300` | Critic subprocess timeout (seconds) |
+| `architectTimeout` | integer | `180` | Architect subprocess timeout (seconds) |
+| `builderTimeout` | integer | `360` | Builder subprocess timeout (seconds) |
+| `criticTimeout` | integer | `240` | Critic subprocess timeout (seconds) |
 | `thinking` | string | `"low"` | Thinking level for spawned sessions |
 | `skipUnchanged` | boolean | `true` | Skip candidates with no file changes |
 | `metaProperty` | object | `{ _meta: "current" }` | Watcher metadata for live meta.json files |

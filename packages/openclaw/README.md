@@ -57,7 +57,7 @@ The `configRoot` setting tells `@karmaniverous/jeeves` core where to find the pl
 ## Documentation
 
 - **[Plugin Setup](guides/plugin-setup.md)** — installation, config, lifecycle
-- **[Tools Reference](guides/tools-reference.md)** — meta_list, meta_detail, meta_trigger, meta_preview, meta_seed, meta_unlock, meta_config, meta_queue
+- **[Tools Reference](guides/tools-reference.md)** — 11 tools: standard (meta_status, meta_config, meta_config_apply, meta_service) + custom (meta_list, meta_detail, meta_trigger, meta_preview, meta_seed, meta_unlock, meta_queue)
 - **[Virtual Rules](guides/virtual-rules.md)** — watcher inference rules
 - **[TOOLS.md Injection](guides/tools-injection.md)** — dynamic prompt generation
 

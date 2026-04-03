@@ -11,7 +11,7 @@ The plugin uses `ComponentWriter` from `@karmaniverous/jeeves` to periodically w
 The injected section includes:
 - Entity summary table (total, stale, errors, never synthesized, stalest, last synthesized)
 - Dependency health warnings (watcher/gateway status, rules registration state)
-- Tool listing table
+- Skill reference pointer
 
 ## Refresh Cycle
 

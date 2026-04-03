@@ -4,7 +4,36 @@ title: Tools Reference
 
 # Tools Reference
 
-All tools delegate to the jeeves-meta HTTP service.
+All tools delegate to the jeeves-meta HTTP service. The plugin registers 11 tools: 4 standard (produced by `createPluginToolset()`) and 7 custom.
+
+## Standard Tools
+
+### meta_status
+
+Service health, version, and uptime. Probes the service's `GET /status` endpoint.
+
+### meta_config
+
+Query the running service configuration with optional JSONPath filtering. Delegates to `GET /config`.
+
+**Parameters:**
+- `path` (string, optional) — JSONPath expression (e.g. `$.schedule`)
+
+### meta_config_apply
+
+Apply a configuration patch to the running service. Delegates to `POST /config/apply`.
+
+**Parameters:**
+- `config` (object, required) — config patch to apply
+
+### meta_service
+
+Manage the system service lifecycle. Delegates to platform-aware service manager (NSSM/systemd/launchd).
+
+**Parameters:**
+- `action` (string, required) — one of `install`, `uninstall`, `start`, `stop`, `restart`, `status`
+
+## Custom Tools
 
 ## meta_list
 
@@ -73,15 +102,6 @@ Remove a stale `.lock` file from a meta entity that is stuck.
 - `path` (string, required) — `.meta/` or owner directory path
 
 **Response:** `{ path, unlocked: true }` or 409 if already unlocked
-
-## meta_config
-
-Query the running service configuration with an optional JSONPath expression.
-
-**Parameters:**
-- `path` (string, optional) — JSONPath like `"$.port"` to query a specific field
-
-**Response:** Full sanitized config (with `gatewayApiKey` redacted) or the specific field value
 
 ## meta_queue
 

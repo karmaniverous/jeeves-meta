@@ -146,7 +146,7 @@ what's running, clear queued work, or abort a stuck synthesis.
 ### Config File
 
 Location determined by `JEEVES_META_CONFIG` env var or `--config` CLI flag.
-Canonical deployment: `J:\config\jeeves-meta.config.json`.
+Canonical deployment: `J:\config\jeeves-meta\config.json`.
 
 Key settings:
 
@@ -161,13 +161,13 @@ Key settings:
 | `depthWeight` | 0.5 | Exponent for depth-based scheduling (0 = pure staleness) |
 | `maxArchive` | 20 | Max archived snapshots per meta |
 | `maxLines` | 500 | Max lines for builder context |
-| `architectTimeout` | 120s | Architect subprocess timeout |
-| `builderTimeout` | 600s | Builder subprocess timeout |
-| `criticTimeout` | 300s | Critic subprocess timeout |
+| `architectTimeout` | 180s | Architect subprocess timeout |
+| `builderTimeout` | 360s | Builder subprocess timeout |
+| `criticTimeout` | 240s | Critic subprocess timeout |
 | `skipUnchanged` | true | Skip candidates with no changes since last synthesis |
 | `thinking` | `low` | Thinking level for spawned LLM sessions |
 | `port` | 1938 | HTTP API listen port |
-| `host` | `127.0.0.1` | Bind address for the HTTP server |
+
 | `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
 | `serverBaseUrl` | (optional) | Public base URL of the service (e.g. `http://myhost:1938`). When set, progress reports include clickable entity links. |
 | `reportChannel` | (optional) | Gateway channel target for progress messages (e.g. Slack channel ID) |
@@ -360,7 +360,6 @@ All config fields hot-reload without restarting the service **except** these
 restart-required fields:
 
 - `port` — HTTP listen port
-- `host` — bind address
 - `watcherUrl` — watcher service URL
 - `gatewayUrl` — OpenClaw gateway URL
 - `gatewayApiKey` — gateway authentication key
@@ -427,7 +426,7 @@ Before the synthesis engine can operate:
 
 ```bash
 npm install -g @karmaniverous/jeeves-meta
-jeeves-meta start --config J:\config\jeeves-meta.config.json
+jeeves-meta start --config J:\config\jeeves-meta\config.json
 ```
 
 2. Install the OpenClaw plugin:
@@ -477,7 +476,7 @@ To uninstall: `npx @karmaniverous/jeeves-meta-openclaw uninstall`
 For production deployments, install as a system service:
 
 ```bash
-jeeves-meta service install --config J:\config\jeeves-meta.config.json
+jeeves-meta service install --config J:\config\jeeves-meta\config.json
 ```
 
 This prints OS-specific instructions:
