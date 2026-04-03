@@ -7,13 +7,14 @@
  * @module watcher-client/HttpWatcherClient
  */
 
+import { sleepAsync } from '@karmaniverous/jeeves';
+
 import type {
   InferenceRuleSpec,
   WatcherClient,
   WatcherScanRequest,
   WatcherScanResult,
 } from '../interfaces/index.js';
-import { sleep } from '../sleep.js';
 
 /** Default retry configuration. */
 const DEFAULT_MAX_RETRIES = 3;
@@ -84,7 +85,7 @@ export class HttpWatcherClient implements WatcherClient {
       // Exponential backoff
       const delayMs =
         this.backoffBaseMs * Math.pow(this.backoffFactor, attempt);
-      await sleep(delayMs);
+      await sleepAsync(delayMs);
     }
 
     // Unreachable, but TypeScript needs it

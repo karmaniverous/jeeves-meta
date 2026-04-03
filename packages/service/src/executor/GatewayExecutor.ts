@@ -13,12 +13,13 @@ import { existsSync, mkdirSync, readFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { sleepAsync } from '@karmaniverous/jeeves';
+
 import type {
   MetaExecutor,
   MetaSpawnOptions,
   MetaSpawnResult,
 } from '../interfaces/index.js';
-import { sleep } from '../sleep.js';
 import { SpawnAbortedError } from './SpawnAbortedError.js';
 import { SpawnTimeoutError } from './SpawnTimeoutError.js';
 
@@ -208,7 +209,7 @@ export class GatewayExecutor implements MetaExecutor {
     }
 
     // Step 2: Poll for completion via sessions_history
-    await sleep(3000);
+    await sleepAsync(3000);
 
     while (Date.now() < deadline) {
       // Check for abort before each poll iteration
@@ -285,7 +286,7 @@ export class GatewayExecutor implements MetaExecutor {
         // Transient poll failure — keep trying
       }
 
-      await sleep(this.pollIntervalMs);
+      await sleepAsync(this.pollIntervalMs);
     }
 
     throw new SpawnTimeoutError(
