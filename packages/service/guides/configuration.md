@@ -32,7 +32,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `port` | integer | `1938` | HTTP listen port |
-| `host` | string | `127.0.0.1` | HTTP bind address |
+
 | `schedule` | string | `*/30 * * * *` | Cron expression for synthesis scheduling |
 | `reportChannel` | string | — | Gateway channel target for progress messages |
 | `watcherHealthIntervalMs` | number | `60000` | Periodic watcher health check interval in ms. 0 = disabled. |
@@ -46,7 +46,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 All config fields hot-reload without a service restart **except** these restart-required fields:
 
 - `port` — HTTP listen port
-- `host` — bind address
+
 - `watcherUrl` — watcher service URL
 - `gatewayUrl` — OpenClaw gateway URL
 - `gatewayApiKey` — gateway authentication key

@@ -20,11 +20,11 @@ title: Architecture
 
 ## Service Architecture
 
-![Service Architecture](../../diagrams/assets/service-architecture.png)
+![Service Architecture](./assets/service-architecture.png)
 
 ## Data Flow
 
-![Data Flow](../../diagrams/assets/data-flow.png)
+![Data Flow](./assets/data-flow.png)
 
 ## Virtual Rules
 
@@ -34,7 +34,7 @@ Three inference rules are registered with jeeves-watcher:
 |------|---------|---------|
 | `meta-current` | `**/.meta/meta.json` | Index live synthesis with domain tags + extracted fields |
 | `meta-archive` | `**/.meta/archive/*.json` | Index archived snapshots |
-| `meta-config` | `**/jeeves-meta.config.json` | Index the service configuration |
+| `meta-config` | `**/jeeves-meta{.config.json,/config.json}` | Index the service configuration |
 
 ## Port Allocation
 
