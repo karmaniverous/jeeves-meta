@@ -40,11 +40,23 @@ export default function register(api: PluginApi): void {
     loadWorkspaceConfig(workspacePath)?.core?.gatewayUrl ??
     WORKSPACE_CONFIG_DEFAULTS.core.gatewayUrl;
 
+  const placeholder =
+    'The jeeves-meta synthesis engine is initializing...\n\n' +
+    'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.';
+
   const getContent = createAsyncContentCache({
     fetch: async () => generateMetaMenu(client),
-    placeholder:
-      'The jeeves-meta synthesis engine is initializing...\n\n' +
-      'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
+    placeholder,
+    onError: (error: unknown) => {
+      const msg = error instanceof Error ? error.message : String(error);
+      if (/HTTP 503\b/i.test(msg) || /scan.in.progress/i.test(msg)) {
+        console.warn(
+          '[jeeves-meta] Watcher scan still in progress — will retry on next refresh cycle.',
+        );
+        return;
+      }
+      console.warn('[jeeves-meta] Content fetch failed:', msg);
+    },
   });
 
   const descriptor: JeevesComponentDescriptor =
