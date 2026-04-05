@@ -2,10 +2,18 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.13.4](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.3...0.13.4)
+#### [0.13.5](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.4...0.13.5)
+
+- unhoisted jeeves [`a2ba39a`](https://github.com/karmaniverous/jeeves-meta/commit/a2ba39ab862d343c8f7b819f6bd2207fb39aa122)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.10.3 [`9d67508`](https://github.com/karmaniverous/jeeves-meta/commit/9d6750852ec63a6f30b168993a600b5258a60c3a)
+
+#### [service/0.13.4](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.3...service/0.13.4)
+
+> 5 April 2026
 
 - hoisted jeeves [`8c0549b`](https://github.com/karmaniverous/jeeves-meta/commit/8c0549b355ac8aefd73e9c36414acf8dbd2ab746)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.10.2 [`5ef44b0`](https://github.com/karmaniverous/jeeves-meta/commit/5ef44b03d5662fa365030b3a8b7dc5340c31adc8)
+- chore: release @karmaniverous/jeeves-meta v0.13.4 [`a80c497`](https://github.com/karmaniverous/jeeves-meta/commit/a80c49768724c0f7708a1a43c1d57686753ba18a)
 
 #### [service/0.13.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.2...service/0.13.3)
 
