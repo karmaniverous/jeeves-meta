@@ -2,13 +2,23 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.13.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.0...0.13.1)
+#### [0.13.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.1...0.13.2)
+
+- fix: correct prompt file paths for rollup bundle (fixes #107) [`#108`](https://github.com/karmaniverous/jeeves-meta/pull/108)
+- Merge pull request #108 from karmaniverous/bugfix/107-prompt-path [`#107`](https://github.com/karmaniverous/jeeves-meta/issues/107)
+- fix: correct prompt file paths for rollup bundle (fixes #107) [`#107`](https://github.com/karmaniverous/jeeves-meta/issues/107)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.10.1 [`a16ec8d`](https://github.com/karmaniverous/jeeves-meta/commit/a16ec8deb0047f02acee76cb842f11559effbb14)
+
+#### [service/0.13.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.0...service/0.13.1)
+
+> 5 April 2026
 
 - chore: update dependencies (jeeves 0.5.3, eslint, vitest, rollup) [`#106`](https://github.com/karmaniverous/jeeves-meta/pull/106)
 - chore: update dependencies (jeeves 0.5.3, eslint, vitest, rollup, etc.) [`08f97b1`](https://github.com/karmaniverous/jeeves-meta/commit/08f97b16e31b9207f9a93c0382dfedf755eef1c7)
 - npm audit fix [`5680f58`](https://github.com/karmaniverous/jeeves-meta/commit/5680f582ca5a234edccd3d525f5ec8e771a219a5)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.10.0 [`7c19ad9`](https://github.com/karmaniverous/jeeves-meta/commit/7c19ad90223294892464e02533aa28378419c36d)
 - test: tighten assertions per Gemini review feedback [`9143d60`](https://github.com/karmaniverous/jeeves-meta/commit/9143d6022c709e16be476bc4bc215979c701e6ee)
+- chore: release @karmaniverous/jeeves-meta v0.13.1 [`7f7bb8e`](https://github.com/karmaniverous/jeeves-meta/commit/7f7bb8edd340c49fdd596b0a4a7975004d3904f4)
 
 #### [service/0.13.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.12.4...service/0.13.0)
 
