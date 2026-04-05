@@ -7,33 +7,61 @@ describe('patchConfig', () => {
   describe('add mode', () => {
     it('adds plugin to plugins.entries', () => {
       const config: Record<string, unknown> = {};
-      const msgs = patchConfig(config, PLUGIN_ID, 'add');
+      const msgs = patchConfig(config, PLUGIN_ID, 'add', {
+        installPath: '/tmp/test',
+      });
       const plugins = config.plugins as Record<string, unknown>;
       const entries = plugins.entries as Record<string, unknown>;
       expect(entries[PLUGIN_ID]).toEqual({ enabled: true });
+
+      const installs = plugins.installs as Record<string, unknown>;
+      expect(installs[PLUGIN_ID]).toMatchObject({
+        source: 'path',
+        installPath: '/tmp/test',
+      });
+
       expect(msgs.some((m) => m.includes('plugins.entries'))).toBe(true);
+      expect(msgs.some((m) => m.includes('plugins.installs'))).toBe(true);
     });
 
     it('adds to tools.alsoAllow when populated', () => {
       const config: Record<string, unknown> = {
         tools: { alsoAllow: ['some-tool'] },
       };
-      patchConfig(config, PLUGIN_ID, 'add');
+      patchConfig(config, PLUGIN_ID, 'add', { installPath: '/tmp/test' });
       const tools = config.tools as Record<string, unknown>;
       expect(tools.alsoAllow).toContain(PLUGIN_ID);
     });
 
-    it('does not duplicate if already present', () => {
+    it('does not duplicate entry or tool when already present', () => {
       const config: Record<string, unknown> = {
         plugins: {
           entries: {
             [PLUGIN_ID]: { enabled: true },
           },
+          installs: {},
         },
         tools: { alsoAllow: [PLUGIN_ID] },
       };
-      const msgs = patchConfig(config, PLUGIN_ID, 'add');
-      expect(msgs).toHaveLength(0);
+      const msgs = patchConfig(config, PLUGIN_ID, 'add', {
+        installPath: '/tmp/test',
+      });
+
+      // Install record should still be written.
+      const plugins = config.plugins as Record<string, unknown>;
+      const installs = plugins.installs as Record<string, unknown>;
+      expect(installs[PLUGIN_ID]).toMatchObject({
+        source: 'path',
+        installPath: '/tmp/test',
+      });
+
+      // Only the install-record message; no entry or tool messages.
+      expect(msgs.length).toBeGreaterThan(0);
+      expect(
+        msgs.every(
+          (m) => !m.includes('plugins.entries') && !m.includes('tools.'),
+        ),
+      ).toBe(true);
     });
   });
 
