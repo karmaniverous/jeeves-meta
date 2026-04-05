@@ -2,13 +2,24 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.10.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.3...0.10.0)
+#### [0.10.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.0...0.10.1)
+
+- chore: update dependencies (jeeves 0.5.3, eslint, vitest, rollup) [`#106`](https://github.com/karmaniverous/jeeves-meta/pull/106)
+- chore: update dependencies (jeeves 0.5.3, eslint, vitest, rollup, etc.) [`08f97b1`](https://github.com/karmaniverous/jeeves-meta/commit/08f97b16e31b9207f9a93c0382dfedf755eef1c7)
+- npm audit fix [`5680f58`](https://github.com/karmaniverous/jeeves-meta/commit/5680f582ca5a234edccd3d525f5ec8e771a219a5)
+- test: tighten assertions per Gemini review feedback [`9143d60`](https://github.com/karmaniverous/jeeves-meta/commit/9143d6022c709e16be476bc4bc215979c701e6ee)
+- chore: release @karmaniverous/jeeves-meta v0.13.1 [`7f7bb8e`](https://github.com/karmaniverous/jeeves-meta/commit/7f7bb8edd340c49fdd596b0a4a7975004d3904f4)
+
+#### [openclaw/0.10.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.9.3...openclaw/0.10.0)
+
+> 3 April 2026
 
 - feat: core v0.5.1 adoption + housekeeping (service 0.13.0 / plugin 0.10.0) [`#101`](https://github.com/karmaniverous/jeeves-meta/pull/101)
 - test: add tests for apiUrl helper and GatewayExecutor (spawn, timeout, abort) [`8c94e65`](https://github.com/karmaniverous/jeeves-meta/commit/8c94e65901a20b98700c0a8801f5536968a8438d)
 - docs: sync all guides, skills, and READMEs with implementation [`7500788`](https://github.com/karmaniverous/jeeves-meta/commit/75007886b79184ca9ba453fd4d0cd54dbc42586f)
 - feat: bump @karmaniverous/jeeves to ^0.5.1, Node &gt;=22 (M1, M2) [`4380cc8`](https://github.com/karmaniverous/jeeves-meta/commit/4380cc8654ffe00dd17c2e5a1463f7fbd62ecb4d)
 - chore: release @karmaniverous/jeeves-meta v0.13.0 [`d583cf2`](https://github.com/karmaniverous/jeeves-meta/commit/d583cf29f4ff578b7a5afc556a42f2999bf9e51d)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.10.0 [`7c19ad9`](https://github.com/karmaniverous/jeeves-meta/commit/7c19ad90223294892464e02533aa28378419c36d)
 - feat: wire gatewayUrl for cleanup escalation, use getPackageVersion (M4, H4) [`81c32cf`](https://github.com/karmaniverous/jeeves-meta/commit/81c32cf099d3b404fa3d17b960f632f5aa122930)
 - refactor: adopt core fetchJson/postJson in MetaServiceClient (H6) [`a8b4b6a`](https://github.com/karmaniverous/jeeves-meta/commit/a8b4b6a4b5a916e7b92664bf71bcce43640be1b7)
 - docs: refresh READMEs for canonical config path and current tool surface [`8b4d690`](https://github.com/karmaniverous/jeeves-meta/commit/8b4d69032099b40dd89ad3971eb7e78cd9721325)
