@@ -2,12 +2,21 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.13.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.1...0.13.2)
+#### [0.13.3](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.2...0.13.3)
+
+- fix: consume core importMetaUrl, remove stale rollup configs, handle watcher 503 (fixes #109, #103, #102) [`#110`](https://github.com/karmaniverous/jeeves-meta/pull/110)
+- Merge pull request #110 from karmaniverous/fix/109-103-102 [`#109`](https://github.com/karmaniverous/jeeves-meta/issues/109)
+- fix: consume core importMetaUrl, remove stale rollup configs, handle watcher 503 (fixes #109, #103, #102) [`#109`](https://github.com/karmaniverous/jeeves-meta/issues/109)
+
+#### [service/0.13.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.1...service/0.13.2)
+
+> 5 April 2026
 
 - fix: correct prompt file paths for rollup bundle (fixes #107) [`#108`](https://github.com/karmaniverous/jeeves-meta/pull/108)
 - Merge pull request #108 from karmaniverous/bugfix/107-prompt-path [`#107`](https://github.com/karmaniverous/jeeves-meta/issues/107)
 - fix: correct prompt file paths for rollup bundle (fixes #107) [`#107`](https://github.com/karmaniverous/jeeves-meta/issues/107)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.10.1 [`a16ec8d`](https://github.com/karmaniverous/jeeves-meta/commit/a16ec8deb0047f02acee76cb842f11559effbb14)
+- chore: release @karmaniverous/jeeves-meta v0.13.2 [`a9b0c01`](https://github.com/karmaniverous/jeeves-meta/commit/a9b0c01a399f3ecfc943b320a8bf95f3f52e0e83)
 
 #### [service/0.13.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.0...service/0.13.1)
 
