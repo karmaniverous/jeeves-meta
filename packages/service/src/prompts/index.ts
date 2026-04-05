@@ -11,10 +11,15 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const promptDir = dirname(fileURLToPath(import.meta.url));
+import { packageDirectorySync } from 'package-directory';
+
+const packageRoot = packageDirectorySync({
+  cwd: fileURLToPath(import.meta.url),
+});
+const promptDir = join(packageRoot!, 'dist', 'prompts');
 
 /** Built-in default architect prompt. */
 export const DEFAULT_ARCHITECT_PROMPT = readFileSync(
