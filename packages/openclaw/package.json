@@ -120,6 +120,6 @@
     }
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.5.3"
+    "@karmaniverous/jeeves": "^0.5.4"
   }
 }
