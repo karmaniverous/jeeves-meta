@@ -2,7 +2,14 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.10.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.1...0.10.2)
+#### [0.10.3](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.2...0.10.3)
+
+- hoisted jeeves [`8c0549b`](https://github.com/karmaniverous/jeeves-meta/commit/8c0549b355ac8aefd73e9c36414acf8dbd2ab746)
+- chore: release @karmaniverous/jeeves-meta v0.13.4 [`a80c497`](https://github.com/karmaniverous/jeeves-meta/commit/a80c49768724c0f7708a1a43c1d57686753ba18a)
+
+#### [openclaw/0.10.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.1...openclaw/0.10.2)
+
+> 5 April 2026
 
 - fix: consume core importMetaUrl, remove stale rollup configs, handle watcher 503 (fixes #109, #103, #102) [`#110`](https://github.com/karmaniverous/jeeves-meta/pull/110)
 - fix: correct prompt file paths for rollup bundle (fixes #107) [`#108`](https://github.com/karmaniverous/jeeves-meta/pull/108)
@@ -10,6 +17,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - fix: consume core importMetaUrl, remove stale rollup configs, handle watcher 503 (fixes #109, #103, #102) [`#109`](https://github.com/karmaniverous/jeeves-meta/issues/109)
 - Merge pull request #108 from karmaniverous/bugfix/107-prompt-path [`#107`](https://github.com/karmaniverous/jeeves-meta/issues/107)
 - fix: correct prompt file paths for rollup bundle (fixes #107) [`#107`](https://github.com/karmaniverous/jeeves-meta/issues/107)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.10.2 [`5ef44b0`](https://github.com/karmaniverous/jeeves-meta/commit/5ef44b03d5662fa365030b3a8b7dc5340c31adc8)
 - chore: release @karmaniverous/jeeves-meta v0.13.2 [`a9b0c01`](https://github.com/karmaniverous/jeeves-meta/commit/a9b0c01a399f3ecfc943b320a8bf95f3f52e0e83)
 - chore: release @karmaniverous/jeeves-meta v0.13.3 [`4fbcd29`](https://github.com/karmaniverous/jeeves-meta/commit/4fbcd2900bf24b212e951b24be384674ecf0ff58)
 
