@@ -13,7 +13,15 @@ describe('patchConfig', () => {
       const plugins = config.plugins as Record<string, unknown>;
       const entries = plugins.entries as Record<string, unknown>;
       expect(entries[PLUGIN_ID]).toEqual({ enabled: true });
+
+      const installs = plugins.installs as Record<string, unknown>;
+      expect(installs[PLUGIN_ID]).toMatchObject({
+        source: 'path',
+        installPath: '/tmp/test',
+      });
+
       expect(msgs.some((m) => m.includes('plugins.entries'))).toBe(true);
+      expect(msgs.some((m) => m.includes('plugins.installs'))).toBe(true);
     });
 
     it('adds to tools.alsoAllow when populated', () => {
@@ -38,7 +46,17 @@ describe('patchConfig', () => {
       const msgs = patchConfig(config, PLUGIN_ID, 'add', {
         installPath: '/tmp/test',
       });
-      // Only the install-record write is expected; entry & tool already present.
+
+      // Install record should still be written.
+      const plugins = config.plugins as Record<string, unknown>;
+      const installs = plugins.installs as Record<string, unknown>;
+      expect(installs[PLUGIN_ID]).toMatchObject({
+        source: 'path',
+        installPath: '/tmp/test',
+      });
+
+      // Only the install-record message; no entry or tool messages.
+      expect(msgs.length).toBeGreaterThan(0);
       expect(
         msgs.every(
           (m) => !m.includes('plugins.entries') && !m.includes('tools.'),
