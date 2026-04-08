@@ -45,6 +45,12 @@ function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
+function formatTokens(tokens: number | undefined): string {
+  return tokens !== undefined
+    ? formatNumber(tokens) + ' tokens'
+    : 'unknown tokens';
+}
+
 function formatSeconds(durationMs: number): string {
   const seconds = durationMs / 1000;
   return Math.round(seconds).toString() + 's';
@@ -107,10 +113,7 @@ export function formatProgressEvent(
 
     case 'phase_complete': {
       const phase = event.phase ? titleCasePhase(event.phase) : 'Phase';
-      const tokenStr =
-        event.tokens !== undefined
-          ? formatNumber(event.tokens) + ' tokens'
-          : 'unknown tokens';
+      const tokenStr = formatTokens(event.tokens);
       const duration =
         event.durationMs !== undefined ? formatSeconds(event.durationMs) : '0s';
       return `  ✅ ${phase} complete (${tokenStr} / ${duration})`;
@@ -118,10 +121,7 @@ export function formatProgressEvent(
 
     case 'synthesis_complete': {
       const metaLink = buildMetaJsonLink(event.path, serverBaseUrl);
-      const tokenStr =
-        event.tokens !== undefined
-          ? formatNumber(event.tokens) + ' tokens'
-          : 'unknown tokens';
+      const tokenStr = formatTokens(event.tokens);
       const duration =
         event.durationMs !== undefined
           ? formatSeconds(event.durationMs)

@@ -56,9 +56,9 @@ describe('POST /config/apply', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    const json = res.json<{ applied: boolean; config: unknown }>();
+    const json = res.json<{ applied: boolean }>();
     expect(json.applied).toBe(true);
-    expect(json.config).toBeDefined();
+    expect(json).not.toHaveProperty('config');
   });
 
   it('returns 400 for invalid config patches', async () => {

@@ -32,10 +32,35 @@ export function registerConfigApplyRoute(
         .send({ error: 'No runtime config path available' });
     }
 
-    const { patch, replace } = request.body as {
-      patch: Record<string, unknown>;
-      replace?: boolean;
+    // Validate request body
+    const body = request.body as Record<string, unknown> | null | undefined;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return reply
+        .status(400)
+        .send({ error: 'Request body must be a JSON object' });
+    }
+
+    const { patch, replace } = body as {
+      patch: unknown;
+      replace?: unknown;
     };
+
+    if (
+      patch === null ||
+      patch === undefined ||
+      typeof patch !== 'object' ||
+      Array.isArray(patch)
+    ) {
+      return reply
+        .status(400)
+        .send({ error: '`patch` must be a non-null object' });
+    }
+
+    if (replace !== undefined && typeof replace !== 'boolean') {
+      return reply
+        .status(400)
+        .send({ error: '`replace` must be a boolean if provided' });
+    }
 
     // Read existing config from the runtime config path
     let existing: Record<string, unknown> = {};
@@ -44,12 +69,22 @@ export function registerConfigApplyRoute(
         string,
         unknown
       >;
-    } catch {
-      // File missing or invalid — start from empty
+    } catch (err) {
+      if (
+        err instanceof SyntaxError ||
+        (err instanceof Error && err.message.includes('JSON'))
+      ) {
+        return reply.status(400).send({
+          error: `Existing config file contains invalid JSON: ${err.message}`,
+        });
+      }
+      // File missing — start from empty
     }
 
     // Merge or replace
-    const merged = replace ? { ...patch } : { ...existing, ...patch };
+    const merged = replace
+      ? { ...(patch as Record<string, unknown>) }
+      : { ...existing, ...(patch as Record<string, unknown>) };
 
     // Validate against schema
     const parseResult = serviceConfigSchema.safeParse(merged);
@@ -82,13 +117,11 @@ export function registerConfigApplyRoute(
         applied: true,
         warning: `Config written but callback failed: ${message}`,
         restartRequired: RESTART_REQUIRED_FIELDS,
-        config: validatedConfig,
       });
     }
 
     return reply.status(200).send({
       applied: true,
-      config: validatedConfig,
     });
   });
 }
