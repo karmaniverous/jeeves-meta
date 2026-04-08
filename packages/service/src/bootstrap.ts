@@ -76,6 +76,7 @@ export async function startService(
     scheduler,
     stats,
     executor,
+    configPath,
   };
 
   registerConfigHotReloadRuntime({
@@ -105,7 +106,7 @@ export async function startService(
   // Wire queue processing — synthesize one meta per dequeue
   const synthesizeFn = async (path: string): Promise<void> => {
     const startMs = Date.now();
-    let cycleTokens = 0;
+    let cycleTokens: number | undefined = 0;
     // Strip .meta suffix for human-readable progress reporting
     const ownerPath = path.replace(/\/?\.meta\/?$/, '');
     await progress.report({
@@ -121,9 +122,19 @@ export async function startService(
         path,
         async (evt) => {
           // Track token stats from phase completions
-          if (evt.type === 'phase_complete' && evt.tokens) {
-            stats.totalTokens += evt.tokens;
-            cycleTokens += evt.tokens;
+          if (evt.type === 'phase_complete') {
+            if (evt.tokens !== undefined) {
+              stats.totalTokens += evt.tokens;
+              if (cycleTokens !== undefined) {
+                cycleTokens += evt.tokens;
+              }
+            } else {
+              cycleTokens = undefined;
+              logger.warn(
+                { path: ownerPath, phase: evt.phase },
+                'Token count unavailable (session lookup may have timed out)',
+              );
+            }
           }
           await progress.report(evt);
         },

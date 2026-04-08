@@ -14,6 +14,7 @@ import { posix as path } from 'node:path';
 
 import type { WatcherClient } from '../interfaces/index.js';
 import type { MinimalLogger } from '../logger/index.js';
+import { normalizePath } from '../normalizePath.js';
 import type { AutoSeedRule } from '../schema/config.js';
 import { createMeta, metaExists } from './createMeta.js';
 
@@ -31,13 +32,24 @@ export interface AutoSeedResult {
  * Walk returns file paths; we need the unique set of immediate parent
  * directories that could be owners.
  */
-function extractDirectories(filePaths: string[]): string[] {
+function extractDirectories(
+  filePaths: string[],
+  logger?: MinimalLogger,
+): string[] {
   const dirs = new Set<string>();
   for (const fp of filePaths) {
-    const dir = path.dirname(fp);
+    // Normalize backslash paths (Windows) to forward slashes before posix.dirname
+    const normalized = normalizePath(fp);
+    const dir = path.dirname(normalized);
     if (dir !== '.' && dir !== '/') {
       dirs.add(dir);
     }
+  }
+  if (filePaths.length > 0 && dirs.size === 0) {
+    logger?.warn(
+      { fileCount: filePaths.length },
+      'extractDirectories returned zero results despite non-empty input',
+    );
   }
   return [...dirs];
 }
@@ -65,7 +77,7 @@ export async function autoSeedPass(
 
   for (const rule of rules) {
     const files = await watcher.walk([rule.match]);
-    const dirs = extractDirectories(files);
+    const dirs = extractDirectories(files, logger);
     for (const dir of dirs) {
       candidates.set(dir, {
         steer: rule.steer,

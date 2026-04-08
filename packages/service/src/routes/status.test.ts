@@ -70,6 +70,7 @@ interface StatusResponse {
   uptime: number;
   status: 'healthy' | 'degraded' | 'unhealthy';
   health: {
+    serviceState: 'idle' | 'synthesizing' | 'waiting' | 'stopping';
     currentTarget: string | null;
     queue: { depth: number; items: unknown[] };
     stats: {
@@ -188,5 +189,58 @@ describe('GET /status', () => {
 
     expect(body.status).toBe('healthy');
     expect(body.health.currentTarget).toBe('/meta/active');
+  });
+
+  it('returns serviceState "idle" when nothing is happening', async () => {
+    const deps = makeDeps();
+    app = Fastify();
+    registerStatusRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({ method: 'GET', url: '/status' });
+    const body = res.json<StatusResponse>();
+    expect(body.health.serviceState).toBe('idle');
+  });
+
+  it('returns serviceState "synthesizing" when a synthesis is in progress', async () => {
+    const logger = makeLogger();
+    const queue = new SynthesisQueue(logger);
+    queue.enqueue('/meta/active');
+    queue.dequeue();
+
+    const deps = makeDeps({ queue });
+    app = Fastify();
+    registerStatusRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({ method: 'GET', url: '/status' });
+    const body = res.json<StatusResponse>();
+    expect(body.health.serviceState).toBe('synthesizing');
+  });
+
+  it('returns serviceState "waiting" when queue has items but none processing', async () => {
+    const logger = makeLogger();
+    const queue = new SynthesisQueue(logger);
+    queue.enqueue('/meta/pending');
+
+    const deps = makeDeps({ queue });
+    app = Fastify();
+    registerStatusRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({ method: 'GET', url: '/status' });
+    const body = res.json<StatusResponse>();
+    expect(body.health.serviceState).toBe('waiting');
+  });
+
+  it('returns serviceState "stopping" during shutdown', async () => {
+    const deps = makeDeps({ shuttingDown: true });
+    app = Fastify();
+    registerStatusRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({ method: 'GET', url: '/status' });
+    const body = res.json<StatusResponse>();
+    expect(body.health.serviceState).toBe('stopping');
   });
 });

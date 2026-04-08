@@ -28,14 +28,27 @@ export type ProgressEvent = {
 export type ProgressReporterConfig = {
   gatewayUrl: string;
   gatewayApiKey?: string;
-  /** Gateway channel target (platform-agnostic). If unset, reporting is disabled. */
+  /**
+   * Messaging channel name (e.g. 'slack'). When set alongside reportTarget,
+   * included in the gateway message payload as `channel`.
+   * Legacy: if reportTarget is unset, reportChannel is used as the target
+   * (single-channel mode, backward compatible).
+   */
   reportChannel?: string;
+  /** Channel/user ID to send messages to. Takes priority over reportChannel as target. */
+  reportTarget?: string;
   /** Optional base URL for the service, used to construct entity links. */
   serverBaseUrl?: string;
 };
 
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
+}
+
+function formatTokens(tokens: number | undefined): string {
+  return tokens !== undefined
+    ? formatNumber(tokens) + ' tokens'
+    : 'unknown tokens';
 }
 
 function formatSeconds(durationMs: number): string {
@@ -100,20 +113,20 @@ export function formatProgressEvent(
 
     case 'phase_complete': {
       const phase = event.phase ? titleCasePhase(event.phase) : 'Phase';
-      const tokens = event.tokens ?? 0;
+      const tokenStr = formatTokens(event.tokens);
       const duration =
         event.durationMs !== undefined ? formatSeconds(event.durationMs) : '0s';
-      return `  ✅ ${phase} complete (${formatNumber(tokens)} tokens / ${duration})`;
+      return `  ✅ ${phase} complete (${tokenStr} / ${duration})`;
     }
 
     case 'synthesis_complete': {
       const metaLink = buildMetaJsonLink(event.path, serverBaseUrl);
-      const tokens = event.tokens ?? 0;
+      const tokenStr = formatTokens(event.tokens);
       const duration =
         event.durationMs !== undefined
           ? formatSeconds(event.durationMs)
           : '0.0s';
-      return `✅ Completed: ${metaLink} (${formatNumber(tokens)} tokens / ${duration})`;
+      return `✅ Completed: ${metaLink} (${tokenStr} / ${duration})`;
     }
 
     case 'error': {
@@ -135,6 +148,7 @@ type GatewayInvokeRequest = {
     action: 'send';
     target: string;
     message: string;
+    channel?: string;
   };
 };
 
@@ -148,20 +162,26 @@ export class ProgressReporter {
   }
 
   public async report(event: ProgressEvent): Promise<void> {
-    const target = this.config.reportChannel;
+    // Multi-channel mode: reportTarget is the destination, reportChannel is the platform.
+    // Legacy mode: reportChannel alone acts as the target (backward compatible).
+    const target = this.config.reportTarget ?? this.config.reportChannel;
     if (!target) return;
 
     const message = formatProgressEvent(event, this.config.serverBaseUrl);
     const url = new URL('/tools/invoke', this.config.gatewayUrl);
 
-    const payload: GatewayInvokeRequest = {
-      tool: 'message',
-      args: {
-        action: 'send',
-        target,
-        message,
-      },
+    const args: GatewayInvokeRequest['args'] = {
+      action: 'send',
+      target,
+      message,
     };
+
+    // Include channel field only in multi-channel mode (reportTarget is set)
+    if (this.config.reportTarget && this.config.reportChannel) {
+      args.channel = this.config.reportChannel;
+    }
+
+    const payload: GatewayInvokeRequest = { tool: 'message', args };
 
     try {
       const res = await fetch(url, {

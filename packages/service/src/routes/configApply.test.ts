@@ -2,49 +2,53 @@
  * @module routes/configApply.test
  */
 
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockHandler = vi.fn();
-const createConfigApplyHandler = vi.fn(() => mockHandler);
-
-vi.mock('@karmaniverous/jeeves', async (importOriginal) => {
-  const actual: unknown = await importOriginal();
-  const actualObj: Record<string, unknown> =
-    typeof actual === 'object' && actual !== null
-      ? (actual as Record<string, unknown>)
-      : {};
-
-  return {
-    ...actualObj,
-    createConfigApplyHandler,
-  };
-});
+vi.mock('../configHotReload.js', () => ({
+  applyHotReloadedConfig: vi.fn(),
+  RESTART_REQUIRED_FIELDS: ['port'],
+}));
 
 describe('POST /config/apply', () => {
   let app: FastifyInstance | undefined;
+  let testDir: string;
+  let configPath: string;
 
   beforeEach(async () => {
-    mockHandler.mockReset();
-    createConfigApplyHandler.mockClear();
+    testDir = join(
+      tmpdir(),
+      `config-apply-test-${Date.now().toString()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(testDir, { recursive: true });
+    configPath = join(testDir, 'config.json');
+
+    // Write a base config with required fields
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        watcherUrl: 'http://localhost:3456',
+        schedule: '*/30 * * * *',
+      }),
+    );
 
     const { registerConfigApplyRoute } = await import('./configApply.js');
     app = Fastify();
-    registerConfigApplyRoute(app);
+    registerConfigApplyRoute(app, configPath);
     await app.ready();
   });
 
   afterEach(async () => {
     await app?.close();
+    rmSync(testDir, { recursive: true, force: true });
   });
 
-  it('passes the request body to the SDK handler', async () => {
-    mockHandler.mockResolvedValueOnce({
-      status: 200,
-      body: { status: 'ok' },
-    });
-
-    const body = { patch: { schedule: '*/5 * * * *' }, replace: false };
+  it('applies a valid config patch and returns applied: true', async () => {
+    const body = { patch: { schedule: '*/5 * * * *' } };
     const res = await app!.inject({
       method: 'POST',
       url: '/config/apply',
@@ -52,16 +56,12 @@ describe('POST /config/apply', () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(mockHandler).toHaveBeenCalledWith(body);
-    expect(res.json()).toEqual({ status: 'ok' });
+    const json = res.json<{ applied: boolean }>();
+    expect(json.applied).toBe(true);
+    expect(json).not.toHaveProperty('config');
   });
 
-  it('forwards SDK status codes and error bodies', async () => {
-    mockHandler.mockResolvedValueOnce({
-      status: 400,
-      body: { error: 'BAD_REQUEST', message: 'invalid config patch' },
-    });
-
+  it('returns 400 for invalid config patches', async () => {
     const res = await app!.inject({
       method: 'POST',
       url: '/config/apply',
@@ -69,9 +69,23 @@ describe('POST /config/apply', () => {
     });
 
     expect(res.statusCode).toBe(400);
-    expect(res.json()).toEqual({
-      error: 'BAD_REQUEST',
-      message: 'invalid config patch',
+    const json = res.json<{ error: string }>();
+    expect(json.error).toBe('Config validation failed');
+  });
+
+  it('returns 500 when no configPath is set', async () => {
+    const noPathApp = Fastify();
+    const { registerConfigApplyRoute } = await import('./configApply.js');
+    registerConfigApplyRoute(noPathApp);
+    await noPathApp.ready();
+
+    const res = await noPathApp.inject({
+      method: 'POST',
+      url: '/config/apply',
+      payload: { patch: { schedule: '*/5 * * * *' } },
     });
+
+    expect(res.statusCode).toBe(500);
+    await noPathApp.close();
   });
 });

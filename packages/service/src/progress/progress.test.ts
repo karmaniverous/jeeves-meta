@@ -117,6 +117,29 @@ describe('formatProgressEvent', () => {
       'http://localhost:1934/path/j/domains/slack/dm-Bob%20Louthan%20(D123)/.meta/meta.json',
     );
   });
+
+  it('renders "unknown tokens" when tokens is undefined in phase_complete', () => {
+    const e: ProgressEvent = {
+      type: 'phase_complete',
+      path: 'x',
+      phase: 'builder',
+      durationMs: 1000,
+    };
+    expect(formatProgressEvent(e)).toBe(
+      '  ✅ Builder complete (unknown tokens / 1s)',
+    );
+  });
+
+  it('renders "unknown tokens" when tokens is undefined in synthesis_complete', () => {
+    const e: ProgressEvent = {
+      type: 'synthesis_complete',
+      path: 'x',
+      durationMs: 2000,
+    };
+    expect(formatProgressEvent(e)).toBe(
+      '✅ Completed: x/.meta/meta.json (unknown tokens / 2s)',
+    );
+  });
 });
 
 describe('ProgressReporter', () => {
@@ -166,6 +189,85 @@ describe('ProgressReporter', () => {
         expect(body.args.action).toBe('send');
         expect(body.args.target).toBe('C123');
         expect(body.args.message).toContain('Started meta synthesis');
+
+        return Promise.resolve(new Response('', { status: 200 }));
+      });
+
+    await reporter.report({ type: 'synthesis_start', path: 'x' });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    fetchSpy.mockRestore();
+  });
+
+  it('sends channel field when both reportChannel and reportTarget are set', async () => {
+    const logger = createLogger();
+    const reporter = new ProgressReporter(
+      {
+        gatewayUrl: 'http://127.0.0.1:18789',
+        reportChannel: 'slack',
+        reportTarget: 'C456',
+      },
+      logger,
+    );
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation((_input, init) => {
+        const rawBody = init?.body;
+        if (typeof rawBody !== 'string') {
+          throw new Error('Expected request body to be a string');
+        }
+        const body = JSON.parse(rawBody) as {
+          tool: string;
+          args: {
+            action: string;
+            target: string;
+            message: string;
+            channel?: string;
+          };
+        };
+
+        expect(body.args.target).toBe('C456');
+        expect(body.args.channel).toBe('slack');
+
+        return Promise.resolve(new Response('', { status: 200 }));
+      });
+
+    await reporter.report({ type: 'synthesis_start', path: 'x' });
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    fetchSpy.mockRestore();
+  });
+
+  it('omits channel field in legacy single-channel mode', async () => {
+    const logger = createLogger();
+    const reporter = new ProgressReporter(
+      {
+        gatewayUrl: 'http://127.0.0.1:18789',
+        reportChannel: 'C123',
+      },
+      logger,
+    );
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation((_input, init) => {
+        const rawBody = init?.body;
+        if (typeof rawBody !== 'string') {
+          throw new Error('Expected request body to be a string');
+        }
+        const body = JSON.parse(rawBody) as {
+          tool: string;
+          args: {
+            action: string;
+            target: string;
+            message: string;
+            channel?: string;
+          };
+        };
+
+        expect(body.args.target).toBe('C123');
+        expect(body.args.channel).toBeUndefined();
 
         return Promise.resolve(new Response('', { status: 200 }));
       });

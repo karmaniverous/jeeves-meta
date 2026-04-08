@@ -94,8 +94,11 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   /** Cron schedule for synthesis cycles (default: every 30 min). */
   schedule: z.string().default('*/30 * * * *'),
 
-  /** Optional channel identifier for reporting. */
+  /** Messaging channel name (e.g. 'slack'). Legacy: also used as target if reportTarget is unset. */
   reportChannel: z.string().optional(),
+
+  /** Channel/user ID to send progress messages to. */
+  reportTarget: z.string().optional(),
 
   /** Optional base URL for the service, used to construct entity links in progress reports. */
   serverBaseUrl: z.string().optional(),
