@@ -76,6 +76,7 @@ export async function startService(
     scheduler,
     stats,
     executor,
+    configPath,
   };
 
   registerConfigHotReloadRuntime({
@@ -121,9 +122,16 @@ export async function startService(
         path,
         async (evt) => {
           // Track token stats from phase completions
-          if (evt.type === 'phase_complete' && evt.tokens) {
-            stats.totalTokens += evt.tokens;
-            cycleTokens += evt.tokens;
+          if (evt.type === 'phase_complete') {
+            if (evt.tokens !== undefined) {
+              stats.totalTokens += evt.tokens;
+              cycleTokens += evt.tokens;
+            } else {
+              logger.warn(
+                { path: ownerPath, phase: evt.phase },
+                'Token count unavailable (session lookup may have timed out)',
+              );
+            }
           }
           await progress.report(evt);
         },

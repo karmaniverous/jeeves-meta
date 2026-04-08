@@ -39,6 +39,8 @@ export interface StatusResponse {
   version?: string;
   /** Component-specific health details from getHealth(). */
   health: {
+    /** Service-specific lifecycle state. */
+    serviceState?: 'idle' | 'synthesizing' | 'waiting' | 'stopping';
     dependencies: {
       watcher: WatcherDepHealth;
       gateway: GatewayDepHealth;

@@ -46,6 +46,8 @@ export interface RouteDeps {
   executor?: Pick<GatewayExecutor, 'abort'>;
   /** Set to true during graceful shutdown. */
   shuttingDown?: boolean;
+  /** Runtime config file path for config-apply. */
+  configPath?: string;
 }
 
 /** Register all HTTP routes on the Fastify instance. */
@@ -81,6 +83,6 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
   registerSeedRoute(app, deps);
   registerUnlockRoute(app, deps);
   registerConfigRoute(app, deps);
-  registerConfigApplyRoute(app);
+  registerConfigApplyRoute(app, deps.configPath);
   registerQueueRoutes(app, deps);
 }

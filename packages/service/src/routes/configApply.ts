@@ -1,22 +1,94 @@
 /**
- * POST /config/apply — apply a config patch via the core SDK handler.
+ * POST /config/apply — apply a config patch using the runtime config path.
+ *
+ * The core SDK's `createConfigApplyHandler` derives the config path from
+ * `getComponentConfigDir()` which uses the npm global config root. This
+ * local implementation uses the actual runtime config path instead, so
+ * temp files are written alongside the active config file.
  *
  * @module routes/configApply
  */
 
-import { createConfigApplyHandler } from '@karmaniverous/jeeves';
+import { readFileSync } from 'node:fs';
+
+import { atomicWrite } from '@karmaniverous/jeeves';
 import type { FastifyInstance } from 'fastify';
 
-import { metaDescriptor } from '../descriptor.js';
+import {
+  applyHotReloadedConfig,
+  RESTART_REQUIRED_FIELDS,
+} from '../configHotReload.js';
+import { serviceConfigSchema } from '../schema/config.js';
 
 /** Register the POST /config/apply route. */
-export function registerConfigApplyRoute(app: FastifyInstance): void {
-  const handler = createConfigApplyHandler(metaDescriptor);
-
+export function registerConfigApplyRoute(
+  app: FastifyInstance,
+  configPath?: string,
+): void {
   app.post('/config/apply', async (request, reply) => {
-    const result = await handler(
-      request.body as { patch: Record<string, unknown>; replace?: boolean },
-    );
-    return reply.status(result.status).send(result.body);
+    if (!configPath) {
+      return reply
+        .status(500)
+        .send({ error: 'No runtime config path available' });
+    }
+
+    const { patch, replace } = request.body as {
+      patch: Record<string, unknown>;
+      replace?: boolean;
+    };
+
+    // Read existing config from the runtime config path
+    let existing: Record<string, unknown> = {};
+    try {
+      existing = JSON.parse(readFileSync(configPath, 'utf8')) as Record<
+        string,
+        unknown
+      >;
+    } catch {
+      // File missing or invalid — start from empty
+    }
+
+    // Merge or replace
+    const merged = replace ? { ...patch } : { ...existing, ...patch };
+
+    // Validate against schema
+    const parseResult = serviceConfigSchema.safeParse(merged);
+    if (!parseResult.success) {
+      return reply.status(400).send({
+        error: 'Config validation failed',
+        issues: parseResult.error.issues,
+      });
+    }
+
+    const validatedConfig = parseResult.data;
+
+    // Write atomically — temp file lands next to the runtime config file
+    try {
+      const json = JSON.stringify(validatedConfig, null, 2) + '\n';
+      atomicWrite(configPath, json);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply
+        .status(500)
+        .send({ error: `Failed to write config: ${message}` });
+    }
+
+    // Apply hot-reload callback
+    try {
+      applyHotReloadedConfig(validatedConfig);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      return reply.status(200).send({
+        applied: true,
+        warning: `Config written but callback failed: ${message}`,
+        restartRequired: RESTART_REQUIRED_FIELDS,
+        config: validatedConfig,
+      });
+    }
+
+    return reply.status(200).send({
+      applied: true,
+      config: validatedConfig,
+    });
   });
 }

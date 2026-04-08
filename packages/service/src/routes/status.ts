@@ -59,6 +59,17 @@ async function checkWatcher(url: string): Promise<WatcherHealth> {
   }
 }
 
+/** Service-specific lifecycle state. */
+export type ServiceState = 'idle' | 'synthesizing' | 'waiting' | 'stopping';
+
+/** Derive service-specific state from current activity and lifecycle. */
+function deriveServiceState(deps: RouteDeps): ServiceState {
+  if (deps.shuttingDown) return 'stopping';
+  if (deps.queue.current) return 'synthesizing';
+  if (deps.queue.depth > 0) return 'waiting';
+  return 'idle';
+}
+
 export function registerStatusRoute(
   app: FastifyInstance,
   deps: RouteDeps,
@@ -76,6 +87,7 @@ export function registerStatusRoute(
       ]);
 
       return {
+        serviceState: deriveServiceState(deps),
         currentTarget: queue.current?.path ?? null,
         queue: queue.getState(),
         stats: {
