@@ -97,6 +97,7 @@ export class GatewayExecutor implements MetaExecutor {
   private async invoke(
     tool: string,
     args: Record<string, unknown>,
+    sessionKey?: string,
   ): Promise<InvokeResponse> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -105,10 +106,13 @@ export class GatewayExecutor implements MetaExecutor {
       headers['Authorization'] = 'Bearer ' + this.apiKey;
     }
 
+    const body: Record<string, unknown> = { tool, args };
+    if (sessionKey) body.sessionKey = sessionKey;
+
     const res = await fetch(this.gatewayUrl + '/tools/invoke', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ tool, args }),
+      body: JSON.stringify(body),
     });
 
     if (!res.ok) {
@@ -131,12 +135,17 @@ export class GatewayExecutor implements MetaExecutor {
   /** Look up totalTokens for a session via sessions_list. */
   private async getSessionTokens(
     sessionKey: string,
+    invokeSessionKey?: string,
   ): Promise<number | undefined> {
     try {
-      const result = await this.invoke('sessions_list', {
-        limit: 20,
-        messageLimit: 0,
-      });
+      const result = await this.invoke(
+        'sessions_list',
+        {
+          limit: 20,
+          messageLimit: 0,
+        },
+        invokeSessionKey,
+      );
 
       const sessions = (result.result?.details?.sessions ??
         result.result?.sessions ??
@@ -173,6 +182,7 @@ export class GatewayExecutor implements MetaExecutor {
     // Generate unique output path for file-based output
     const outputId = randomUUID();
     const outputPath = this.workspaceDir + '/output-' + outputId + '.json';
+    const invokeSessionKey = 'agent:main:meta-invoke:' + outputId;
 
     // Append file output instruction to the task
     const taskWithOutput =
@@ -188,13 +198,17 @@ export class GatewayExecutor implements MetaExecutor {
     const labelBase = options?.label ?? 'jeeves-meta-synthesis';
     const label = labelBase + '-' + outputId.slice(0, 8);
 
-    const spawnResult = await this.invoke('sessions_spawn', {
-      task: taskWithOutput,
-      label,
-      runTimeoutSeconds: timeoutSeconds,
-      ...(options?.thinking ? { thinking: options.thinking } : {}),
-      ...(options?.model ? { model: options.model } : {}),
-    });
+    const spawnResult = await this.invoke(
+      'sessions_spawn',
+      {
+        task: taskWithOutput,
+        label,
+        runTimeoutSeconds: timeoutSeconds,
+        ...(options?.thinking ? { thinking: options.thinking } : {}),
+        ...(options?.model ? { model: options.model } : {}),
+      },
+      invokeSessionKey,
+    );
 
     const details = (spawnResult.result?.details ?? spawnResult.result) as
       | Record<string, unknown>
@@ -219,11 +233,15 @@ export class GatewayExecutor implements MetaExecutor {
       }
 
       try {
-        const historyResult = await this.invoke('sessions_history', {
-          sessionKey,
-          limit: 5,
-          includeTools: false,
-        });
+        const historyResult = await this.invoke(
+          'sessions_history',
+          {
+            sessionKey,
+            limit: 5,
+            includeTools: false,
+          },
+          invokeSessionKey,
+        );
 
         const messages =
           historyResult.result?.details?.messages ??
@@ -247,7 +265,10 @@ export class GatewayExecutor implements MetaExecutor {
             lastMsg.stopReason !== 'error'
           ) {
             // Fetch token usage from session metadata
-            const tokens = await this.getSessionTokens(sessionKey);
+            const tokens = await this.getSessionTokens(
+              sessionKey,
+              invokeSessionKey,
+            );
 
             // Read output from file (sub-agent wrote it via Write tool)
             if (existsSync(outputPath)) {

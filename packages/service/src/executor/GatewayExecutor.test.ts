@@ -50,9 +50,15 @@ describe('GatewayExecutor.spawn', () => {
       workspaceDir: testDir,
     });
 
+    const invokeSessionKeys: string[] = [];
+
     // Mock sessions_spawn → returns sessionKey
     mockFetch.mockImplementation((_url: string, init: RequestInit) => {
       const body = JSON.parse(init.body as string) as Record<string, unknown>;
+
+      if (typeof body.sessionKey === 'string') {
+        invokeSessionKeys.push(body.sessionKey);
+      }
 
       if (body.tool === 'sessions_spawn') {
         return jsonResponse({
@@ -112,6 +118,9 @@ describe('GatewayExecutor.spawn', () => {
 
     expect(result.output).toContain('Test synthesis output');
     expect(result.tokens).toBe(5000);
+    expect(invokeSessionKeys.length).toBeGreaterThan(0);
+    expect(new Set(invokeSessionKeys).size).toBe(1);
+    expect(invokeSessionKeys[0]).toMatch(/^agent:main:meta-invoke:/);
   });
 
   it('throws SpawnTimeoutError when deadline exceeded', async () => {
