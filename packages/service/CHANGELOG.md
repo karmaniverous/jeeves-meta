@@ -2,10 +2,18 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.13.8](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.7...0.13.8)
+#### [0.13.9](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.8...0.13.9)
+
+- feat: identify meta synthesis sessions by phase and entity path [`#119`](https://github.com/karmaniverous/jeeves-meta/pull/119)
+- feat: add H1 identification header and phase-specific labels to synthesis sessions [`f5c1836`](https://github.com/karmaniverous/jeeves-meta/commit/f5c1836e2a5985334f8caa7da587f43d60cd7758)
+
+#### [service/0.13.8](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.7...service/0.13.8)
+
+> 13 April 2026
 
 - fix: isolate gateway invoke session per synthesis [`#118`](https://github.com/karmaniverous/jeeves-meta/pull/118)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.10.6 [`3351fee`](https://github.com/karmaniverous/jeeves-meta/commit/3351fee27509220dc16a394e40858c63283946ac)
+- chore: release @karmaniverous/jeeves-meta v0.13.8 [`aee33b6`](https://github.com/karmaniverous/jeeves-meta/commit/aee33b664ab5849a3f60c849fdd53c93a94df2bc)
 
 #### [service/0.13.7](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.6...service/0.13.7)
 
