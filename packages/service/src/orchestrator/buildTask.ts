@@ -138,6 +138,8 @@ export function buildArchitectTask(
   config: MetaConfig,
 ): string {
   const sections = [
+    `# jeeves-meta · ARCHITECT · ${ctx.path}`,
+    '',
     meta._architect ?? config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
     '',
     '## SCOPE',
@@ -185,6 +187,8 @@ export function buildBuilderTask(
   config: MetaConfig,
 ): string {
   const sections = [
+    `# jeeves-meta · BUILDER · ${ctx.path}`,
+    '',
     '## TASK BRIEF (from Architect)',
     meta._builder ?? '(No architect brief available)',
     '',
@@ -259,6 +263,8 @@ export function buildCriticTask(
   config: MetaConfig,
 ): string {
   const sections = [
+    `# jeeves-meta · CRITIC · ${ctx.path}`,
+    '',
     meta._critic ?? config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
     '',
     '## SYNTHESIS TO EVALUATE',

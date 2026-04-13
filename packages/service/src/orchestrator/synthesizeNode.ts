@@ -117,6 +117,7 @@ export async function synthesizeNode(
       const architectResult = await executor.spawn(architectTask, {
         thinking: config.thinking,
         timeout: config.architectTimeout,
+        label: 'meta-architect',
       });
       builderBrief = parseArchitectOutput(architectResult.output);
       architectTokens = architectResult.tokens;
@@ -166,6 +167,7 @@ export async function synthesizeNode(
     const builderResult = await executor.spawn(builderTask, {
       thinking: config.thinking,
       timeout: config.builderTimeout,
+      label: 'meta-builder',
     });
     builderOutput = parseBuilderOutput(builderResult.output);
     builderTokens = builderResult.tokens;
@@ -220,6 +222,7 @@ export async function synthesizeNode(
     const criticResult = await executor.spawn(criticTask, {
       thinking: config.thinking,
       timeout: config.criticTimeout,
+      label: 'meta-critic',
     });
     feedback = parseCriticOutput(criticResult.output);
     criticTokens = criticResult.tokens;
