@@ -8,6 +8,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { listMetas } from '../discovery/index.js';
+import { resolveMetaDir } from '../lock.js';
 import { discoverStalestPath } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
@@ -26,7 +27,7 @@ export function registerSynthesizeRoute(
 
     let targetPath: string;
     if (body.path) {
-      targetPath = body.path;
+      targetPath = resolveMetaDir(body.path);
     } else {
       // Discover stalest candidate
       let result;
