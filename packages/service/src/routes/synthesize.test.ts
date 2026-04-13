@@ -134,6 +134,48 @@ describe('POST /synthesize', () => {
     expect(queue.depth).toBe(1);
   });
 
+  it('normalizes owner path to .meta path', async () => {
+    const logger = makeLogger();
+    const queue = new SynthesisQueue(logger);
+    const deps = makeDeps({ queue });
+    app = Fastify();
+    registerSynthesizeRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/synthesize',
+      payload: { path: '/some/owner/dir' },
+    });
+
+    expect(res.statusCode).toBe(202);
+    const body = res.json<{ status: string; path: string }>();
+    expect(body.status).toBe('accepted');
+    expect(body.path).toMatch(/[/\\]some[/\\]owner[/\\]dir[/\\]\.meta$/);
+    expect(queue.depth).toBe(1);
+  });
+
+  it('preserves path already ending in .meta', async () => {
+    const logger = makeLogger();
+    const queue = new SynthesisQueue(logger);
+    const deps = makeDeps({ queue });
+    app = Fastify();
+    registerSynthesizeRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/synthesize',
+      payload: { path: '/some/owner/dir/.meta' },
+    });
+
+    expect(res.statusCode).toBe(202);
+    const body = res.json<{ status: string; path: string }>();
+    expect(body.status).toBe('accepted');
+    expect(body.path).toBe('/some/owner/dir/.meta');
+    expect(queue.depth).toBe(1);
+  });
+
   it('returns queue position', async () => {
     const logger = makeLogger();
     const queue = new SynthesisQueue(logger);
