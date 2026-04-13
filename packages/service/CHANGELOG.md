@@ -2,9 +2,17 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.13.9](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.8...0.13.9)
+#### [0.13.10](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.9...0.13.10)
+
+- fix: normalize owner paths in /synthesize route (#120) [`#121`](https://github.com/karmaniverous/jeeves-meta/pull/121)
+- fix: normalize owner paths in /synthesize route [`#120`](https://github.com/karmaniverous/jeeves-meta/pull/120)
+
+#### [service/0.13.9](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.8...service/0.13.9)
+
+> 13 April 2026
 
 - feat: identify meta synthesis sessions by phase and entity path [`#119`](https://github.com/karmaniverous/jeeves-meta/pull/119)
+- chore: release @karmaniverous/jeeves-meta v0.13.9 [`fa19239`](https://github.com/karmaniverous/jeeves-meta/commit/fa19239890fc8ea81e4af92a15a8ef559cc18181)
 - feat: add H1 identification header and phase-specific labels to synthesis sessions [`f5c1836`](https://github.com/karmaniverous/jeeves-meta/commit/f5c1836e2a5985334f8caa7da587f43d60cd7758)
 
 #### [service/0.13.8](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.7...service/0.13.8)
