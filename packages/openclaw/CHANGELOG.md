@@ -2,11 +2,27 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.10.6](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.5...0.10.6)
+#### [0.10.7](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.6...0.10.7)
+
+- fix: normalize owner paths in /synthesize route (#120) [`#121`](https://github.com/karmaniverous/jeeves-meta/pull/121)
+- fix: normalize owner paths in /synthesize route [`#120`](https://github.com/karmaniverous/jeeves-meta/pull/120)
+- feat: identify meta synthesis sessions by phase and entity path [`#119`](https://github.com/karmaniverous/jeeves-meta/pull/119)
+- fix: isolate gateway invoke session per synthesis [`#118`](https://github.com/karmaniverous/jeeves-meta/pull/118)
+- updated jeeves-core [`9e95518`](https://github.com/karmaniverous/jeeves-meta/commit/9e95518310bd3de59fb48b966f3e93381e86a829)
+- chore: release @karmaniverous/jeeves-meta v0.13.10 [`aa045ea`](https://github.com/karmaniverous/jeeves-meta/commit/aa045ea4e7bccbebcce86ea597cfea22f1b61d8f)
+- chore: release @karmaniverous/jeeves-meta v0.13.9 [`fa19239`](https://github.com/karmaniverous/jeeves-meta/commit/fa19239890fc8ea81e4af92a15a8ef559cc18181)
+- chore: release @karmaniverous/jeeves-meta v0.13.8 [`aee33b6`](https://github.com/karmaniverous/jeeves-meta/commit/aee33b664ab5849a3f60c849fdd53c93a94df2bc)
+- chore: release @karmaniverous/jeeves-meta v0.13.11 [`fa46b9b`](https://github.com/karmaniverous/jeeves-meta/commit/fa46b9bceef113cab1242fac9ffd3b43d1fc18de)
+- feat: add H1 identification header and phase-specific labels to synthesis sessions [`f5c1836`](https://github.com/karmaniverous/jeeves-meta/commit/f5c1836e2a5985334f8caa7da587f43d60cd7758)
+
+#### [openclaw/0.10.6](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.5...openclaw/0.10.6)
+
+> 9 April 2026
 
 - fix: resolve 5 open bugs (#112 #113 #114 #111 #104) [`#115`](https://github.com/karmaniverous/jeeves-meta/pull/115)
 - fix: resolve 5 bugs (#112, #113, #114, #111, #104) [`0f42f10`](https://github.com/karmaniverous/jeeves-meta/commit/0f42f10eaac12dd739c8a5318d8c52cf0e6ec0b3)
 - fix: address PR review feedback [`7862a12`](https://github.com/karmaniverous/jeeves-meta/commit/7862a12205ffce8daad3924dee03b660778f6b2f)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.10.6 [`3351fee`](https://github.com/karmaniverous/jeeves-meta/commit/3351fee27509220dc16a394e40858c63283946ac)
 - chore: release @karmaniverous/jeeves-meta v0.13.7 [`ceee364`](https://github.com/karmaniverous/jeeves-meta/commit/ceee36414c6d03b8a7f60c7d1098671f18eb8665)
 
 #### [openclaw/0.10.5](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.4...openclaw/0.10.5)
