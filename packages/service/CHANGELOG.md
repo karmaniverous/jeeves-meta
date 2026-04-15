@@ -2,10 +2,17 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.13.10](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.9...0.13.10)
+#### [0.13.11](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.10...0.13.11)
+
+- updated jeeves-core [`9e95518`](https://github.com/karmaniverous/jeeves-meta/commit/9e95518310bd3de59fb48b966f3e93381e86a829)
+
+#### [service/0.13.10](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.9...service/0.13.10)
+
+> 13 April 2026
 
 - fix: normalize owner paths in /synthesize route (#120) [`#121`](https://github.com/karmaniverous/jeeves-meta/pull/121)
 - fix: normalize owner paths in /synthesize route [`#120`](https://github.com/karmaniverous/jeeves-meta/pull/120)
+- chore: release @karmaniverous/jeeves-meta v0.13.10 [`aa045ea`](https://github.com/karmaniverous/jeeves-meta/commit/aa045ea4e7bccbebcce86ea597cfea22f1b61d8f)
 
 #### [service/0.13.9](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.8...service/0.13.9)
 
