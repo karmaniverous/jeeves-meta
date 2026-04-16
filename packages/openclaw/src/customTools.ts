@@ -30,6 +30,7 @@ export function buildCustomTools(
     buildMetaSeedTool(client, baseUrl),
     buildMetaUnlockTool(client, baseUrl),
     buildMetaQueueTool(client, baseUrl),
+    buildMetaUpdateTool(client, baseUrl),
   ];
 }
 
@@ -61,12 +62,13 @@ function buildMetaListTool(
         filter: {
           type: 'object',
           description:
-            'Structured filter. Supported keys: hasError (boolean), staleHours (number), neverSynthesized (boolean), locked (boolean).',
+            'Structured filter. Supported keys: hasError (boolean), staleHours (number), neverSynthesized (boolean), locked (boolean), disabled (boolean).',
           properties: {
             hasError: { type: 'boolean' },
             staleHours: { type: 'number' },
             neverSynthesized: { type: 'boolean' },
             locked: { type: 'boolean' },
+            disabled: { type: 'boolean' },
           },
         },
         fields: {
@@ -85,6 +87,7 @@ function buildMetaListTool(
           staleHours: filter?.staleHours as number | undefined,
           neverSynthesized: filter?.neverSynthesized as boolean | undefined,
           locked: filter?.locked as boolean | undefined,
+          disabled: filter?.disabled as boolean | undefined,
           fields: params.fields as string[] | undefined,
         }),
       );
@@ -283,5 +286,49 @@ function buildMetaQueueTool(
           return ok({ error: `Unknown action: ${action}` });
       }
     },
+  };
+}
+
+function buildMetaUpdateTool(
+  client: MetaServiceClient,
+  baseUrl: string,
+): ToolDescriptor {
+  return {
+    name: 'meta_update',
+    description: 'Update user-settable reserved properties on a meta entity.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+          description: 'Path to the .meta/ directory or owner directory.',
+        },
+        updates: {
+          type: 'object',
+          description:
+            'Properties to set. Supported: _steer, _emphasis, _depth, _crossRefs, _disabled. Set to null to remove.',
+          properties: {
+            _steer: { type: ['string', 'null'] },
+            _emphasis: { type: ['number', 'null'] },
+            _depth: { type: ['number', 'null'] },
+            _crossRefs: {
+              oneOf: [
+                { type: 'array', items: { type: 'string' } },
+                { type: 'null' },
+              ],
+            },
+            _disabled: { type: ['boolean', 'null'] },
+          },
+        },
+      },
+      required: ['path', 'updates'],
+    },
+    execute: async (_id: string, params: Record<string, unknown>) =>
+      wrap(baseUrl, () =>
+        client.update(
+          params.path as string,
+          params.updates as Parameters<MetaServiceClient['update']>[1],
+        ),
+      ),
   };
 }

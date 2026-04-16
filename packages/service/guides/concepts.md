@@ -34,6 +34,8 @@ Cross-ref freshness does NOT affect the referencing meta's staleness. Each meta 
 
 A meta is stale when any file in its scope was modified after `_generatedAt`. The scheduler uses a weighted formula incorporating tree depth and per-meta emphasis to prioritize which meta to synthesize next.
 
+Set `_disabled: true` on a meta to exclude it from automatic staleness scheduling. Disabled metas are never selected by the scheduler or by the auto-select path of `POST /synthesize`, but manual triggers (`meta_trigger` with an explicit path, or `POST /synthesize` with an explicit path) still run them.
+
 ## Progressive Synthesis (`_state`)
 
 The builder can populate an opaque `_state` field in `meta.json` to carry forward intermediate progress across cycles. On timeout (`SpawnTimeoutError`), the service attempts to salvage any advanced `_state` from partial output — preserving progress even when the full synthesis fails.

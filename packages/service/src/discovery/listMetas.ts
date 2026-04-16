@@ -35,6 +35,8 @@ export interface MetaEntry {
   hasError: boolean;
   /** Whether this meta is currently locked. */
   locked: boolean;
+  /** Whether this meta is disabled (skipped during staleness scheduling). */
+  disabled: boolean;
   /** Cumulative architect tokens, or null if never run. */
   architectTokens: number | null;
   /** Cumulative builder tokens, or null if never run. */
@@ -55,6 +57,7 @@ export interface MetaListSummary {
   stale: number;
   errors: number;
   locked: number;
+  disabled: number;
   neverSynthesized: number;
   tokens: {
     architect: number;
@@ -110,6 +113,7 @@ export async function listMetas(
     const emphasis = meta._emphasis ?? 1;
     const hasError = Boolean(meta._error);
     const locked = isLocked(normalizePath(node.metaPath));
+    const disabled = meta._disabled === true;
     const neverSynth = !meta._generatedAt;
 
     // Compute staleness
@@ -134,6 +138,7 @@ export async function listMetas(
       lastSynthesized: meta._generatedAt ?? null,
       hasError,
       locked,
+      disabled,
       architectTokens: archTokens > 0 ? archTokens : null,
       builderTokens: buildTokens > 0 ? buildTokens : null,
       criticTokens: critTokens > 0 ? critTokens : null,

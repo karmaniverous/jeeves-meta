@@ -26,6 +26,10 @@ Each tick:
 4. Enqueue the stalest candidate (if none found, increase backoff and return)
 5. Check watcher uptime for restart detection → re-register virtual rules if needed (only runs when a candidate was found)
 
+## Disabled Metas
+
+Any meta with `_disabled: true` in its `meta.json` is excluded from automatic scheduling — the scheduler and the auto-select path of `POST /synthesize` both skip it. Manual triggers (`meta_trigger` with an explicit path or `POST /synthesize` with an explicit path) still run disabled metas on demand. Use `meta_update` (or `PATCH /metas/:path`) to toggle the flag.
+
 ## Adaptive Backoff
 
 When no stale candidates are found:

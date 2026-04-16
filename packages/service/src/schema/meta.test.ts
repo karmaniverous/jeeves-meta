@@ -148,4 +148,30 @@ describe('metaJsonSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('accepts _disabled: true', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _disabled: true,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._disabled).toBe(true);
+  });
+
+  it('accepts _disabled: false', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+      _disabled: false,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._disabled).toBe(false);
+  });
+
+  it('accepts meta without _disabled (optional)', () => {
+    const result = metaJsonSchema.safeParse({
+      _id: '550e8400-e29b-41d4-a716-446655440000',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._disabled).toBeUndefined();
+  });
 });

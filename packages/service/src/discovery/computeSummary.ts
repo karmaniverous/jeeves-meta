@@ -22,6 +22,7 @@ export function computeSummary(
   let staleCount = 0;
   let errorCount = 0;
   let lockedCount = 0;
+  let disabledCount = 0;
   let neverSynthesizedCount = 0;
   let totalArchitectTokens = 0;
   let totalBuilderTokens = 0;
@@ -35,6 +36,7 @@ export function computeSummary(
     if (e.stalenessSeconds > 0) staleCount++;
     if (e.hasError) errorCount++;
     if (e.locked) lockedCount++;
+    if (e.disabled) disabledCount++;
     if (e.lastSynthesized === null) neverSynthesizedCount++;
 
     totalArchitectTokens += e.architectTokens ?? 0;
@@ -64,6 +66,7 @@ export function computeSummary(
     stale: staleCount,
     errors: errorCount,
     locked: lockedCount,
+    disabled: disabledCount,
     neverSynthesized: neverSynthesizedCount,
     tokens: {
       architect: totalArchitectTokens,
