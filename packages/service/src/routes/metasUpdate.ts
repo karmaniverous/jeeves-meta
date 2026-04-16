@@ -7,14 +7,15 @@
  * @module routes/metasUpdate
  */
 
-import { readFile, writeFile } from 'node:fs/promises';
+import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { findNode, listMetas } from '../discovery/index.js';
+import { resolveMetaDir } from '../lock.js';
 import { normalizePath } from '../normalizePath.js';
+import { readMetaJson } from '../readMetaJson.js';
 import type { RouteDeps } from './index.js';
 
 const updateBodySchema = z
@@ -31,11 +32,11 @@ export function registerMetasUpdateRoute(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
+  void deps; // Signature matches other route registrars; deps unused for direct-read route
+
   app.patch<{ Params: { path: string } }>(
     '/metas/:path',
     async (request, reply) => {
-      const { config, watcher } = deps;
-
       const parseResult = updateBodySchema.safeParse(request.body);
       if (!parseResult.success) {
         return reply.status(400).send({
@@ -46,21 +47,19 @@ export function registerMetasUpdateRoute(
       const updates = parseResult.data;
 
       const targetPath = normalizePath(decodeURIComponent(request.params.path));
-      const result = await listMetas(config, watcher);
-      const targetNode = findNode(result.tree, targetPath);
+      const metaDir = resolveMetaDir(targetPath);
 
-      if (!targetNode) {
+      let meta: Record<string, unknown>;
+      try {
+        meta = (await readMetaJson(metaDir)) as Record<string, unknown>;
+      } catch {
         return reply.status(404).send({
           error: 'NOT_FOUND',
           message: 'Meta path not found: ' + targetPath,
         });
       }
 
-      const metaJsonPath = join(targetNode.metaPath, 'meta.json');
-      const meta = JSON.parse(await readFile(metaJsonPath, 'utf8')) as Record<
-        string,
-        unknown
-      >;
+      const metaJsonPath = join(metaDir, 'meta.json');
 
       const KEYS = [
         '_steer',
@@ -101,7 +100,7 @@ export function registerMetasUpdateRoute(
       }
 
       return reply.send({
-        path: targetNode.metaPath,
+        path: metaDir,
         meta: projected,
       });
     },
