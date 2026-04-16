@@ -4,7 +4,7 @@ OpenClaw plugin for [jeeves-meta](../service/). A thin HTTP client that register
 
 ## Features
 
-- **Eleven tools** — standard: `meta_status`, `meta_config`, `meta_config_apply`, `meta_service`; custom: `meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_queue` (list/clear/abort)
+- **Twelve tools** — standard: `meta_status`, `meta_config`, `meta_config_apply`, `meta_service`; custom: `meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_queue` (list/clear/abort), `meta_update`
 - **MetaServiceClient** — typed HTTP client delegating all operations to the running service
 - **TOOLS.md injection** — periodic refresh of entity stats via `ComponentWriter` from `@karmaniverous/jeeves` (73-second prime interval)
 - **Cleanup escalation** — passes `gatewayUrl` into `ComponentWriter` so managed-content cleanup can request a gateway session when needed
@@ -57,7 +57,7 @@ The `configRoot` setting tells `@karmaniverous/jeeves` core where to find the pl
 ## Documentation
 
 - **[Plugin Setup](guides/plugin-setup.md)** — installation, config, lifecycle
-- **[Tools Reference](guides/tools-reference.md)** — 11 tools: standard (meta_status, meta_config, meta_config_apply, meta_service) + custom (meta_list, meta_detail, meta_trigger, meta_preview, meta_seed, meta_unlock, meta_queue)
+- **[Tools Reference](guides/tools-reference.md)** — 12 tools: standard (meta_status, meta_config, meta_config_apply, meta_service) + custom (meta_list, meta_detail, meta_trigger, meta_preview, meta_seed, meta_unlock, meta_queue, meta_update)
 - **[Virtual Rules](guides/virtual-rules.md)** — watcher inference rules
 - **[TOOLS.md Injection](guides/tools-injection.md)** — dynamic prompt generation
 
