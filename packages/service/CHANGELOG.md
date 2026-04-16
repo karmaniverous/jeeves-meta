@@ -2,9 +2,19 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.13.11](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.10...0.13.11)
+#### [0.14.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.11...0.14.0)
+
+- feat: add _disabled flag and meta_update tool (#123, #124) [`#125`](https://github.com/karmaniverous/jeeves-meta/pull/125)
+- docs: update READMEs and skill for meta_update tool and _disabled flag [`7a9cdaf`](https://github.com/karmaniverous/jeeves-meta/commit/7a9cdafe61470f7d0001847dd7b77dffdd3fa147)
+- refactor: PATCH route uses resolveMetaDir instead of full listMetas walk [`4abc29a`](https://github.com/karmaniverous/jeeves-meta/commit/4abc29a249353775772f1ea2a45bdfc34eea8912)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.10.7 [`1196955`](https://github.com/karmaniverous/jeeves-meta/commit/11969551f51214e7358f068b40c2c7fcd19f4acc)
+
+#### [service/0.13.11](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.10...service/0.13.11)
+
+> 15 April 2026
 
 - updated jeeves-core [`9e95518`](https://github.com/karmaniverous/jeeves-meta/commit/9e95518310bd3de59fb48b966f3e93381e86a829)
+- chore: release @karmaniverous/jeeves-meta v0.13.11 [`fa46b9b`](https://github.com/karmaniverous/jeeves-meta/commit/fa46b9bceef113cab1242fac9ffd3b43d1fc18de)
 
 #### [service/0.13.10](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.9...service/0.13.10)
 
