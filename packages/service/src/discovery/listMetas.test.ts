@@ -223,6 +223,31 @@ describe('listMetas', () => {
     expect(result.tree.nodes.size).toBe(2);
   });
 
+  it('includes disabled meta in listing with disabled: true', async () => {
+    const enabled = join(testDir, 'enabled', '.meta');
+    const disabled = join(testDir, 'disabled', '.meta');
+
+    createMeta(enabled, {
+      _generatedAt: new Date(Date.now() - 3600_000).toISOString(),
+    });
+    createMeta(disabled, {
+      _generatedAt: new Date(Date.now() - 3600_000).toISOString(),
+      _disabled: true,
+    });
+
+    const watcher = mockWatcher([enabled, disabled]);
+    const result = await listMetas(makeConfig(), watcher);
+
+    expect(result.entries).toHaveLength(2);
+    const disabledEntry = result.entries.find((e) =>
+      e.path.includes('disabled'),
+    );
+    const enabledEntry = result.entries.find((e) => e.path.includes('enabled'));
+    expect(disabledEntry?.disabled).toBe(true);
+    expect(enabledEntry?.disabled).toBe(false);
+    expect(result.summary.disabled).toBe(1);
+  });
+
   it('tracks stalest and last synthesized correctly', async () => {
     const old = join(testDir, 'old', '.meta');
     const recent = join(testDir, 'recent', '.meta');

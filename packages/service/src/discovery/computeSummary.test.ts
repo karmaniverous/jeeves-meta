@@ -22,6 +22,7 @@ function makeEntry(overrides: Partial<MetaEntry> = {}): MetaEntry {
     architectTokens: overrides.architectTokens ?? null,
     builderTokens: overrides.builderTokens ?? null,
     criticTokens: overrides.criticTokens ?? null,
+    disabled: overrides.disabled ?? false,
     children: overrides.children ?? 0,
     node: overrides.node ?? ({} as MetaEntry['node']),
     meta: overrides.meta ?? ({} as MetaEntry['meta']),
@@ -36,6 +37,7 @@ describe('computeSummary', () => {
     expect(summary.stale).toBe(0);
     expect(summary.errors).toBe(0);
     expect(summary.locked).toBe(0);
+    expect(summary.disabled).toBe(0);
     expect(summary.neverSynthesized).toBe(0);
     expect(summary.tokens.architect).toBe(0);
     expect(summary.tokens.builder).toBe(0);
@@ -198,5 +200,17 @@ describe('computeSummary', () => {
     const summary = computeSummary(entries, 0.5);
 
     expect(summary.locked).toBe(2);
+  });
+
+  it('counts disabled entries', () => {
+    const entries = [
+      makeEntry({ path: 'j:/a/.meta', disabled: true }),
+      makeEntry({ path: 'j:/b/.meta', disabled: false }),
+      makeEntry({ path: 'j:/c/.meta', disabled: true }),
+    ];
+
+    const summary = computeSummary(entries, 0.5);
+
+    expect(summary.disabled).toBe(2);
   });
 });

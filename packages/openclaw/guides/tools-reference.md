@@ -4,7 +4,7 @@ title: Tools Reference
 
 # Tools Reference
 
-All tools delegate to the jeeves-meta HTTP service. The plugin registers 11 tools: 4 standard (produced by `createPluginToolset()`) and 7 custom.
+All tools delegate to the jeeves-meta HTTP service. The plugin registers 12 tools: 4 standard (produced by `createPluginToolset()`) and 8 custom.
 
 ## Standard Tools
 
@@ -41,7 +41,7 @@ List metas with summary stats and per-meta projection.
 
 **Parameters:**
 - `pathPrefix` (string, optional) — filter by path prefix
-- `filter` (object, optional) — structured filter: `hasError`, `staleHours`, `neverSynthesized`, `locked`
+- `filter` (object, optional) — structured filter: `hasError`, `staleHours`, `neverSynthesized`, `locked`, `disabled`
 - `fields` (string[], optional) — fields to include per meta
 
 **Response:** `{ summary, metas }`
@@ -116,4 +116,16 @@ Queue management: list pending items, clear the queue, or abort current synthesi
 **Response (list):** `{ current, pending, state }`
 **Response (clear):** `{ cleared: <count> }`
 **Response (abort):** `{ status: "aborted", path }` or 404 if nothing running
+
+## meta_update
+
+Update user-settable reserved properties on a meta entity. Delegates to `PATCH /metas/:path`.
+
+**Parameters:**
+- `path` (string, required) — `.meta/` or owner directory path
+- `updates` (object, required) — properties to set. Supported: `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`. Set a value to `null` to remove the property.
+
+**Response:** `{ path, meta }` — the updated meta with large generated fields (`_architect`, `_builder`, `_critic`, `_content`, `_feedback`) excluded.
+
+Engine-managed properties (tokens, timestamps, errors, synthesis output) are rejected. Unknown keys fail validation (400). Missing meta paths return 404.
 

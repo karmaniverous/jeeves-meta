@@ -327,11 +327,55 @@ describe('GET /metas — list with filters', () => {
       'lastSynthesized',
       'hasError',
       'locked',
+      'disabled',
       'architectTokens',
       'builderTokens',
       'criticTokens',
     ];
     expect(Object.keys(body.metas[0]).sort()).toEqual(expectedKeys.sort());
+  });
+
+  it('disabled filter works (true and false)', async () => {
+    const ownerActive = join(listRoot, 'active');
+    const ownerDisabled = join(listRoot, 'disabled-owner');
+    const pathActive = createMeta(ownerActive, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: '2026-03-01T00:00:00Z',
+    });
+    const pathDisabled = createMeta(ownerDisabled, {
+      _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      _generatedAt: '2026-03-01T00:00:00Z',
+      _disabled: true,
+    });
+    const watcher = makeWatcher([pathActive, pathDisabled]);
+    const deps = makeDeps({
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerMetasRoutes(app, deps);
+    await app.ready();
+
+    const resTrue = await app.inject({
+      method: 'GET',
+      url: '/metas?disabled=true',
+    });
+    const bodyTrue = resTrue.json<{
+      metas: Array<{ disabled: boolean; path: string }>;
+    }>();
+    expect(bodyTrue.metas).toHaveLength(1);
+    expect(bodyTrue.metas[0]?.disabled).toBe(true);
+    expect(bodyTrue.metas[0]?.path).toContain('disabled-owner');
+
+    const resFalse = await app.inject({
+      method: 'GET',
+      url: '/metas?disabled=false',
+    });
+    const bodyFalse = resFalse.json<{
+      metas: Array<{ disabled: boolean; path: string }>;
+    }>();
+    expect(bodyFalse.metas).toHaveLength(1);
+    expect(bodyFalse.metas[0]?.disabled).toBe(false);
+    expect(bodyFalse.metas[0]?.path).toContain('active');
   });
 });
 

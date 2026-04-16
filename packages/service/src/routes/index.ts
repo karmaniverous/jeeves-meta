@@ -16,6 +16,7 @@ import type { ServiceConfig } from '../schema/config.js';
 import { registerConfigRoute } from './config.js';
 import { registerConfigApplyRoute } from './configApply.js';
 import { registerMetasRoutes } from './metas.js';
+import { registerMetasUpdateRoute } from './metasUpdate.js';
 import { registerPreviewRoute } from './preview.js';
 import { registerQueueRoutes } from './queue.js';
 import { registerSeedRoute } from './seed.js';
@@ -78,6 +79,7 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
 
   registerStatusRoute(app, deps);
   registerMetasRoutes(app, deps);
+  registerMetasUpdateRoute(app, deps);
   registerSynthesizeRoute(app, deps);
   registerPreviewRoute(app, deps);
   registerSeedRoute(app, deps);

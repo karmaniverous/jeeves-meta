@@ -111,6 +111,9 @@ export const metaJsonSchema = z
      * Cleared on successful cycle.
      */
     _error: metaErrorSchema.optional(),
+
+    /** When true, this meta is skipped during staleness scheduling. Manual trigger still works. */
+    _disabled: z.boolean().optional(),
   })
   .loose();
 

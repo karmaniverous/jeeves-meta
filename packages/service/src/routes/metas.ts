@@ -41,6 +41,10 @@ const metasQuerySchema = z.object({
     .enum(['true', 'false'])
     .transform((v) => v === 'true')
     .optional(),
+  disabled: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
   fields: z.string().optional(),
 });
 
@@ -80,6 +84,9 @@ export function registerMetasRoutes(
     if (query.locked !== undefined) {
       entries = entries.filter((e) => e.locked === query.locked);
     }
+    if (query.disabled !== undefined) {
+      entries = entries.filter((e) => e.disabled === query.disabled);
+    }
     if (typeof query.staleHours === 'number') {
       entries = entries.filter(
         (e) => e.stalenessSeconds >= query.staleHours! * 3600,
@@ -99,6 +106,7 @@ export function registerMetasRoutes(
       'lastSynthesized',
       'hasError',
       'locked',
+      'disabled',
       'architectTokens',
       'builderTokens',
       'criticTokens',
@@ -117,6 +125,7 @@ export function registerMetasRoutes(
         lastSynthesized: e.lastSynthesized,
         hasError: e.hasError,
         locked: e.locked,
+        disabled: e.disabled,
         architectTokens: e.architectTokens,
         builderTokens: e.builderTokens,
         criticTokens: e.criticTokens,

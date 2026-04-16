@@ -196,7 +196,7 @@ export class Scheduler {
     try {
       const result = await listMetas(this.config, this.watcher);
       const stale = result.entries
-        .filter((e) => e.stalenessSeconds > 0)
+        .filter((e) => e.stalenessSeconds > 0 && !e.disabled)
         .map((e) => ({
           node: e.node,
           meta: e.meta,

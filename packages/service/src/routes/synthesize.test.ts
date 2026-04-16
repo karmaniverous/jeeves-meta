@@ -261,6 +261,49 @@ describe('POST /synthesize', () => {
     expect(body.path).toContain('stale');
   });
 
+  it('skips disabled metas during auto-select but honors explicit path', async () => {
+    const ownerStale = join(synthRoot, 'disabled-stale');
+    const metaJsonPath = createMeta(ownerStale, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: new Date(Date.now() - 86400_000).toISOString(),
+      _disabled: true,
+    });
+    const watcher = makeWatcher([metaJsonPath]);
+    const logger = makeLogger();
+    const queue = new SynthesisQueue(logger);
+
+    const deps = makeDeps({
+      queue,
+      watcher: watcher as unknown as RouteDeps['watcher'],
+    });
+    app = Fastify();
+    registerSynthesizeRoute(app, deps);
+    await app.ready();
+
+    // Auto-select: disabled meta must be skipped.
+    const resAuto = await app.inject({
+      method: 'POST',
+      url: '/synthesize',
+      payload: {},
+    });
+    expect(resAuto.statusCode).toBe(200);
+    const bodyAuto = resAuto.json<{ status: string }>();
+    expect(bodyAuto.status).toBe('skipped');
+    expect(queue.depth).toBe(0);
+
+    // Explicit path: manual trigger still works on disabled metas.
+    const resExplicit = await app.inject({
+      method: 'POST',
+      url: '/synthesize',
+      payload: { path: ownerStale },
+    });
+    expect(resExplicit.statusCode).toBe(202);
+    const bodyExplicit = resExplicit.json<{ status: string; path: string }>();
+    expect(bodyExplicit.status).toBe('accepted');
+    expect(bodyExplicit.path).toContain('disabled-stale');
+    expect(queue.depth).toBe(1);
+  });
+
   it('returns 503 when watcher unreachable and no path provided', async () => {
     const watcher: WatcherClient = {
       walk: vi.fn().mockRejectedValue(new Error('connection refused')),

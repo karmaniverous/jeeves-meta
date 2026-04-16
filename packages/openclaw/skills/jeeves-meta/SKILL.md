@@ -19,12 +19,12 @@ registration health.
 
 ### meta_list
 List all `.meta/` directories with summary stats and per-meta projection.
-Supports filtering by path prefix, error status, staleness, and lock state.
-Use for engine health checks and finding stale knowledge.
+Supports filtering by path prefix, error status, staleness, lock state, and
+disabled status. Use for engine health checks and finding stale knowledge.
 
 **Parameters:**
 - `pathPrefix` (optional): Filter by path prefix (e.g. "github/")
-- `filter` (optional): Structured filter (`{ hasError: true }`, `{ staleHours: 24 }`)
+- `filter` (optional): Structured filter (`{ hasError: true }`, `{ staleHours: 24 }`, `{ disabled: true }`)
 - `fields` (optional): Property projection array
 
 ### meta_detail
@@ -86,6 +86,17 @@ filtering to extract specific settings. Sensitive fields (e.g.
 - `path` (optional): JSONPath expression (e.g. `$.schedule`). If omitted,
   returns the full sanitized config.
 
+### meta_update
+Update user-settable reserved properties on a meta entity. Use this to
+toggle `_disabled`, change `_steer`, adjust `_emphasis` or `_depth`, or
+modify `_crossRefs` — without editing `meta.json` directly on the filesystem.
+
+**Parameters:**
+- `path` (required): `.meta/` or owner directory path.
+- `updates` (required): Object with properties to set. Supported:
+  `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`.
+  Set a value to `null` to remove the property.
+
 ### meta_queue
 Queue management: list pending items, clear the queue, or abort current
 synthesis. The synthesis queue is single-threaded; use this tool to inspect
@@ -113,6 +124,9 @@ what's running, clear queued work, or abort a stuck synthesis.
 - **Checking queue state:** `meta_queue` with action `list`
 - **Clearing queued work:** `meta_queue` with action `clear`
 - **Aborting stuck synthesis:** `meta_queue` with action `abort`
+- **Disabling a meta:** `meta_update` with path and `updates: { _disabled: true }`
+- **Re-enabling a meta:** `meta_update` with path and `updates: { _disabled: null }`
+- **Changing steer via API:** `meta_update` with path and `updates: { _steer: "new focus" }`
 - **Reading synthesis output:** Use `watcher_search` filtered by the properties
   configured in `metaProperty` (e.g. `{ "domains": ["meta"] }` in production).
   The default properties are `{ _meta: "current" }` for live metas and
@@ -131,6 +145,10 @@ what's running, clear queued work, or abort a stuck synthesis.
 - **Staleness:** Time since last synthesis. Deeper metas (leaves) update more
   often than rollup metas (parents). Cross-ref freshness does NOT affect
   the referencing meta's staleness — each meta synthesizes independently.
+- **Disabled (`_disabled`):** Set `_disabled: true` on a meta to exclude it
+  from automatic staleness scheduling. The scheduler and auto-select both
+  skip disabled metas. Manual triggers (`meta_trigger` with explicit path)
+  still work. Use `meta_update` to toggle the flag.
 - **Three steps:** Architect crafts the task brief, Builder produces content,
   Critic evaluates quality. The feedback loop self-improves over cycles.
 - **Archives:** Each cycle creates a timestamped snapshot in `.meta/archive/`.
@@ -501,6 +519,7 @@ The service exposes these endpoints (default port 1938):
 | GET | `/status` | Service health, queue state, dependency checks |
 | GET | `/metas` | List metas with filtering and field projection |
 | GET | `/metas/:path` | Single meta detail with optional archive |
+| PATCH | `/metas/:path` | Update user-settable reserved properties |
 | GET | `/preview` | Dry-run next synthesis candidate |
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
 | POST | `/synthesize/abort` | Abort the currently running synthesis |

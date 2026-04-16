@@ -65,7 +65,7 @@ jeeves-meta service start|stop|status|install|remove
 
 ### As an OpenClaw plugin
 
-Install the plugin package. Eleven tools become available to the agent:
+Install the plugin package. Twelve tools become available to the agent:
 
 - `meta_status` — service health, version, uptime
 - `meta_config` — query service configuration with optional JSONPath
@@ -78,6 +78,7 @@ Install the plugin package. Eleven tools become available to the agent:
 - `meta_seed` — create `.meta/` directory for a new path (with optional cross-refs and steer)
 - `meta_unlock` — remove stale `.lock` from a meta entity
 - `meta_queue` — queue management: list pending, clear queue, abort current synthesis
+- `meta_update` — update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`)
 
 ## Configuration
 

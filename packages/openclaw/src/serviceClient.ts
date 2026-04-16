@@ -113,6 +113,7 @@ export class MetaServiceClient {
     staleHours?: number;
     neverSynthesized?: boolean;
     locked?: boolean;
+    disabled?: boolean;
     fields?: string[];
   }): Promise<MetasResponse> {
     const qs = new URLSearchParams();
@@ -124,9 +125,30 @@ export class MetaServiceClient {
     if (params?.neverSynthesized !== undefined)
       qs.set('neverSynthesized', String(params.neverSynthesized));
     if (params?.locked !== undefined) qs.set('locked', String(params.locked));
+    if (params?.disabled !== undefined)
+      qs.set('disabled', String(params.disabled));
     if (params?.fields?.length) qs.set('fields', params.fields.join(','));
     const query = qs.toString();
     return this.get<MetasResponse>('/metas' + (query ? '?' + query : ''));
+  }
+
+  /** PATCH /metas/:path — update user-settable reserved properties. */
+  public async update(
+    metaPath: string,
+    updates: {
+      _steer?: string | null;
+      _emphasis?: number | null;
+      _depth?: number | null;
+      _crossRefs?: string[] | null;
+      _disabled?: boolean | null;
+    },
+  ): Promise<unknown> {
+    const encoded = encodeURIComponent(metaPath);
+    return fetchJson(`${this.baseUrl}/metas/${encoded}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
   }
 
   /** GET /metas/:path — detail for a single meta. */
