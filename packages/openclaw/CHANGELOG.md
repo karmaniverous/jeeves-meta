@@ -2,13 +2,23 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.10.7](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.6...0.10.7)
+#### [0.11.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.7...0.11.0)
+
+- feat: add _disabled flag and meta_update tool (#123, #124) [`#125`](https://github.com/karmaniverous/jeeves-meta/pull/125)
+- docs: update READMEs and skill for meta_update tool and _disabled flag [`7a9cdaf`](https://github.com/karmaniverous/jeeves-meta/commit/7a9cdafe61470f7d0001847dd7b77dffdd3fa147)
+- refactor: PATCH route uses resolveMetaDir instead of full listMetas walk [`4abc29a`](https://github.com/karmaniverous/jeeves-meta/commit/4abc29a249353775772f1ea2a45bdfc34eea8912)
+- chore: release @karmaniverous/jeeves-meta v0.14.0 [`17482f0`](https://github.com/karmaniverous/jeeves-meta/commit/17482f0bf74f506d52d0d67e92c4907a6bb3930c)
+
+#### [openclaw/0.10.7](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.6...openclaw/0.10.7)
+
+> 15 April 2026
 
 - fix: normalize owner paths in /synthesize route (#120) [`#121`](https://github.com/karmaniverous/jeeves-meta/pull/121)
 - fix: normalize owner paths in /synthesize route [`#120`](https://github.com/karmaniverous/jeeves-meta/pull/120)
 - feat: identify meta synthesis sessions by phase and entity path [`#119`](https://github.com/karmaniverous/jeeves-meta/pull/119)
 - fix: isolate gateway invoke session per synthesis [`#118`](https://github.com/karmaniverous/jeeves-meta/pull/118)
 - updated jeeves-core [`9e95518`](https://github.com/karmaniverous/jeeves-meta/commit/9e95518310bd3de59fb48b966f3e93381e86a829)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.10.7 [`1196955`](https://github.com/karmaniverous/jeeves-meta/commit/11969551f51214e7358f068b40c2c7fcd19f4acc)
 - chore: release @karmaniverous/jeeves-meta v0.13.10 [`aa045ea`](https://github.com/karmaniverous/jeeves-meta/commit/aa045ea4e7bccbebcce86ea597cfea22f1b61d8f)
 - chore: release @karmaniverous/jeeves-meta v0.13.9 [`fa19239`](https://github.com/karmaniverous/jeeves-meta/commit/fa19239890fc8ea81e4af92a15a8ef559cc18181)
 - chore: release @karmaniverous/jeeves-meta v0.13.8 [`aee33b6`](https://github.com/karmaniverous/jeeves-meta/commit/aee33b664ab5849a3f60c849fdd53c93a94df2bc)
