@@ -40,6 +40,18 @@ describe('derivePhaseState', () => {
     });
   });
 
+  it('errored at architect with cached builder preserves fresh downstream', () => {
+    const meta: MetaJson = {
+      _builder: 'cached brief',
+      _content: 'old content',
+      _error: { step: 'architect', code: 'TIMEOUT', message: 'Timed out' },
+    };
+    const result = derivePhaseState(meta);
+    expect(result.architect).toBe('failed');
+    expect(result.builder).toBe('fresh');
+    expect(result.critic).toBe('fresh');
+  });
+
   it('errored at architect with no cached builder', () => {
     const meta: MetaJson = {
       _error: { step: 'architect', code: 'TIMEOUT', message: 'Timed out' },

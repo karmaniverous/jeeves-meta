@@ -308,7 +308,8 @@ describe('SynthesisQueue', () => {
       expect(queue.currentPhase).not.toBeNull();
       expect(queue.currentPhase?.path).toBe('/meta/x');
       expect(queue.currentPhase?.phase).toBe('architect');
-      expect(queue.currentPhase?.startedAt).toBeDefined();
+      expect(typeof queue.currentPhase?.startedAt).toBe('string');
+      expect(new Date(queue.currentPhase!.startedAt).getTime()).not.toBeNaN();
 
       queue.clearCurrentPhase();
       expect(queue.currentPhase).toBeNull();
@@ -318,6 +319,63 @@ describe('SynthesisQueue', () => {
       queue.setCurrentPhase('/meta/x', 'critic');
       expect(queue.has('/meta/x')).toBe(true);
       expect(queue.has('/meta/y')).toBe(false);
+    });
+  });
+
+  describe('clear', () => {
+    it('removes all legacy queue items and returns count', () => {
+      queue.enqueue('/meta/a');
+      queue.enqueue('/meta/b');
+      queue.enqueue('/meta/c');
+      const count = queue.clear();
+      expect(count).toBe(3);
+      expect(queue.depth).toBe(0);
+      expect(queue.items).toEqual([]);
+    });
+
+    it('does not affect currently-running item', () => {
+      queue.enqueue('/meta/a');
+      queue.enqueue('/meta/b');
+      queue.dequeue(); // /meta/a becomes current
+      queue.clear();
+      expect(queue.current?.path).toBe('/meta/a');
+      expect(queue.depth).toBe(0);
+    });
+
+    it('returns 0 when queue is already empty', () => {
+      expect(queue.clear()).toBe(0);
+    });
+  });
+
+  describe('onEnqueue callback', () => {
+    it('fires on new legacy enqueue', () => {
+      const cb = vi.fn();
+      queue.onEnqueue(cb);
+      queue.enqueue('/meta/a');
+      expect(cb).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires on new override enqueue', () => {
+      const cb = vi.fn();
+      queue.onEnqueue(cb);
+      queue.enqueueOverride('/meta/a');
+      expect(cb).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires on duplicate legacy enqueue (callback still called)', () => {
+      const cb = vi.fn();
+      queue.onEnqueue(cb);
+      queue.enqueue('/meta/a');
+      queue.enqueue('/meta/a'); // duplicate — callback not called
+      expect(cb).toHaveBeenCalledTimes(1);
+    });
+
+    it('fires on duplicate override enqueue (callback not called)', () => {
+      const cb = vi.fn();
+      queue.onEnqueue(cb);
+      queue.enqueueOverride('/meta/a');
+      queue.enqueueOverride('/meta/a'); // duplicate — callback not called
+      expect(cb).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -175,6 +175,35 @@ describe('metaJsonSchema', () => {
     expect(result.data?._disabled).toBeUndefined();
   });
 
+  it('rejects negative _emphasis', () => {
+    const result = metaJsonSchema.safeParse({
+      _emphasis: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts _emphasis of 0', () => {
+    const result = metaJsonSchema.safeParse({
+      _emphasis: 0,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._emphasis).toBe(0);
+  });
+
+  it('rejects non-integer _synthesisCount', () => {
+    const result = metaJsonSchema.safeParse({
+      _synthesisCount: 1.5,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid _generatedAt datetime', () => {
+    const result = metaJsonSchema.safeParse({
+      _generatedAt: 'not-a-date',
+    });
+    expect(result.success).toBe(false);
+  });
+
   // ── _phaseState schema tests (Task #1 gap) ────────────────────────
 
   it('accepts valid _phaseState with all fresh', () => {

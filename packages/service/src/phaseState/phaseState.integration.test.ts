@@ -386,13 +386,13 @@ describe('full-cycle completion (Task #17)', () => {
     expect(isFullyFresh(ps)).toBe(true);
   });
 
-  it('architect success resets _synthesisCount to 0 (via convention)', () => {
-    // This tests the convention, not the function — architect success
-    // means _synthesisCount should be set to 0 by the caller
+  it('architect success transitions to builder pending', () => {
     const ps = architectSuccess(initialPhaseState());
-    expect(ps.architect).toBe('fresh');
-    // The actual _synthesisCount=0 happens in runArchitect, tested here
-    // as a convention verification
+    expect(ps).toEqual({
+      architect: 'fresh',
+      builder: 'pending',
+      critic: 'stale',
+    });
   });
 
   it('enforceInvariant promotes stale to pending when it becomes first non-fresh', () => {
@@ -512,9 +512,11 @@ describe('I/O integration (Tasks #14-17)', () => {
     const onDisk = JSON.parse(
       readFileSync(join(metaPath, 'meta.json'), 'utf8'),
     ) as MetaJson;
-    expect(onDisk._phaseState).toBeDefined();
-    expect(onDisk._phaseState!.architect).toBe('fresh');
-    expect(onDisk._phaseState!.builder).toBe('pending');
+    expect(onDisk._phaseState).toEqual({
+      architect: 'fresh',
+      builder: 'pending',
+      critic: 'stale',
+    });
 
     releaseLock(metaPath);
   });
@@ -565,7 +567,7 @@ describe('I/O integration (Tasks #14-17)', () => {
     const archiveFiles = readdirSync(archiveDir).filter((f) =>
       f.endsWith('.json'),
     );
-    expect(archiveFiles.length).toBeGreaterThan(0);
+    expect(archiveFiles.length).toBe(1);
 
     // Verify archive content has _archived: true
     const archiveContent = JSON.parse(
@@ -649,10 +651,16 @@ describe('I/O integration (Tasks #14-17)', () => {
     const onDisk = JSON.parse(
       readFileSync(join(metaPath, 'meta.json'), 'utf8'),
     ) as MetaJson;
-    expect(onDisk._error).toBeDefined();
-    expect(onDisk._error!.code).toBe('ABORT');
-    expect(onDisk._error!.message).toBe('Aborted by operator');
-    expect(onDisk._phaseState!.builder).toBe('failed');
+    expect(onDisk._error).toEqual({
+      step: 'builder',
+      code: 'ABORT',
+      message: 'Aborted by operator',
+    });
+    expect(onDisk._phaseState).toEqual({
+      architect: 'fresh',
+      builder: 'failed',
+      critic: 'stale',
+    });
 
     releaseLock(metaPath);
   });

@@ -15,6 +15,7 @@ import {
   isFullyFresh,
   phaseFailed,
   phaseRunning,
+  retryAllFailed,
   retryPhase,
 } from './phaseTransitions.js';
 
@@ -197,6 +198,17 @@ describe('phaseTransitions', () => {
         critic: 'pending',
       });
     });
+
+    it('preserves failed critic', () => {
+      const state: PhaseState = {
+        architect: 'fresh',
+        builder: 'running',
+        critic: 'failed',
+      };
+      const result = builderSuccess(state);
+      expect(result.builder).toBe('fresh');
+      expect(result.critic).toBe('failed');
+    });
   });
 
   describe('criticSuccess', () => {
@@ -281,6 +293,53 @@ describe('phaseTransitions', () => {
       };
       const result = retryPhase(state, 'critic');
       expect(result.critic).toBe('pending');
+    });
+  });
+
+  describe('retryAllFailed', () => {
+    it('no-op when no phases are failed', () => {
+      const state: PhaseState = {
+        architect: 'fresh',
+        builder: 'pending',
+        critic: 'stale',
+      };
+      const result = retryAllFailed(state);
+      expect(result).toEqual(state);
+    });
+
+    it('retries single failed phase', () => {
+      const state: PhaseState = {
+        architect: 'fresh',
+        builder: 'failed',
+        critic: 'stale',
+      };
+      const result = retryAllFailed(state);
+      expect(result.builder).toBe('pending');
+      expect(result.critic).toBe('stale');
+    });
+
+    it('retries multiple failed phases — first becomes pending, rest stay stale', () => {
+      const state: PhaseState = {
+        architect: 'failed',
+        builder: 'failed',
+        critic: 'failed',
+      };
+      const result = retryAllFailed(state);
+      // enforceInvariant promotes only the first non-fresh to pending
+      expect(result.architect).toBe('pending');
+      expect(result.builder).toBe('stale');
+      expect(result.critic).toBe('stale');
+    });
+
+    it('retries two downstream failed phases', () => {
+      const state: PhaseState = {
+        architect: 'fresh',
+        builder: 'failed',
+        critic: 'failed',
+      };
+      const result = retryAllFailed(state);
+      expect(result.builder).toBe('pending');
+      expect(result.critic).toBe('stale');
     });
   });
 

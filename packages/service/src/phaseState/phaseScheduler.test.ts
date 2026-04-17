@@ -1,8 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
+import type { MetaEntry } from '../discovery/listMetas.js';
 import type { MetaNode } from '../discovery/types.js';
 import type { MetaJson, PhaseState } from '../schema/meta.js';
-import { selectPhaseCandidate } from './phaseScheduler.js';
+import {
+  buildPhaseCandidates,
+  rankPhaseCandidates,
+  selectPhaseCandidate,
+} from './phaseScheduler.js';
 
 /** Helper to create a minimal MetaNode stub. */
 function makeNode(metaPath: string, treeDepth = 0): MetaNode {
@@ -228,5 +233,165 @@ describe('selectPhaseCandidate', () => {
     );
     expect(result!.owedPhase).toBe('architect');
     expect(result!.band).toBe(3);
+  });
+
+  it('treeDepth with depthWeight influences tiebreak', () => {
+    const metas = [
+      candidate(
+        'shallow/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'pending' },
+        { actualStaleness: 1000, treeDepth: 0 },
+      ),
+      candidate(
+        'deep/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'pending' },
+        { actualStaleness: 1000, treeDepth: 5 },
+      ),
+    ];
+
+    // With depthWeight = 0, same staleness → order depends on effective staleness calc
+    const noWeight = selectPhaseCandidate(metas, 0);
+    expect(noWeight).not.toBeNull();
+
+    // With depthWeight > 0, deeper node should get boosted staleness
+    const withWeight = selectPhaseCandidate(metas, 2);
+    expect(withWeight).not.toBeNull();
+    expect(withWeight!.node.metaPath).toBe('deep/.meta');
+  });
+});
+
+describe('buildPhaseCandidates', () => {
+  function makeEntry(
+    metaPath: string,
+    meta: MetaJson,
+    opts: {
+      locked?: boolean;
+      disabled?: boolean;
+      stalenessSeconds?: number;
+      treeDepth?: number;
+    } = {},
+  ): MetaEntry {
+    return {
+      path: metaPath,
+      depth: opts.treeDepth ?? 0,
+      emphasis: 1,
+      stalenessSeconds: opts.stalenessSeconds ?? 3600,
+      lastSynthesized: null,
+      hasError: false,
+      locked: opts.locked ?? false,
+      disabled: opts.disabled ?? false,
+      architectTokens: null,
+      builderTokens: null,
+      criticTokens: null,
+      children: 0,
+      node: makeNode(metaPath, opts.treeDepth ?? 0),
+      meta,
+    };
+  }
+
+  it('derives phase state from meta fields', () => {
+    const entries: MetaEntry[] = [
+      makeEntry('a/.meta', {}), // never-synthesized → architect pending
+    ];
+    const candidates = buildPhaseCandidates(entries);
+    expect(candidates).toHaveLength(1);
+    expect(candidates[0].phaseState.architect).toBe('pending');
+    expect(candidates[0].phaseState.builder).toBe('stale');
+  });
+
+  it('auto-retries failed phases', () => {
+    const entries: MetaEntry[] = [
+      makeEntry('a/.meta', {
+        _phaseState: {
+          architect: 'fresh',
+          builder: 'failed',
+          critic: 'stale',
+        },
+      }),
+    ];
+    const candidates = buildPhaseCandidates(entries);
+    expect(candidates[0].phaseState.builder).toBe('pending');
+  });
+
+  it('maps staleness, locked, and disabled from entry', () => {
+    const entries: MetaEntry[] = [
+      makeEntry(
+        'a/.meta',
+        { _builder: 'b', _content: 'c', _feedback: 'f' },
+        { locked: true, disabled: true, stalenessSeconds: 9999 },
+      ),
+    ];
+    const candidates = buildPhaseCandidates(entries);
+    expect(candidates[0].locked).toBe(true);
+    expect(candidates[0].disabled).toBe(true);
+    expect(candidates[0].actualStaleness).toBe(9999);
+  });
+});
+
+describe('rankPhaseCandidates', () => {
+  it('returns full sorted list, not just the first', () => {
+    const metas = [
+      candidate('arch/.meta', {
+        architect: 'pending',
+        builder: 'stale',
+        critic: 'stale',
+      }),
+      candidate('build/.meta', {
+        architect: 'fresh',
+        builder: 'pending',
+        critic: 'stale',
+      }),
+      candidate('crit/.meta', {
+        architect: 'fresh',
+        builder: 'fresh',
+        critic: 'pending',
+      }),
+    ];
+
+    const ranked = rankPhaseCandidates(metas, 1);
+    expect(ranked).toHaveLength(3);
+    expect(ranked[0].owedPhase).toBe('critic');
+    expect(ranked[0].band).toBe(1);
+    expect(ranked[1].owedPhase).toBe('builder');
+    expect(ranked[1].band).toBe(2);
+    expect(ranked[2].owedPhase).toBe('architect');
+    expect(ranked[2].band).toBe(3);
+  });
+
+  it('sorts within band by effective staleness descending', () => {
+    const metas = [
+      candidate(
+        'a/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'pending' },
+        { actualStaleness: 100 },
+      ),
+      candidate(
+        'b/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'pending' },
+        { actualStaleness: 5000 },
+      ),
+      candidate(
+        'c/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'pending' },
+        { actualStaleness: 2000 },
+      ),
+    ];
+
+    const ranked = rankPhaseCandidates(metas, 0);
+    expect(ranked[0].node.metaPath).toBe('b/.meta');
+    expect(ranked[1].node.metaPath).toBe('c/.meta');
+    expect(ranked[2].node.metaPath).toBe('a/.meta');
+  });
+
+  it('returns empty array when all candidates are ineligible', () => {
+    const metas = [
+      candidate('a/.meta', {
+        architect: 'fresh',
+        builder: 'fresh',
+        critic: 'fresh',
+      }),
+    ];
+    const ranked = rankPhaseCandidates(metas, 1);
+    expect(ranked).toEqual([]);
   });
 });
