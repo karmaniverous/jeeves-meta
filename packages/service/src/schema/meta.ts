@@ -11,6 +11,37 @@ import { z } from 'zod';
 
 import { metaErrorSchema } from './error.js';
 
+/** Phase names in pipeline order. */
+export const phaseNames = ['architect', 'builder', 'critic'] as const;
+
+/** A single synthesis phase name. */
+export type PhaseName = (typeof phaseNames)[number];
+
+/** Valid states for a synthesis phase. */
+export const phaseStatuses = [
+  'fresh',
+  'stale',
+  'pending',
+  'running',
+  'failed',
+] as const;
+
+/** A single phase status value. */
+export type PhaseStatus = (typeof phaseStatuses)[number];
+
+/** Per-phase state record. */
+export type PhaseState = Record<PhaseName, PhaseStatus>;
+
+/** Zod schema for a per-phase status value. */
+const phaseStatusSchema = z.enum(phaseStatuses);
+
+/** Zod schema for the per-meta phase state record. */
+export const phaseStateSchema = z.object({
+  architect: phaseStatusSchema,
+  builder: phaseStatusSchema,
+  critic: phaseStatusSchema,
+});
+
 /** Zod schema for the reserved (underscore-prefixed) meta.json properties. */
 export const metaJsonSchema = z
   .object({
@@ -114,6 +145,13 @@ export const metaJsonSchema = z
 
     /** When true, this meta is skipped during staleness scheduling. Manual trigger still works. */
     _disabled: z.boolean().optional(),
+
+    /**
+     * Per-phase state machine record. Engine-managed.
+     * Keyed by phase name (architect, builder, critic) with status values.
+     * Persisted to survive ticks; derived on first load for back-compat.
+     */
+    _phaseState: phaseStateSchema.optional(),
   })
   .loose();
 

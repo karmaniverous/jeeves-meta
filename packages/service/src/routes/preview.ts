@@ -14,6 +14,12 @@ import {
   listMetas,
 } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
+import {
+  type ArchitectInvalidator,
+  derivePhaseState,
+  getOwedPhase,
+  getPriorityBand,
+} from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
 import {
   computeStalenessScore,
@@ -83,6 +89,21 @@ export function registerPreviewRoute(
       Boolean(latestArchive),
     );
 
+    // _architect change detection
+    const architectChanged = latestArchive
+      ? (meta._architect ?? '') !== (latestArchive._architect ?? '')
+      : Boolean(meta._architect);
+
+    // _crossRefs declaration change detection
+    const currentRefs = (meta._crossRefs ?? []).slice().sort().join(',');
+    const archiveRefs = (latestArchive?._crossRefs ?? [])
+      .slice()
+      .sort()
+      .join(',');
+    const crossRefsDeclChanged = latestArchive
+      ? currentRefs !== archiveRefs
+      : currentRefs.length > 0;
+
     const architectTriggered = isArchitectTriggered(
       meta,
       structureChanged,
@@ -111,6 +132,39 @@ export function registerPreviewRoute(
       config.depthWeight,
     );
 
+    // Phase state
+    const phaseState = derivePhaseState(meta, {
+      structureChanged,
+      steerChanged,
+      architectChanged,
+      crossRefsChanged: crossRefsDeclChanged,
+      architectEvery: config.architectEvery,
+    });
+    const owedPhase = getOwedPhase(phaseState);
+    const priorityBand = getPriorityBand(phaseState);
+
+    // Architect invalidators
+    const architectInvalidators: ArchitectInvalidator[] = [];
+    if (owedPhase === 'architect') {
+      if (structureChanged) architectInvalidators.push('structureHash');
+      if (steerChanged) architectInvalidators.push('steer');
+      if (architectChanged) architectInvalidators.push('_architect');
+      if (crossRefsDeclChanged) architectInvalidators.push('_crossRefs');
+      if ((meta._synthesisCount ?? 0) >= config.architectEvery) {
+        architectInvalidators.push('architectEvery');
+      }
+    }
+
+    // Staleness inputs
+    const stalenessInputs = {
+      structureHash,
+      steerChanged,
+      architectChanged,
+      crossRefsDeclChanged,
+      scopeMtimeMax: null as string | null,
+      crossRefContentChanged: false,
+    };
+
     return {
       path: targetNode.metaPath,
       staleness: {
@@ -136,6 +190,12 @@ export function registerPreviewRoute(
         deltaCount: deltaFiles.length,
       },
       estimatedTokens,
+      // New phase-state fields (additive)
+      owedPhase,
+      priorityBand,
+      phaseState,
+      stalenessInputs,
+      architectInvalidators,
     };
   });
 }

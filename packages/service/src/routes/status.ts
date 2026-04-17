@@ -11,6 +11,9 @@ import { createStatusHandler } from '@karmaniverous/jeeves';
 import type { FastifyInstance } from 'fastify';
 
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
+import { listMetas } from '../discovery/index.js';
+import { derivePhaseState, selectPhaseCandidate } from '../phaseState/index.js';
+import type { PhaseName, PhaseStatus } from '../schema/meta.js';
 import type { RouteDeps } from './index.js';
 
 interface DepHealth {
@@ -35,7 +38,6 @@ async function checkDependency(url: string, path: string): Promise<DepHealth> {
   }
 }
 
-/** Check watcher, surfacing initialScan.active as indexing state. */
 async function checkWatcher(url: string): Promise<WatcherHealth> {
   const checkedAt = new Date().toISOString();
   try {
@@ -65,9 +67,16 @@ export type ServiceState = 'idle' | 'synthesizing' | 'waiting' | 'stopping';
 /** Derive service-specific state from current activity and lifecycle. */
 function deriveServiceState(deps: RouteDeps): ServiceState {
   if (deps.shuttingDown) return 'stopping';
-  if (deps.queue.current) return 'synthesizing';
-  if (deps.queue.depth > 0) return 'waiting';
+  if (deps.queue.current || deps.queue.currentPhase) return 'synthesizing';
+  if (deps.queue.depth > 0 || deps.queue.overrides.length > 0) return 'waiting';
   return 'idle';
+}
+
+/** Phase state count record. */
+type PhaseStateCounts = Record<PhaseStatus, number>;
+
+function emptyPhaseCounts(): PhaseStateCounts {
+  return { fresh: 0, stale: 0, pending: 0, running: 0, failed: 0 };
 }
 
 export function registerStatusRoute(
@@ -78,7 +87,7 @@ export function registerStatusRoute(
     name: SERVICE_NAME,
     version: SERVICE_VERSION,
     getHealth: async () => {
-      const { config, queue, scheduler, stats } = deps;
+      const { config, queue, scheduler, stats, watcher } = deps;
 
       // On-demand dependency checks
       const [watcherHealth, gatewayHealth] = await Promise.all([
@@ -86,9 +95,59 @@ export function registerStatusRoute(
         checkDependency(config.gatewayUrl, '/status'),
       ]);
 
+      // Phase state summary
+      const phaseStateSummary: Record<PhaseName, PhaseStateCounts> = {
+        architect: emptyPhaseCounts(),
+        builder: emptyPhaseCounts(),
+        critic: emptyPhaseCounts(),
+      };
+
+      let nextPhase: {
+        path: string;
+        phase: PhaseName;
+        band: number;
+        staleness: number;
+      } | null = null;
+
+      try {
+        const metaResult = await listMetas(config, watcher);
+
+        const candidates = [];
+
+        for (const entry of metaResult.entries) {
+          const ps = derivePhaseState(entry.meta);
+          // Count phase states
+          for (const phase of ['architect', 'builder', 'critic'] as const) {
+            phaseStateSummary[phase][ps[phase]]++;
+          }
+
+          candidates.push({
+            node: entry.node,
+            meta: entry.meta,
+            phaseState: ps,
+            actualStaleness: entry.stalenessSeconds,
+            locked: entry.locked,
+            disabled: entry.disabled,
+          });
+        }
+
+        // Find next phase candidate
+        const winner = selectPhaseCandidate(candidates, config.depthWeight);
+        if (winner) {
+          nextPhase = {
+            path: winner.node.metaPath,
+            phase: winner.owedPhase,
+            band: winner.band,
+            staleness: winner.effectiveStaleness,
+          };
+        }
+      } catch {
+        // Watcher unreachable — phase summary unavailable
+      }
+
       return {
         serviceState: deriveServiceState(deps),
-        currentTarget: queue.current?.path ?? null,
+        currentTarget: queue.current?.path ?? queue.currentPhase?.path ?? null,
         queue: queue.getState(),
         stats: {
           totalSyntheses: stats.totalSyntheses,
@@ -108,6 +167,8 @@ export function registerStatusRoute(
           },
           gateway: gatewayHealth,
         },
+        phaseStateSummary,
+        nextPhase,
       };
     },
   });

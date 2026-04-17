@@ -19,6 +19,7 @@ import { computeSummary } from '../discovery/computeSummary.js';
 import { getScopeFiles } from '../discovery/index.js';
 import { findNode, listMetas } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
+import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
 import { computeStalenessScore } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
@@ -110,10 +111,13 @@ export function registerMetasRoutes(
       'architectTokens',
       'builderTokens',
       'criticTokens',
+      'phaseState',
+      'owedPhase',
     ];
     const projectedFields = fieldList ?? defaultFields;
 
     const metas = entries.map((e) => {
+      const ps = derivePhaseState(e.meta);
       const full: Record<string, unknown> = {
         path: e.path,
         depth: e.depth,
@@ -129,6 +133,8 @@ export function registerMetasRoutes(
         architectTokens: e.architectTokens,
         builderTokens: e.builderTokens,
         criticTokens: e.criticTokens,
+        phaseState: ps,
+        owedPhase: getOwedPhase(ps),
       };
       const projected: Record<string, unknown> = {};
       for (const f of projectedFields) {
@@ -207,6 +213,13 @@ export function registerMetasRoutes(
         config.depthWeight,
       );
 
+      // Phase state
+      const entry = result.entries.find(
+        (e) => e.node.metaPath === targetNode.metaPath,
+      );
+      const phaseState = entry ? derivePhaseState(entry.meta) : null;
+      const owedPhase = phaseState ? getOwedPhase(phaseState) : null;
+
       const response: Record<string, unknown> = {
         path: targetNode.metaPath,
         meta: projectMeta(meta),
@@ -219,6 +232,8 @@ export function registerMetasRoutes(
           seconds: staleSeconds,
           score: Math.round(score * 100) / 100,
         },
+        phaseState,
+        owedPhase,
       };
 
       // Cross-refs status

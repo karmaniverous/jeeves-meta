@@ -1,6 +1,9 @@
 /**
  * POST /synthesize route handler.
  *
+ * Path-targeted triggers create explicit override entries in the queue.
+ * Corpus-wide triggers discover the stalest candidate.
+ *
  * @module routes/synthesize
  */
 
@@ -9,6 +12,8 @@ import { z } from 'zod';
 
 import { listMetas } from '../discovery/index.js';
 import { resolveMetaDir } from '../lock.js';
+import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
+import { readMetaJson } from '../readMetaJson.js';
 import { discoverStalestPath } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
@@ -25,44 +30,80 @@ export function registerSynthesizeRoute(
     const body = synthesizeBodySchema.parse(request.body);
     const { config, watcher, queue } = deps;
 
-    let targetPath: string;
     if (body.path) {
-      targetPath = resolveMetaDir(body.path);
-    } else {
-      // Discover stalest candidate
-      let result;
+      // Path-targeted trigger: create override entry
+      const targetPath = resolveMetaDir(body.path);
+
+      // Read meta to determine owed phase
+      let owedPhase: string | null = null;
       try {
-        result = await listMetas(config, watcher);
+        const meta = await readMetaJson(targetPath);
+        const phaseState = derivePhaseState(meta);
+        owedPhase = getOwedPhase(phaseState);
       } catch {
-        return reply.status(503).send({
-          error: 'SERVICE_UNAVAILABLE',
-          message: 'Watcher unreachable — cannot discover candidates',
-        });
+        // Meta unreadable — proceed, phase will be evaluated at dequeue time
       }
-      const stale = result.entries
-        .filter((e) => e.stalenessSeconds > 0 && !e.disabled)
-        .map((e) => ({
-          node: e.node,
-          meta: e.meta,
-          actualStaleness: e.stalenessSeconds,
-        }));
-      const stalest = discoverStalestPath(stale, config.depthWeight);
-      if (!stalest) {
-        return reply.code(200).send({
-          status: 'skipped',
-          message: 'No stale metas found. Nothing to synthesize.',
-        });
+
+      // Fully fresh meta → skip
+      if (owedPhase === null) {
+        try {
+          const meta = await readMetaJson(targetPath);
+          if (meta._phaseState || meta._content) {
+            return await reply.code(200).send({
+              status: 'skipped',
+              path: targetPath,
+              owedPhase: null,
+              queuePosition: -1,
+              alreadyQueued: false,
+            });
+          }
+        } catch {
+          // If we can't read it, still enqueue as override
+        }
       }
-      targetPath = stalest;
+
+      const result = queue.enqueueOverride(targetPath);
+      return reply.code(202).send({
+        status: 'queued',
+        path: targetPath,
+        owedPhase,
+        queuePosition: result.position,
+        alreadyQueued: result.alreadyQueued,
+      });
     }
 
-    const result = queue.enqueue(targetPath, body.path !== undefined);
+    // Corpus-wide trigger: discover stalest candidate
+    let result;
+    try {
+      result = await listMetas(config, watcher);
+    } catch {
+      return reply.status(503).send({
+        error: 'SERVICE_UNAVAILABLE',
+        message: 'Watcher unreachable — cannot discover candidates',
+      });
+    }
+    const stale = result.entries
+      .filter((e) => e.stalenessSeconds > 0 && !e.disabled)
+      .map((e) => ({
+        node: e.node,
+        meta: e.meta,
+        actualStaleness: e.stalenessSeconds,
+      }));
+    const stalest = discoverStalestPath(stale, config.depthWeight);
+    if (!stalest) {
+      return reply.code(200).send({
+        status: 'skipped',
+        message: 'No stale metas found. Nothing to synthesize.',
+      });
+    }
+
+    const enqueueResult = queue.enqueue(stalest);
 
     return reply.code(202).send({
       status: 'accepted',
-      path: targetPath,
-      queuePosition: result.position,
-      alreadyQueued: result.alreadyQueued,
+      path: stalest,
+      queuePosition: enqueueResult.position,
+      alreadyQueued: enqueueResult.alreadyQueued,
     });
   });
 }
