@@ -9,9 +9,12 @@
  * @module orchestrator/orchestratePhase
  */
 
+import { copyFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import { buildMinimalNode } from '../discovery/buildMinimalNode.js';
 import { listMetas } from '../discovery/index.js';
-import { getScopeFiles } from '../discovery/scope.js';
+import { getScopeFiles, getScopePrefix } from '../discovery/scope.js';
 import type { MetaNode } from '../discovery/types.js';
 import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
@@ -25,6 +28,7 @@ import {
 } from '../phaseState/index.js';
 import type { ProgressEvent } from '../progress/index.js';
 import { readMetaJson } from '../readMetaJson.js';
+import { isStale } from '../scheduling/staleness.js';
 import type {
   MetaConfig,
   MetaJson,
@@ -155,6 +159,28 @@ export async function orchestratePhase(
     // Compute structure hash for the phase
     const { scopeFiles } = await getScopeFiles(winner.node, watcher);
     const structureHash = computeStructureHash(scopeFiles);
+
+    // skipUnchanged: bump _generatedAt without altering _phaseState
+    if (config.skipUnchanged && currentMeta._generatedAt) {
+      const verifiedStale = await isStale(
+        getScopePrefix(winner.node),
+        currentMeta,
+        watcher,
+      );
+      if (!verifiedStale) {
+        const freshMeta = await readMetaJson(winner.node.metaPath);
+        freshMeta._generatedAt = new Date().toISOString();
+        const lockPath = join(winner.node.metaPath, '.lock');
+        const metaJsonPath = join(winner.node.metaPath, 'meta.json');
+        await writeFile(lockPath, JSON.stringify(freshMeta, null, 2) + '\n');
+        await copyFile(lockPath, metaJsonPath);
+        logger?.debug(
+          { path: winner.node.ownerPath },
+          'Skipped unchanged meta, bumped _generatedAt',
+        );
+        return { executed: false };
+      }
+    }
 
     return await executePhase(
       winner.node,
