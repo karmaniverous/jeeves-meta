@@ -541,7 +541,7 @@ The service exposes these endpoints (default port 1938):
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/status` | Service health, queue state, dependency checks |
+| GET | `/status` | Service health, queue state, dependency checks, phase-state summary |
 | GET | `/metas` | List metas with filtering and field projection |
 | GET | `/metas/:path` | Single meta detail with optional archive |
 | PATCH | `/metas/:path` | Update user-settable reserved properties |
@@ -552,8 +552,8 @@ The service exposes these endpoints (default port 1938):
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 | POST | `/config/apply` | Apply a config patch (merge or replace) |
-| GET | `/queue` | Current queue state (current, pending, stats) |
-| POST | `/queue/clear` | Remove all pending queue items |
+| GET | `/queue` | Queue state: current (with phase), overrides, automatic, pending |
+| POST | `/queue/clear` | Remove all override queue entries |
 
 All endpoints return JSON. The OpenClaw plugin tools are thin wrappers
 around these endpoints.
@@ -698,8 +698,10 @@ not yet indexed new files
 - All prompts are compiled as Handlebars templates. Avoid using `{{` in prompt
   overrides unless you intend template variable resolution. Escape with `\{{`
   for literal double-braces.
-- The synthesis queue is single-threaded: one synthesis at a time. HTTP-triggered
-  syntheses get priority over scheduler-triggered ones.
+- The synthesis queue is single-threaded with three layers: `current` (the
+  running phase), `overrides` (explicitly triggered entries, highest priority),
+  and `automatic` (scheduler-computed candidates). Override entries are
+  processed before automatic candidates.
 - The scheduler uses adaptive backoff: if no stale candidates are found, it
   doubles the skip interval (max 4×). Backoff resets after any successful
   phase execution (not just full-cycle completion).
