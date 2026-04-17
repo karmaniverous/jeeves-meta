@@ -118,9 +118,8 @@ describe('GatewayExecutor.spawn', () => {
 
     expect(result.output).toContain('Test synthesis output');
     expect(result.tokens).toBe(5000);
-    expect(invokeSessionKeys.length).toBeGreaterThan(0);
-    expect(new Set(invokeSessionKeys).size).toBe(1);
-    expect(invokeSessionKeys[0]).toMatch(/^agent:main:meta-invoke:/);
+    // Stateless spawning: no parent sessionKey attached to requests
+    expect(invokeSessionKeys.length).toBe(0);
   });
 
   it('throws SpawnTimeoutError when deadline exceeded', async () => {
