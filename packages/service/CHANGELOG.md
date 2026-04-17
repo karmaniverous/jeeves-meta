@@ -2,33 +2,40 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.15.0](https://github.com/karmaniverous/jeeves-meta/compare/0.14.0...0.15.0)
+#### [0.15.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.14.0...0.15.0)
 
-- feat: add phase-state machine foundation — per-meta `_phaseState` tracking `{ architect, builder, critic }` × `{ fresh, stale, pending, running, failed }`
-- feat: phase-addressable scheduling — scheduler picks one phase per tick across entire corpus (critic > builder > architect priority)
-- feat: three-layer synthesis queue — `current` (running phase) + `overrides` (explicit triggers) + `automatic` (scheduler candidates)
-- feat: surgical retry of failed phases without re-running the full pipeline
-- feat: auto-retry — failed phases promoted `failed` → `pending` on each scheduler tick
-- feat: full-cycle completion — archive snapshot + `_synthesisCount` increment only when all three phases are `fresh`
-- feat: adaptive backoff resets on any successful phase execution
-- feat: `derivePhaseState()` backward compatibility for legacy metas without `_phaseState`
-- feat: `phaseStateSummary` and `nextPhase` in GET /status health response
-- feat: phase-aware GET /queue with three-layer model
-- feat: phase-aware POST /synthesize/abort response
-- docs: update guides for phase-state machine, scheduling, orchestration, concepts
+- feat: phase-state machine (v0.15.0 / v0.12.0) [`#126`](https://github.com/karmaniverous/jeeves-meta/pull/126)
+- feat: add phase-state machine foundation (Tasks #1-6, #11-13d) [`131baa9`](https://github.com/karmaniverous/jeeves-meta/commit/131baa99d9245802c6f7acc9b7719069d6661f0f)
+- refactor: extract shared test fixtures and fix mock shapes in route tests [`9d10d02`](https://github.com/karmaniverous/jeeves-meta/commit/9d10d02dcbf3fe766c5c15496251a261b167874b)
+- fix: resolve all verification gaps — queue automatic layer, abort _error, skipUnchanged bump, integration tests, e2e test, minor gaps [`a32f73a`](https://github.com/karmaniverous/jeeves-meta/commit/a32f73a4f5da7a8ea8c6a212495e32a71e502ecd)
+- test: add phase-state integration tests (Tasks #14-18) [`daeb014`](https://github.com/karmaniverous/jeeves-meta/commit/daeb014eafd7c36366d2121420e34f6ca25af826)
+- feat: wire phase-state orchestration into bootstrap + queue (Tasks #7-10) [`5e2ced7`](https://github.com/karmaniverous/jeeves-meta/commit/5e2ced798c6f5c3692e76ddff4b9761eaa1e2062)
+- test: strengthen test suite — add missing coverage and fix weak assertions [`ca998c0`](https://github.com/karmaniverous/jeeves-meta/commit/ca998c0027248805999b0d4c91e3e84f8fb38f16)
+- feat: rewrite scheduler for phase-aware tick and fix _synthesisCount [`cd178da`](https://github.com/karmaniverous/jeeves-meta/commit/cd178da059499c1ea36e08b71df2ca1576effb37)
+- docs: update guides and changelogs for phase-state machine (Tasks #19a-19h) [`32ec985`](https://github.com/karmaniverous/jeeves-meta/commit/32ec985009b90a95e9febe7e1aa1dfbb16787863)
+- feat: wire bootstrap to phase-state machine and override queue processing [`9a35a65`](https://github.com/karmaniverous/jeeves-meta/commit/9a35a6526aa81f1ede6f61bcb19c30f4f0ceb11d)
+- fix: address PR #126 review comments — wire currentPhase, remove redundant reads, use shared helpers [`ce9d968`](https://github.com/karmaniverous/jeeves-meta/commit/ce9d968814ac81abf295c268b3d6ce38cb1ac11b)
+- feat: update plugin tools and TOOLS.md for phase-state machine (Tasks #18a-18b) [`841e912`](https://github.com/karmaniverous/jeeves-meta/commit/841e912ce17354142a95f01a926a428057c59f4e)
+- fix: prevent abort race condition — runPhase skips persist when executor.aborted [`8cc46f5`](https://github.com/karmaniverous/jeeves-meta/commit/8cc46f571bdbc2787c56714e8295e35725437ad1)
+- docs: update SKILL.md for phase-state machine awareness [`7100e29`](https://github.com/karmaniverous/jeeves-meta/commit/7100e29780f064723f88edce0c242ca544bd3ff6)
+- docs: add phase-state machine and troubleshooting guidance to SKILL.md [`bcf5d0f`](https://github.com/karmaniverous/jeeves-meta/commit/bcf5d0f7f156946637af99ecb7c98246bcf582b5)
+- style: fix lint formatting — prettier and import sort [`f4170e3`](https://github.com/karmaniverous/jeeves-meta/commit/f4170e32544ec5fd13a641ed7bb4e97437386288)
+- chore: add root vitest config to exclude .rollup.cache from test discovery [`3c6f8c1`](https://github.com/karmaniverous/jeeves-meta/commit/3c6f8c195eaca38886889a0c3f730445c0ddaf9e)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.11.0 [`2bf9926`](https://github.com/karmaniverous/jeeves-meta/commit/2bf9926245de8f44583a3d99ef2f1922d4540175)
+- docs: update service README for phase-state machine [`b297390`](https://github.com/karmaniverous/jeeves-meta/commit/b297390d5aff4f78dd64043cefb72e2b80636066)
+- docs: update SKILL.md endpoints table and queue description [`3aa0c0f`](https://github.com/karmaniverous/jeeves-meta/commit/3aa0c0ff04f98b503d92f89410d2ee143f18e303)
+- docs: update SKILL.md gotchas for phase-per-tick and backoff behavior [`b5f49bb`](https://github.com/karmaniverous/jeeves-meta/commit/b5f49bb5aa6176a6ce620f44314a433d4760114b)
+- docs: update root README for phase-state machine architecture [`2bb81be`](https://github.com/karmaniverous/jeeves-meta/commit/2bb81bee0869f882e2cf79b3dbdec3bb0116169e)
 
-**Migration notes:**
-- `_phaseState` is auto-derived from existing fields on first load — no manual migration needed
-- All API response changes are **additive** (new fields only) — no breaking changes
-- GET /queue now returns `{ current, overrides, automatic, pending, state }` — `pending` and `state` fields are retained for backward compatibility
-- POST /queue/clear now removes only override entries (not legacy queue items)
+#### [service/0.14.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.11...service/0.14.0)
 
-#### [0.14.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.11...0.14.0)
+> 16 April 2026
 
 - feat: add _disabled flag and meta_update tool (#123, #124) [`#125`](https://github.com/karmaniverous/jeeves-meta/pull/125)
 - docs: update READMEs and skill for meta_update tool and _disabled flag [`7a9cdaf`](https://github.com/karmaniverous/jeeves-meta/commit/7a9cdafe61470f7d0001847dd7b77dffdd3fa147)
 - refactor: PATCH route uses resolveMetaDir instead of full listMetas walk [`4abc29a`](https://github.com/karmaniverous/jeeves-meta/commit/4abc29a249353775772f1ea2a45bdfc34eea8912)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.10.7 [`1196955`](https://github.com/karmaniverous/jeeves-meta/commit/11969551f51214e7358f068b40c2c7fcd19f4acc)
+- chore: release @karmaniverous/jeeves-meta v0.14.0 [`17482f0`](https://github.com/karmaniverous/jeeves-meta/commit/17482f0bf74f506d52d0d67e92c4907a6bb3930c)
 
 #### [service/0.13.11](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.10...service/0.13.11)
 
