@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.15.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.14.0...0.15.0)
+#### [0.15.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.15.0...0.15.1)
+
+- fix: stateless gateway session spawning [`#128`](https://github.com/karmaniverous/jeeves-meta/pull/128)
+- fix: drop synthetic parent sessionKey from GatewayExecutor — spawn statelessly like runner [`8fd051f`](https://github.com/karmaniverous/jeeves-meta/commit/8fd051f2e083eb12fde7a6a59a898709e418b04c)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.12.0 [`5c00eeb`](https://github.com/karmaniverous/jeeves-meta/commit/5c00eeb96060fc2dae459a4196e8af8ea667fd9f)
+
+#### [service/0.15.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.14.0...service/0.15.0)
+
+> 17 April 2026
 
 - feat: phase-state machine (v0.15.0 / v0.12.0) [`#126`](https://github.com/karmaniverous/jeeves-meta/pull/126)
 - feat: add phase-state machine foundation (Tasks #1-6, #11-13d) [`131baa9`](https://github.com/karmaniverous/jeeves-meta/commit/131baa99d9245802c6f7acc9b7719069d6661f0f)
@@ -16,6 +24,7 @@ All notable changes to this project will be documented in this file. Dates are d
 - feat: wire bootstrap to phase-state machine and override queue processing [`9a35a65`](https://github.com/karmaniverous/jeeves-meta/commit/9a35a6526aa81f1ede6f61bcb19c30f4f0ceb11d)
 - fix: address PR #126 review comments — wire currentPhase, remove redundant reads, use shared helpers [`ce9d968`](https://github.com/karmaniverous/jeeves-meta/commit/ce9d968814ac81abf295c268b3d6ce38cb1ac11b)
 - feat: update plugin tools and TOOLS.md for phase-state machine (Tasks #18a-18b) [`841e912`](https://github.com/karmaniverous/jeeves-meta/commit/841e912ce17354142a95f01a926a428057c59f4e)
+- chore: release @karmaniverous/jeeves-meta v0.15.0 [`0b2760c`](https://github.com/karmaniverous/jeeves-meta/commit/0b2760cd4c8c9bf6ceb81ae95d042a9f1bda5f12)
 - fix: prevent abort race condition — runPhase skips persist when executor.aborted [`8cc46f5`](https://github.com/karmaniverous/jeeves-meta/commit/8cc46f571bdbc2787c56714e8295e35725437ad1)
 - docs: update SKILL.md for phase-state machine awareness [`7100e29`](https://github.com/karmaniverous/jeeves-meta/commit/7100e29780f064723f88edce0c242ca544bd3ff6)
 - docs: add phase-state machine and troubleshooting guidance to SKILL.md [`bcf5d0f`](https://github.com/karmaniverous/jeeves-meta/commit/bcf5d0f7f156946637af99ecb7c98246bcf582b5)
