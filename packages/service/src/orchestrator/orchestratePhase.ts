@@ -21,9 +21,10 @@ import { acquireLock, releaseLock } from '../lock.js';
 import type { MinimalLogger } from '../logger/index.js';
 import { normalizePath } from '../normalizePath.js';
 import {
+  buildPhaseCandidates,
   derivePhaseState,
   getOwedPhase,
-  retryPhase,
+  retryAllFailed,
   selectPhaseCandidate,
 } from '../phaseState/index.js';
 import type { ProgressEvent } from '../progress/index.js';
@@ -42,6 +43,13 @@ import {
   runBuilder,
   runCritic,
 } from './runPhase.js';
+
+/** Phase runner dispatch map — avoids repeating the same switch/case. */
+const phaseRunners = {
+  architect: runArchitect,
+  builder: runBuilder,
+  critic: runCritic,
+} as const;
 
 /** Callback for synthesis progress events. */
 export type PhaseProgressCallback = (
@@ -101,27 +109,7 @@ export async function orchestratePhase(
   if (metaResult.entries.length === 0) return { executed: false };
 
   // Build candidates with phase state (including invalidation + auto-retry)
-  const candidates = [];
-  for (const entry of metaResult.entries) {
-    let ps = derivePhaseState(entry.meta);
-
-    // Auto-retry failed phases: failed → pending on each tick
-    // (spec §8: "retry on the next eligible tick")
-    for (const phase of ['architect', 'builder', 'critic'] as const) {
-      if (ps[phase] === 'failed') {
-        ps = retryPhase(ps, phase);
-      }
-    }
-
-    candidates.push({
-      node: entry.node,
-      meta: entry.meta,
-      phaseState: ps,
-      actualStaleness: entry.stalenessSeconds,
-      locked: entry.locked,
-      disabled: entry.disabled,
-    });
-  }
+  const candidates = buildPhaseCandidates(metaResult.entries);
 
   // Select best phase candidate
   const winner = selectPhaseCandidate(candidates, config.depthWeight);
@@ -141,14 +129,7 @@ export async function orchestratePhase(
   try {
     // Re-read meta under lock for freshness
     const currentMeta = await readMetaJson(winner.node.metaPath);
-    let phaseState = derivePhaseState(currentMeta);
-
-    // Re-apply auto-retry under lock
-    for (const phase of ['architect', 'builder', 'critic'] as const) {
-      if (phaseState[phase] === 'failed') {
-        phaseState = retryPhase(phaseState, phase);
-      }
-    }
+    const phaseState = retryAllFailed(derivePhaseState(currentMeta));
 
     const owedPhase = getOwedPhase(phaseState);
     if (!owedPhase || phaseState[owedPhase] !== 'pending') {
@@ -220,14 +201,7 @@ async function orchestrateTargeted(
 
   try {
     const currentMeta = await readMetaJson(normalizedTarget);
-    let phaseState = derivePhaseState(currentMeta);
-
-    // Auto-retry failed phases for targeted triggers too
-    for (const phase of ['architect', 'builder', 'critic'] as const) {
-      if (phaseState[phase] === 'failed') {
-        phaseState = retryPhase(phaseState, phase);
-      }
-    }
+    const phaseState = retryAllFailed(derivePhaseState(currentMeta));
 
     const owedPhase = getOwedPhase(phaseState);
     if (!owedPhase) {
@@ -271,49 +245,17 @@ async function executePhase(
   onProgress?: PhaseProgressCallback,
   logger?: MinimalLogger,
 ): Promise<OrchestratePhaseResult> {
-  let result: PhaseResult;
-
-  switch (phase) {
-    case 'architect':
-      result = await runArchitect(
-        node,
-        currentMeta,
-        phaseState,
-        config,
-        executor,
-        watcher,
-        structureHash,
-        onProgress,
-        logger,
-      );
-      break;
-    case 'builder':
-      result = await runBuilder(
-        node,
-        currentMeta,
-        phaseState,
-        config,
-        executor,
-        watcher,
-        structureHash,
-        onProgress,
-        logger,
-      );
-      break;
-    case 'critic':
-      result = await runCritic(
-        node,
-        currentMeta,
-        phaseState,
-        config,
-        executor,
-        watcher,
-        structureHash,
-        onProgress,
-        logger,
-      );
-      break;
-  }
+  const result: PhaseResult = await phaseRunners[phase](
+    node,
+    currentMeta,
+    phaseState,
+    config,
+    executor,
+    watcher,
+    structureHash,
+    onProgress,
+    logger,
+  );
 
   return {
     executed: true,

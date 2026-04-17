@@ -4,16 +4,15 @@
  * @module routes/metasUpdate.test
  */
 
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import type { Logger } from 'pino';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import type { WatcherClient } from '../interfaces/index.js';
 import { normalizePath } from '../normalizePath.js';
+import { createTestMeta, makeTestDeps, makeTestWatcher } from './__testUtils.js';
 import type { RouteDeps } from './index.js';
 import { registerMetasUpdateRoute } from './metasUpdate.js';
 
@@ -22,70 +21,12 @@ const root = join(
   `jeeves-meta-metas-update-${Date.now().toString()}`,
 );
 
-function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
-  return {
-    config: {
-      watcherUrl: 'http://localhost:3456',
-      gatewayUrl: 'http://127.0.0.1:18789',
-      depthWeight: 1,
-      architectEvery: 10,
-      maxArchive: 20,
-      maxLines: 500,
-      architectTimeout: 120,
-      builderTimeout: 600,
-      criticTimeout: 300,
-      thinking: 'low',
-      defaultArchitect: 'arch',
-      defaultCritic: 'crit',
-      skipUnchanged: true,
-      metaProperty: {},
-      metaArchiveProperty: {},
-      port: 1938,
-      schedule: '*/30 * * * *',
-      watcherHealthIntervalMs: 60000,
-      logging: { level: 'info' },
-      autoSeed: [],
-    },
-    logger: {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    } as unknown as Logger,
-    queue: {} as RouteDeps['queue'],
-    watcher: {} as RouteDeps['watcher'],
-    scheduler: null,
-    stats: {
-      totalSyntheses: 0,
-      totalTokens: 0,
-      totalErrors: 0,
-      lastCycleDurationMs: null,
-      lastCycleAt: null,
-    },
-    ...overrides,
-  };
-}
-
-function makeWatcher(metaJsonPaths: string[]): WatcherClient {
-  return {
-    walk: vi.fn().mockResolvedValue(metaJsonPaths),
-    registerRules: vi.fn().mockResolvedValue(undefined),
-  };
-}
-
 function createMeta(
   ownerDir: string,
   meta: Record<string, unknown> = {},
 ): { metaJsonPath: string; metaDir: string } {
+  const metaJsonPath = createTestMeta(ownerDir, meta);
   const metaDir = join(ownerDir, '.meta');
-  mkdirSync(metaDir, { recursive: true });
-  const metaJsonPath = join(metaDir, 'meta.json');
-  writeFileSync(
-    metaJsonPath,
-    JSON.stringify({
-      _id: '550e8400-e29b-41d4-a716-446655440099',
-      ...meta,
-    }),
-  );
   return { metaJsonPath, metaDir };
 }
 
@@ -108,8 +49,8 @@ describe('PATCH /metas/:path', () => {
     const owner = join(root, 'disableMe');
     const { metaJsonPath, metaDir } = createMeta(owner);
 
-    const watcher = makeWatcher([metaJsonPath]);
-    const deps = makeDeps({
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
     app = Fastify();
@@ -135,8 +76,8 @@ describe('PATCH /metas/:path', () => {
   it('updates _steer', async () => {
     const owner = join(root, 'steerMe');
     const { metaJsonPath, metaDir } = createMeta(owner);
-    const watcher = makeWatcher([metaJsonPath]);
-    const deps = makeDeps({
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
     app = Fastify();
@@ -161,8 +102,8 @@ describe('PATCH /metas/:path', () => {
     const { metaJsonPath, metaDir } = createMeta(owner, {
       _steer: 'old steer',
     });
-    const watcher = makeWatcher([metaJsonPath]);
-    const deps = makeDeps({
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
     app = Fastify();
@@ -185,8 +126,8 @@ describe('PATCH /metas/:path', () => {
   it('rejects engine-managed properties (strict validation)', async () => {
     const owner = join(root, 'strict');
     const { metaJsonPath } = createMeta(owner);
-    const watcher = makeWatcher([metaJsonPath]);
-    const deps = makeDeps({
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
     app = Fastify();
@@ -206,8 +147,8 @@ describe('PATCH /metas/:path', () => {
   });
 
   it('returns 404 for unknown path', async () => {
-    const watcher = makeWatcher([]);
-    const deps = makeDeps({
+    const watcher = makeTestWatcher([]);
+    const deps = makeTestDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
     app = Fastify();
@@ -236,8 +177,8 @@ describe('PATCH /metas/:path', () => {
       _feedback: 'FEEDBACK',
       _steer: 'old',
     });
-    const watcher = makeWatcher([metaJsonPath]);
-    const deps = makeDeps({
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
     app = Fastify();

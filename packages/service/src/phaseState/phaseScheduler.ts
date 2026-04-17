@@ -8,10 +8,46 @@
  * @module phaseState/phaseScheduler
  */
 
+import type { MetaEntry } from '../discovery/listMetas.js';
 import type { MetaNode } from '../discovery/types.js';
 import { computeEffectiveStaleness } from '../scheduling/weightedFormula.js';
 import type { MetaJson, PhaseName, PhaseState } from '../schema/index.js';
-import { getOwedPhase, getPriorityBand } from './phaseTransitions.js';
+import { derivePhaseState } from './derivePhaseState.js';
+import {
+  getOwedPhase,
+  getPriorityBand,
+  retryAllFailed,
+} from './phaseTransitions.js';
+
+/** Input for phase candidate selection (from listMetas entries). */
+export interface PhaseCandidateInput {
+  node: MetaNode;
+  meta: MetaJson;
+  phaseState: PhaseState;
+  actualStaleness: number;
+  locked: boolean;
+  disabled: boolean;
+  isOverride?: boolean;
+}
+
+/**
+ * Build phase candidates from listMetas entries.
+ *
+ * Derives phase state and auto-retries failed phases for each entry.
+ * Used by orchestratePhase, queue route, and status route.
+ */
+export function buildPhaseCandidates(
+  entries: MetaEntry[],
+): PhaseCandidateInput[] {
+  return entries.map((entry) => ({
+    node: entry.node,
+    meta: entry.meta,
+    phaseState: retryAllFailed(derivePhaseState(entry.meta)),
+    actualStaleness: entry.stalenessSeconds,
+    locked: entry.locked,
+    disabled: entry.disabled,
+  }));
+}
 
 /** A candidate for phase-level scheduling. */
 export interface PhaseCandidate {
@@ -25,40 +61,29 @@ export interface PhaseCandidate {
 }
 
 /**
- * Select the best phase candidate across the corpus.
+ * Rank all eligible phase candidates by priority.
  *
- * @param metas - Array of (node, meta, phaseState, stalenessSeconds) tuples.
- * @param depthWeight - Config depthWeight for staleness tiebreak.
- * @returns The winning candidate, or null if no phase is ready.
+ * Filters to pending phases, computes effective staleness, and sorts by
+ * band (ascending: critic first) then effective staleness (descending).
+ *
+ * Used by selectPhaseCandidate (returns first) and the queue route (returns all).
  */
-export function selectPhaseCandidate(
-  metas: Array<{
-    node: MetaNode;
-    meta: MetaJson;
-    phaseState: PhaseState;
-    actualStaleness: number;
-    locked: boolean;
-    disabled: boolean;
-    isOverride?: boolean;
-  }>,
+export function rankPhaseCandidates(
+  metas: PhaseCandidateInput[],
   depthWeight: number,
-): PhaseCandidate | null {
+): PhaseCandidate[] {
   // Filter to metas with a pending (scheduler-eligible) phase
   const eligible = metas.filter((m) => {
-    // Locked metas cannot be scheduled
     if (m.locked) return false;
-    // Disabled metas excluded unless override
     if (m.disabled && !m.isOverride) return false;
 
     const owed = getOwedPhase(m.phaseState);
     if (!owed) return false;
 
-    // Only pending phases are scheduler-eligible
-    // (stale, running, failed are not ready for picking)
     return m.phaseState[owed] === 'pending';
   });
 
-  if (eligible.length === 0) return null;
+  if (eligible.length === 0) return [];
 
   // Compute effective staleness for tiebreaking
   const withStaleness = computeEffectiveStaleness(
@@ -91,5 +116,19 @@ export function selectPhaseCandidate(
     return b.effectiveStaleness - a.effectiveStaleness;
   });
 
-  return candidates[0];
+  return candidates;
+}
+
+/**
+ * Select the best phase candidate across the corpus.
+ *
+ * @param metas - Array of (node, meta, phaseState, stalenessSeconds) tuples.
+ * @param depthWeight - Config depthWeight for staleness tiebreak.
+ * @returns The winning candidate, or null if no phase is ready.
+ */
+export function selectPhaseCandidate(
+  metas: PhaseCandidateInput[],
+  depthWeight: number,
+): PhaseCandidate | null {
+  return rankPhaseCandidates(metas, depthWeight)[0] ?? null;
 }

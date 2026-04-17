@@ -11,7 +11,13 @@ export {
   type InvalidationResult,
   type StalenessInputs,
 } from './invalidate.js';
-export { type PhaseCandidate, selectPhaseCandidate } from './phaseScheduler.js';
+export {
+  buildPhaseCandidates,
+  type PhaseCandidate,
+  type PhaseCandidateInput,
+  rankPhaseCandidates,
+  selectPhaseCandidate,
+} from './phaseScheduler.js';
 export {
   architectSuccess,
   builderSuccess,
@@ -26,5 +32,6 @@ export {
   isFullyFresh,
   phaseFailed,
   phaseRunning,
+  retryAllFailed,
   retryPhase,
 } from './phaseTransitions.js';

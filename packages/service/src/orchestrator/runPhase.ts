@@ -92,6 +92,40 @@ async function persistPhaseState(
   return merged;
 }
 
+/**
+ * Handle phase failure (abort or error).
+ *
+ * Shared error path for all three phase executors. When the executor was
+ * aborted, returns immediately without persisting (abort route handles it).
+ * Otherwise, transitions the phase to failed and persists the error.
+ */
+async function handlePhaseFailure(
+  phase: 'architect' | 'builder' | 'critic',
+  err: unknown,
+  executor: MetaExecutor,
+  ps: PhaseState,
+  base: FinalizeBase,
+  additionalUpdates?: Partial<MetaJson>,
+): Promise<PhaseResult> {
+  if (executor.aborted) {
+    return {
+      executed: true,
+      phaseState: phaseFailed(ps, phase),
+      error: { step: phase, code: 'ABORT', message: 'Aborted by operator' },
+    };
+  }
+
+  const error = toMetaError(phase, err);
+  const failedPs = phaseFailed(ps, phase);
+
+  await persistPhaseState(base, failedPs, {
+    _error: error,
+    ...additionalUpdates,
+  });
+
+  return { executed: true, phaseState: failedPs, error };
+}
+
 // ── Architect executor ─────────────────────────────────────────────────
 
 export async function runArchitect(
@@ -151,26 +185,12 @@ export async function runArchitect(
 
     return { executed: true, phaseState: ps, updatedMeta };
   } catch (err) {
-    // If aborted by operator, the abort route already persisted _error.
-    if (executor.aborted) {
-      ps = phaseFailed(ps, 'architect');
-      return {
-        executed: true,
-        phaseState: ps,
-        error: { step: 'architect', code: 'ABORT', message: 'Aborted by operator' },
-      };
-    }
-
-    const error = toMetaError('architect', err);
-    ps = phaseFailed(ps, 'architect');
-
-    await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      { _error: error },
-    );
-
-    return { executed: true, phaseState: ps, error };
+    return handlePhaseFailure('architect', err, executor, ps, {
+      metaPath: node.metaPath,
+      current: currentMeta,
+      config,
+      structureHash,
+    });
   }
 }
 
@@ -233,21 +253,8 @@ export async function runBuilder(
 
     return { executed: true, phaseState: ps, updatedMeta };
   } catch (err) {
-    // If aborted by operator, the abort route already persisted _error.
-    if (executor.aborted) {
-      ps = phaseFailed(ps, 'builder');
-      return {
-        executed: true,
-        phaseState: ps,
-        error: { step: 'builder', code: 'ABORT', message: 'Aborted by operator' },
-      };
-    }
-
-    const error = toMetaError('builder', err);
-    ps = phaseFailed(ps, 'builder');
-
     // §4.6 partial _state recovery on timeout
-    const stateUpdates: Partial<MetaJson> = { _error: error };
+    let partialState: Partial<MetaJson> | undefined;
     if (err instanceof SpawnTimeoutError) {
       try {
         const raw = await readFile(err.outputPath, 'utf8');
@@ -256,20 +263,19 @@ export async function runBuilder(
           partial.state !== undefined &&
           JSON.stringify(partial.state) !== JSON.stringify(currentMeta._state)
         ) {
-          stateUpdates._state = partial.state;
+          partialState = { _state: partial.state };
         }
       } catch {
         // Could not read partial output — no state recovery
       }
     }
 
-    await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      stateUpdates,
-    );
-
-    return { executed: true, phaseState: ps, error };
+    return handlePhaseFailure('builder', err, executor, ps, {
+      metaPath: node.metaPath,
+      current: currentMeta,
+      config,
+      structureHash,
+    }, partialState);
   }
 }
 
@@ -352,25 +358,11 @@ export async function runCritic(
       cycleComplete,
     };
   } catch (err) {
-    // If aborted by operator, the abort route already persisted _error.
-    if (executor.aborted) {
-      ps = phaseFailed(ps, 'critic');
-      return {
-        executed: true,
-        phaseState: ps,
-        error: { step: 'critic', code: 'ABORT', message: 'Aborted by operator' },
-      };
-    }
-
-    const error = toMetaError('critic', err);
-    ps = phaseFailed(ps, 'critic');
-
-    await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      { _error: error },
-    );
-
-    return { executed: true, phaseState: ps, error };
+    return handlePhaseFailure('critic', err, executor, ps, {
+      metaPath: node.metaPath,
+      current: currentMeta,
+      config,
+      structureHash,
+    });
   }
 }

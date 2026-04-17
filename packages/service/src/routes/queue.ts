@@ -16,11 +16,11 @@ import type { FastifyInstance } from 'fastify';
 import { listMetas } from '../discovery/index.js';
 import { releaseLock, resolveMetaDir } from '../lock.js';
 import {
+  buildPhaseCandidates,
   derivePhaseState,
   getOwedPhase,
-  getPriorityBand,
   phaseFailed,
-  retryPhase,
+  rankPhaseCandidates,
 } from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
 import type { RouteDeps } from './index.js';
@@ -68,68 +68,14 @@ export function registerQueueRoutes(
     }> = [];
     try {
       const metaResult = await listMetas(deps.config, deps.watcher);
-      const candidates = [];
-      for (const entry of metaResult.entries) {
-        let ps = derivePhaseState(entry.meta);
-
-        // Auto-retry failed phases (same as orchestratePhase)
-        for (const phase of ['architect', 'builder', 'critic'] as const) {
-          if (ps[phase] === 'failed') {
-            ps = retryPhase(ps, phase);
-          }
-        }
-
-        candidates.push({
-          node: entry.node,
-          meta: entry.meta,
-          phaseState: ps,
-          actualStaleness: entry.stalenessSeconds,
-          locked: entry.locked,
-          disabled: entry.disabled,
-        });
-      }
-
-      // Filter to those with a pending owed phase, then rank
-      const eligible = candidates.filter((c) => {
-        const owed = getOwedPhase(c.phaseState);
-        return owed !== null && c.phaseState[owed] === 'pending';
-      });
-
-      // Use selectPhaseCandidate logic for ranking: sort all eligible
-      // by band asc, then effective staleness desc
-      if (eligible.length > 0) {
-        // We need the full sorted list, not just the winner.
-        // Re-use the scheduler's ranking approach directly.
-        const { computeEffectiveStaleness } =
-          await import('../scheduling/weightedFormula.js');
-        const withStaleness = computeEffectiveStaleness(
-          eligible.map((m) => ({
-            node: m.node,
-            meta: m.meta,
-            actualStaleness: m.actualStaleness,
-          })),
-          deps.config.depthWeight,
-        );
-
-        const ranked = withStaleness.map((ws, i) => {
-          const m = eligible[i];
-          const owedPhase = getOwedPhase(m.phaseState)!;
-          return {
-            path: m.node.metaPath,
-            owedPhase,
-            priorityBand: getPriorityBand(m.phaseState)!,
-            effectiveStaleness: ws.effectiveStaleness,
-          };
-        });
-
-        ranked.sort((a, b) => {
-          if (a.priorityBand !== b.priorityBand)
-            return a.priorityBand - b.priorityBand;
-          return b.effectiveStaleness - a.effectiveStaleness;
-        });
-
-        automatic = ranked;
-      }
+      const candidates = buildPhaseCandidates(metaResult.entries);
+      const ranked = rankPhaseCandidates(candidates, deps.config.depthWeight);
+      automatic = ranked.map((c) => ({
+        path: c.node.metaPath,
+        owedPhase: c.owedPhase,
+        priorityBand: c.band,
+        effectiveStaleness: c.effectiveStaleness,
+      }));
     } catch {
       // If listing fails, automatic stays empty
     }

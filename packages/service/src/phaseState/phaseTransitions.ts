@@ -166,6 +166,20 @@ export function retryPhase(
   });
 }
 
+/**
+ * Retry all failed phases: each failed phase → pending.
+ * Used by scheduler ticks and queue reads to auto-promote failed phases.
+ */
+export function retryAllFailed(state: PhaseState): PhaseState {
+  let result = state;
+  for (const phase of ['architect', 'builder', 'critic'] as const) {
+    if (result[phase] === 'failed') {
+      result = retryPhase(result, phase);
+    }
+  }
+  return result;
+}
+
 // ── Running transition ─────────────────────────────────────────────────
 
 /**

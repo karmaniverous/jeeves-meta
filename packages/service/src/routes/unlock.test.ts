@@ -9,59 +9,15 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import type { Logger } from 'pino';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
-import type { RouteDeps } from './index.js';
+import { makeTestDeps } from './__testUtils.js';
 import { registerUnlockRoute } from './unlock.js';
 
 const unlockRoot = join(
   tmpdir(),
   `jeeves-meta-unlock-${Date.now().toString()}`,
 );
-
-function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
-  return {
-    config: {
-      watcherUrl: 'http://localhost:3456',
-      gatewayUrl: 'http://127.0.0.1:18789',
-      depthWeight: 0.5,
-      architectEvery: 10,
-      maxArchive: 20,
-      maxLines: 500,
-      architectTimeout: 120,
-      builderTimeout: 600,
-      criticTimeout: 300,
-      thinking: 'low',
-      defaultArchitect: 'arch',
-      defaultCritic: 'crit',
-      skipUnchanged: true,
-      metaProperty: {},
-      metaArchiveProperty: {},
-      port: 1938,
-      schedule: '*/30 * * * *',
-      watcherHealthIntervalMs: 60000,
-      logging: { level: 'info' },
-      autoSeed: [],
-    },
-    logger: {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    } as unknown as Logger,
-    queue: {} as RouteDeps['queue'],
-    watcher: {} as RouteDeps['watcher'],
-    scheduler: null,
-    stats: {
-      totalSyntheses: 0,
-      totalTokens: 0,
-      totalErrors: 0,
-      lastCycleDurationMs: null,
-      lastCycleAt: null,
-    },
-    ...overrides,
-  };
-}
 
 describe('POST /unlock', () => {
   let app: FastifyInstance;
@@ -82,7 +38,7 @@ describe('POST /unlock', () => {
       }),
     );
 
-    const deps = makeDeps();
+    const deps = makeTestDeps();
     app = Fastify();
     registerUnlockRoute(app, deps);
     await app.ready();
@@ -105,7 +61,7 @@ describe('POST /unlock', () => {
     mkdirSync(metaDir, { recursive: true });
     // No .lock file created
 
-    const deps = makeDeps();
+    const deps = makeTestDeps();
     app = Fastify();
     registerUnlockRoute(app, deps);
     await app.ready();
@@ -124,7 +80,7 @@ describe('POST /unlock', () => {
   it('returns 409 when meta path does not exist', async () => {
     const nonExistent = join(unlockRoot, 'nonexistent', '.meta');
 
-    const deps = makeDeps();
+    const deps = makeTestDeps();
     app = Fastify();
     registerUnlockRoute(app, deps);
     await app.ready();

@@ -8,65 +8,12 @@
  */
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import type { Logger } from 'pino';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
-import type { RouteDeps } from './index.js';
+import { makeTestDeps, makeTestLogger } from './__testUtils.js';
 import { registerQueueRoutes } from './queue.js';
 import { registerStatusRoute } from './status.js';
-
-function makeLogger(): Logger {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-    fatal: vi.fn(),
-    trace: vi.fn(),
-    child: vi.fn(),
-    level: 'info',
-  } as unknown as Logger;
-}
-
-function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
-  return {
-    config: {
-      watcherUrl: 'http://localhost:3456',
-      gatewayUrl: 'http://127.0.0.1:18789',
-      depthWeight: 0.5,
-      architectEvery: 10,
-      maxArchive: 20,
-      maxLines: 500,
-      architectTimeout: 120,
-      builderTimeout: 600,
-      criticTimeout: 300,
-      thinking: 'low',
-      defaultArchitect: 'arch',
-      defaultCritic: 'crit',
-      skipUnchanged: true,
-      metaProperty: {},
-      metaArchiveProperty: {},
-      port: 1938,
-      schedule: '*/30 * * * *',
-      watcherHealthIntervalMs: 60000,
-      logging: { level: 'info' },
-      autoSeed: [],
-    },
-    logger: makeLogger(),
-    queue: new SynthesisQueue(makeLogger()),
-    watcher: {} as RouteDeps['watcher'],
-    scheduler: null,
-    stats: {
-      totalSyntheses: 0,
-      totalTokens: 0,
-      totalErrors: 0,
-      lastCycleDurationMs: null,
-      lastCycleAt: null,
-    },
-    ...overrides,
-  };
-}
 
 describe('phase-state operator surfaces (Task #18)', () => {
   let app: FastifyInstance | undefined;
@@ -77,7 +24,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
 
   describe('GET /status — phaseStateSummary and nextPhase', () => {
     it('includes phaseStateSummary in health', async () => {
-      const deps = makeDeps();
+      const deps = makeTestDeps();
       app = Fastify();
       registerStatusRoute(app, deps);
       await app.ready();
@@ -113,7 +60,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
     });
 
     it('includes nextPhase in health (null when no candidates)', async () => {
-      const deps = makeDeps();
+      const deps = makeTestDeps();
       app = Fastify();
       registerStatusRoute(app, deps);
       await app.ready();
@@ -129,9 +76,9 @@ describe('phase-state operator surfaces (Task #18)', () => {
 
   describe('GET /queue — 3-layer model', () => {
     it('returns current, overrides, automatic, pending, state', async () => {
-      const logger = makeLogger();
+      const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
-      const deps = makeDeps({ queue });
+      const deps = makeTestDeps({ queue });
       app = Fastify();
       registerQueueRoutes(app, deps);
       await app.ready();
@@ -153,11 +100,11 @@ describe('phase-state operator surfaces (Task #18)', () => {
     });
 
     it('current includes phase when phase-aware item is set', async () => {
-      const logger = makeLogger();
+      const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
       queue.setCurrentPhase('/meta/test', 'builder');
 
-      const deps = makeDeps({ queue });
+      const deps = makeTestDeps({ queue });
       app = Fastify();
       registerQueueRoutes(app, deps);
       await app.ready();
@@ -174,12 +121,12 @@ describe('phase-state operator surfaces (Task #18)', () => {
     });
 
     it('overrides reflect enqueued override entries', async () => {
-      const logger = makeLogger();
+      const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
       queue.enqueueOverride('/meta/override-a');
       queue.enqueueOverride('/meta/override-b');
 
-      const deps = makeDeps({ queue });
+      const deps = makeTestDeps({ queue });
       app = Fastify();
       registerQueueRoutes(app, deps);
       await app.ready();
@@ -199,12 +146,12 @@ describe('phase-state operator surfaces (Task #18)', () => {
     });
 
     it('POST /queue/clear removes only overrides', async () => {
-      const logger = makeLogger();
+      const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
       queue.enqueueOverride('/meta/override-a');
       queue.enqueue('/meta/legacy-item');
 
-      const deps = makeDeps({ queue });
+      const deps = makeTestDeps({ queue });
       app = Fastify();
       registerQueueRoutes(app, deps);
       await app.ready();
@@ -221,7 +168,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
 
   describe('POST /synthesize/abort — phase-state integration', () => {
     it('returns {status: idle} when nothing is running', async () => {
-      const deps = makeDeps();
+      const deps = makeTestDeps();
       app = Fastify();
       registerQueueRoutes(app, deps);
       await app.ready();
@@ -235,11 +182,11 @@ describe('phase-state operator surfaces (Task #18)', () => {
     });
 
     it('returns {status: aborted, path, phase} when phase item is running', async () => {
-      const logger = makeLogger();
+      const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
       queue.setCurrentPhase('/meta/active', 'critic');
 
-      const deps = makeDeps({ queue, executor: { abort: vi.fn() } });
+      const deps = makeTestDeps({ queue, executor: { abort: vi.fn() } });
       app = Fastify();
       registerQueueRoutes(app, deps);
       await app.ready();

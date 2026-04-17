@@ -12,68 +12,25 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import type { Logger } from 'pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { WatcherClient } from '../interfaces/index.js';
 import { normalizePath } from '../normalizePath.js';
+import {
+  createTestMeta,
+  makeTestDeps,
+  makeTestWatcher,
+} from './__testUtils.js';
 import type { RouteDeps } from './index.js';
 import { registerMetasRoutes } from './metas.js';
 
 const testRoot = join(tmpdir(), `jeeves-meta-metas-${Date.now().toString()}`);
 
 function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
-  return {
-    config: {
-      watcherUrl: 'http://localhost:3456',
-      gatewayUrl: 'http://127.0.0.1:18789',
-      depthWeight: 1,
-      architectEvery: 10,
-      maxArchive: 20,
-      maxLines: 500,
-      architectTimeout: 120,
-      builderTimeout: 600,
-      criticTimeout: 300,
-      thinking: 'low',
-      defaultArchitect: 'arch',
-      defaultCritic: 'crit',
-      skipUnchanged: true,
-      metaProperty: {},
-      metaArchiveProperty: {},
-      port: 1938,
-      schedule: '*/30 * * * *',
-      watcherHealthIntervalMs: 60000,
-      logging: { level: 'info' },
-      autoSeed: [],
-    },
-    logger: {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    } as unknown as Logger,
-    queue: {} as RouteDeps['queue'],
-    watcher: {} as RouteDeps['watcher'],
-    scheduler: null,
-    stats: {
-      totalSyntheses: 0,
-      totalTokens: 0,
-      totalErrors: 0,
-      lastCycleDurationMs: null,
-      lastCycleAt: null,
-    },
-    ...overrides,
-  };
-}
-
-function makeWatcher(
-  metaJsonPaths: string[],
-  scan = vi.fn().mockResolvedValue({ points: [], cursor: null }),
-): WatcherClient {
-  return {
-    walk: vi.fn().mockResolvedValue(metaJsonPaths),
-    registerRules: vi.fn().mockResolvedValue(undefined),
-    scan,
-  };
+  const { config: configOverrides, ...rest } = overrides;
+  return makeTestDeps({
+    ...rest,
+    config: { depthWeight: 1, ...configOverrides },
+  });
 }
 
 describe('GET /metas — list with filters', () => {
@@ -83,22 +40,6 @@ describe('GET /metas — list with filters', () => {
     `jeeves-meta-metas-list-${Date.now().toString()}`,
   );
 
-  function createMeta(
-    ownerDir: string,
-    meta: Record<string, unknown> = {},
-  ): string {
-    const metaDir = join(ownerDir, '.meta');
-    mkdirSync(metaDir, { recursive: true });
-    writeFileSync(
-      join(metaDir, 'meta.json'),
-      JSON.stringify({
-        _id: '550e8400-e29b-41d4-a716-446655440099',
-        ...meta,
-      }),
-    );
-    return join(metaDir, 'meta.json');
-  }
-
   afterEach(async () => {
     await app.close();
     rmSync(listRoot, { recursive: true, force: true });
@@ -106,11 +47,11 @@ describe('GET /metas — list with filters', () => {
 
   it('returns summary + metas array', async () => {
     const ownerA = join(listRoot, 'projA');
-    const pathA = createMeta(ownerA, {
+    const pathA = createTestMeta(ownerA, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: '2026-03-01T00:00:00Z',
     });
-    const watcher = makeWatcher([pathA]);
+    const watcher = makeTestWatcher([pathA]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -134,15 +75,15 @@ describe('GET /metas — list with filters', () => {
   it('pathPrefix filter works', async () => {
     const ownerA = join(listRoot, 'alpha', 'projA');
     const ownerB = join(listRoot, 'beta', 'projB');
-    const pathA = createMeta(ownerA, {
+    const pathA = createTestMeta(ownerA, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: '2026-03-01T00:00:00Z',
     });
-    const pathB = createMeta(ownerB, {
+    const pathB = createTestMeta(ownerB, {
       _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       _generatedAt: '2026-03-01T00:00:00Z',
     });
-    const watcher = makeWatcher([pathA, pathB]);
+    const watcher = makeTestWatcher([pathA, pathB]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -167,11 +108,11 @@ describe('GET /metas — list with filters', () => {
   it('hasError filter works', async () => {
     const ownerOk = join(listRoot, 'ok');
     const ownerErr = join(listRoot, 'err');
-    const pathOk = createMeta(ownerOk, {
+    const pathOk = createTestMeta(ownerOk, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: '2026-03-01T00:00:00Z',
     });
-    const pathErr = createMeta(ownerErr, {
+    const pathErr = createTestMeta(ownerErr, {
       _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       _generatedAt: '2026-03-01T00:00:00Z',
       _error: {
@@ -180,7 +121,7 @@ describe('GET /metas — list with filters', () => {
         timestamp: '2026-03-01T00:00:00Z',
       },
     });
-    const watcher = makeWatcher([pathOk, pathErr]);
+    const watcher = makeTestWatcher([pathOk, pathErr]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -204,15 +145,15 @@ describe('GET /metas — list with filters', () => {
   it('staleHours filter works', async () => {
     const ownerRecent = join(listRoot, 'recent');
     const ownerOld = join(listRoot, 'old');
-    const pathRecent = createMeta(ownerRecent, {
+    const pathRecent = createTestMeta(ownerRecent, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: new Date(Date.now() - 1800_000).toISOString(), // 30 min ago
     });
-    const pathOld = createMeta(ownerOld, {
+    const pathOld = createTestMeta(ownerOld, {
       _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       _generatedAt: new Date(Date.now() - 86400_000 * 3).toISOString(), // 3 days ago
     });
-    const watcher = makeWatcher([pathRecent, pathOld]);
+    const watcher = makeTestWatcher([pathRecent, pathOld]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -236,14 +177,14 @@ describe('GET /metas — list with filters', () => {
   it('neverSynthesized=true returns only never-synthesized entries', async () => {
     const ownerSynth = join(listRoot, 'synth');
     const ownerFresh = join(listRoot, 'fresh');
-    const pathSynth = createMeta(ownerSynth, {
+    const pathSynth = createTestMeta(ownerSynth, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: '2026-03-01T00:00:00Z',
     });
-    const pathFresh = createMeta(ownerFresh, {
+    const pathFresh = createTestMeta(ownerFresh, {
       _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
     });
-    const watcher = makeWatcher([pathSynth, pathFresh]);
+    const watcher = makeTestWatcher([pathSynth, pathFresh]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -278,12 +219,12 @@ describe('GET /metas — list with filters', () => {
 
   it('field projection with custom fields query param', async () => {
     const owner = join(listRoot, 'proj');
-    const path = createMeta(owner, {
+    const path = createTestMeta(owner, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: '2026-03-01T00:00:00Z',
       _architectTokens: 100,
     });
-    const watcher = makeWatcher([path]);
+    const watcher = makeTestWatcher([path]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -304,11 +245,11 @@ describe('GET /metas — list with filters', () => {
 
   it('default field projection matches expected keys', async () => {
     const owner = join(listRoot, 'defaults');
-    const path = createMeta(owner, {
+    const path = createTestMeta(owner, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: '2026-03-01T00:00:00Z',
     });
-    const watcher = makeWatcher([path]);
+    const watcher = makeTestWatcher([path]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -340,16 +281,16 @@ describe('GET /metas — list with filters', () => {
   it('disabled filter works (true and false)', async () => {
     const ownerActive = join(listRoot, 'active');
     const ownerDisabled = join(listRoot, 'disabled-owner');
-    const pathActive = createMeta(ownerActive, {
+    const pathActive = createTestMeta(ownerActive, {
       _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
       _generatedAt: '2026-03-01T00:00:00Z',
     });
-    const pathDisabled = createMeta(ownerDisabled, {
+    const pathDisabled = createTestMeta(ownerDisabled, {
       _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
       _generatedAt: '2026-03-01T00:00:00Z',
       _disabled: true,
     });
-    const watcher = makeWatcher([pathActive, pathDisabled]);
+    const watcher = makeTestWatcher([pathActive, pathDisabled]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -416,7 +357,7 @@ describe('GET /metas/:path — crossRefs status', () => {
     );
 
     // refDirB has no .meta directory (missing)
-    const watcher = makeWatcher([join(metaDir, 'meta.json')]);
+    const watcher = makeTestWatcher([join(metaDir, 'meta.json')]);
     const deps = makeDeps({
       watcher: watcher as unknown as RouteDeps['watcher'],
     });
@@ -538,7 +479,7 @@ describe('GET /metas/:path — archive reads', () => {
       cursor: null,
     });
 
-    const watcher = makeWatcher([join(metaDir, 'meta.json')], scan);
+    const watcher = makeTestWatcher([join(metaDir, 'meta.json')], scan);
     app = Fastify();
     registerMetasRoutes(
       app,
@@ -562,7 +503,7 @@ describe('GET /metas/:path — archive reads', () => {
   });
 
   it('falls back to disk reads when watcher scan fails', async () => {
-    const watcher = makeWatcher(
+    const watcher = makeTestWatcher(
       [join(metaDir, 'meta.json')],
       vi.fn().mockRejectedValue(new Error('watcher down')),
     );

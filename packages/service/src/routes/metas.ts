@@ -21,7 +21,7 @@ import { findNode, listMetas } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
 import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
 import { computeStalenessScore } from '../scheduling/index.js';
-import type { RouteDeps } from './index.js';
+import { DEFAULT_EXCLUDE_FIELDS, type RouteDeps } from './index.js';
 
 const metasQuerySchema = z.object({
   pathPrefix: z.string().optional(),
@@ -168,13 +168,6 @@ export function registerMetasRoutes(
       ) as Record<string, unknown>;
 
       // Field projection
-      const defaultExclude = new Set([
-        '_architect',
-        '_builder',
-        '_critic',
-        '_content',
-        '_feedback',
-      ]);
       const fieldList = query.fields?.split(',');
 
       const projectMeta = (
@@ -187,7 +180,7 @@ export function registerMetasRoutes(
         }
         const r: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(m)) {
-          if (!defaultExclude.has(k)) r[k] = v;
+          if (!DEFAULT_EXCLUDE_FIELDS.has(k)) r[k] = v;
         }
         return r;
       };

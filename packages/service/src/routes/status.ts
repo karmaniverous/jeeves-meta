@@ -12,7 +12,11 @@ import type { FastifyInstance } from 'fastify';
 
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
 import { listMetas } from '../discovery/index.js';
-import { derivePhaseState, selectPhaseCandidate } from '../phaseState/index.js';
+import {
+  buildPhaseCandidates,
+  derivePhaseState,
+  selectPhaseCandidate,
+} from '../phaseState/index.js';
 import type { PhaseName, PhaseStatus } from '../schema/meta.js';
 import type { RouteDeps } from './index.js';
 
@@ -112,24 +116,16 @@ export function registerStatusRoute(
       try {
         const metaResult = await listMetas(config, watcher);
 
-        const candidates = [];
-
+        // Count raw phase states (before retry) for display
         for (const entry of metaResult.entries) {
           const ps = derivePhaseState(entry.meta);
-          // Count phase states
           for (const phase of ['architect', 'builder', 'critic'] as const) {
             phaseStateSummary[phase][ps[phase]]++;
           }
-
-          candidates.push({
-            node: entry.node,
-            meta: entry.meta,
-            phaseState: ps,
-            actualStaleness: entry.stalenessSeconds,
-            locked: entry.locked,
-            disabled: entry.disabled,
-          });
         }
+
+        // Build candidates (with auto-retry) for scheduling
+        const candidates = buildPhaseCandidates(metaResult.entries);
 
         // Find next phase candidate
         const winner = selectPhaseCandidate(candidates, config.depthWeight);

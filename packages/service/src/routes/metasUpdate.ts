@@ -16,7 +16,7 @@ import { z } from 'zod';
 import { resolveMetaDir } from '../lock.js';
 import { normalizePath } from '../normalizePath.js';
 import { readMetaJson } from '../readMetaJson.js';
-import type { RouteDeps } from './index.js';
+import { DEFAULT_EXCLUDE_FIELDS, type RouteDeps } from './index.js';
 
 const updateBodySchema = z
   .object({
@@ -87,16 +87,9 @@ export function registerMetasUpdateRoute(
       await writeFile(metaJsonPath, JSON.stringify(updated, null, 2) + '\n');
 
       // Project the response — exclude the same large fields as the detail route.
-      const defaultExclude = new Set([
-        '_architect',
-        '_builder',
-        '_critic',
-        '_content',
-        '_feedback',
-      ]);
       const projected: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(updated)) {
-        if (!defaultExclude.has(k)) projected[k] = v;
+        if (!DEFAULT_EXCLUDE_FIELDS.has(k)) projected[k] = v;
       }
 
       return reply.send({
