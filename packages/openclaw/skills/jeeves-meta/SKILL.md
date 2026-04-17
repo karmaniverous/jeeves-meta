@@ -172,6 +172,17 @@ compatibility.
   (e.g. phased analysis, incremental refinement). On builder timeout, the
   engine attempts to recover partial output — if `_state` advanced, it saves
   the new state without overwriting existing content.
+- **Phase-state machine (`_phaseState`):** Each meta tracks its three phases
+  independently: `{ architect: <state>, builder: <state>, critic: <state> }`.
+  States are `fresh`, `stale`, `pending`, `running`, or `failed`. The
+  scheduler picks the single highest-priority owed phase across all metas
+  each tick (critic > builder > architect, with staleness tiebreaking).
+  Failed phases are automatically retried on the next tick (promoted from
+  `failed` → `pending`). Only the failed phase reruns — upstream/downstream
+  phases are untouched (surgical retries). A full cycle completes only when
+  all three phases are `fresh`, at which point the archive snapshot is taken
+  and `_synthesisCount` increments. Legacy metas without `_phaseState` have
+  their state derived automatically from existing fields on first load.
 
 ## Configuration
 
@@ -567,15 +578,22 @@ The `start` command uses `--config`/`-c` instead (port is read from the config f
 Recommended periodic checks:
 - **Errors:** `meta_list` with `filter: { hasError: true }` — investigate
   and retry with `meta_trigger`
+- **Failed phases:** The TOOLS.md injection shows a "Failed:" alert listing
+  metas with failed phases. Failed phases auto-retry on the next scheduler
+  tick. Use `meta_detail` to inspect the `_phaseState` and `_error` fields.
 - **Stuck locks:** `meta_list` with `filter: { locked: true }` — locks
   older than 30 minutes indicate a crashed synthesis; use `jeeves-meta unlock`
 - **Stale knowledge:** `meta_list` with `filter: { staleHours: 48 }` — check
   if the scheduler is running and the watcher is up
+- **Phase health:** `/status` includes `phaseStateSummary` with aggregate
+  counts per phase (`fresh`, `stale`, `pending`, `running`, `failed`) and
+  `nextPhase` showing the next candidate.
 - **Service health:** `/status` endpoint (via `meta_list` summary or direct
   HTTP) includes dependency status for watcher and gateway
 
 The TOOLS.md injection surfaces the most critical stats (entity count, errors,
-stalest entity) in the agent's system prompt automatically.
+stalest entity, phase summary, failed-phase alerts, next-phase indicator) in
+the agent's system prompt automatically.
 
 ## Troubleshooting
 
@@ -636,18 +654,22 @@ progressive work is not lost on timeout — only the content update is skipped.
 3. Check if the LLM provider is slow or rate-limited
 4. Check scope size: large scopes with many files take longer
 
-### LLM errors in synthesis steps
+### LLM errors in synthesis phases
 
-**Symptom:** `meta_detail` shows `_error` field with step/code/message
+**Symptom:** `meta_detail` shows `_error` field with step/code/message, and
+`_phaseState` shows `failed` for one or more phases.
 **Cause:** Subprocess failed (API error, malformed output, rate limit)
 **Fix:**
 1. Check error details: `meta_detail <path>` — `_error.step` tells you
-   which step failed
-2. Architect failure with existing `_builder`: engine reuses cached brief
+   which phase failed; `_phaseState` shows the exact state of each phase
+2. Failed phases are **automatically retried** on the next scheduler tick
+   (promoted from `failed` → `pending`). Only the failed phase reruns —
+   other phases are untouched (surgical retry).
+3. Architect failure with existing `_builder`: engine reuses cached brief
    (self-healing)
-3. Architect failure without `_builder` (first run): retry with `meta_trigger`
-4. Builder failure: meta stays stale, retried next cycle automatically
-5. Critic failure: content saved without feedback, not critical
+4. Architect failure without `_builder` (first run): retry with `meta_trigger`
+5. Builder failure: meta stays stale, retried next tick automatically
+6. Critic failure: content saved without feedback, not critical
 
 ### Discovery returns wrong/stale results
 
