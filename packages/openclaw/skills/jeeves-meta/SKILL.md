@@ -7,6 +7,12 @@ jeeves-meta is the Jeeves platform's knowledge synthesis engine. It discovers
 gathers context from co-located source files, and uses a three-step LLM process
 (architect, builder, critic) to produce structured synthesis artifacts.
 
+Each meta entity carries a **phase-state machine** (`_phaseState`) tracking
+the state of each phase independently: `fresh`, `stale`, `pending`, `running`,
+or `failed`. The scheduler picks **one phase per tick** across the entire
+corpus (critic > builder > architect priority), enabling surgical retries of
+failed phases without re-running the full pipeline.
+
 **Requires:** jeeves-watcher ≥ 0.10.0 (provides `POST /walk` and auto
 rules-reindex on registration).
 
@@ -21,6 +27,8 @@ registration health.
 List all `.meta/` directories with summary stats and per-meta projection.
 Supports filtering by path prefix, error status, staleness, lock state, and
 disabled status. Use for engine health checks and finding stale knowledge.
+Each meta entry includes `phaseState` (`{ architect, builder, critic }`)
+showing the per-phase state.
 
 **Parameters:**
 - `pathPrefix` (optional): Filter by path prefix (e.g. "github/")
@@ -28,7 +36,8 @@ disabled status. Use for engine health checks and finding stale knowledge.
 - `fields` (optional): Property projection array
 
 ### meta_detail
-Full detail for a single meta, with optional archive history.
+Full detail for a single meta, with optional archive history. Includes
+`_phaseState` showing the per-phase state machine status.
 
 **Parameters:**
 - `path` (required): `.meta/` or owner directory path
@@ -36,20 +45,22 @@ Full detail for a single meta, with optional archive history.
 - `includeArchive` (optional): false, true, or number (N most recent)
 
 ### meta_preview
-Dry-run for the next synthesis cycle. Shows scope files, delta files,
-architect trigger reasons, steer status, and structure changes — without
-running any LLM calls. Use before `meta_trigger` to understand what
-will happen.
+Dry-run for the next synthesis candidate. Shows scope files, delta files,
+architect trigger reasons, steer status, structure changes, and the
+phase that would execute next — without running any LLM calls. Includes
+`phaseState` and `owedPhase` (the phase that would run). Use before
+`meta_trigger` to understand what will happen.
 
 **Parameters:**
 - `path` (optional): Specific `.meta/` or owner directory path. If omitted,
   previews the stalest candidate.
 
 ### meta_trigger
-Enqueue a synthesis cycle for a specific meta or the next-stalest candidate.
+Enqueue a synthesis for a specific meta or the next-stalest candidate.
 The synthesis runs asynchronously in the service queue; the tool returns
-immediately with the queue position. The full cycle (architect → builder →
-critic) runs in the background.
+immediately with the queue position. Only one phase runs per tick (the
+owed phase). Includes `owedPhase` in the response showing which phase
+will execute.
 
 **Parameters:**
 - `path` (optional): Specific `.meta/` or owner directory path. If omitted,
@@ -99,14 +110,17 @@ modify `_crossRefs` — without editing `meta.json` directly on the filesystem.
 
 ### meta_queue
 Queue management: list pending items, clear the queue, or abort current
-synthesis. The synthesis queue is single-threaded; use this tool to inspect
-what's running, clear queued work, or abort a stuck synthesis.
+synthesis. The queue has three layers: `current` (the running phase),
+`overrides` (explicitly triggered entries), and `automatic` (scheduler-
+computed candidates). The `pending` and `state` fields provide legacy
+compatibility.
 
 **Parameters:**
 - `action` (required): One of `list`, `clear`, `abort`.
-  - `list`: Show current queue state (current synthesis, pending items).
-  - `clear`: Remove all pending queue items.
-  - `abort`: Stop the currently running synthesis and release its lock.
+  - `list`: Show current queue state (current with phase, overrides,
+    automatic candidates, pending items).
+  - `clear`: Remove all override queue entries.
+  - `abort`: Stop the currently running phase and release its lock.
 
 ## When to Use
 
