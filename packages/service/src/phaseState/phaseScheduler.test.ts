@@ -220,6 +220,27 @@ describe('selectPhaseCandidate', () => {
     expect(result).toBeNull();
   });
 
+  it('mid-cycle builder beats staler architect (finish started work first)', () => {
+    const metas = [
+      candidate(
+        'stale-arch/.meta',
+        { architect: 'pending', builder: 'stale', critic: 'stale' },
+        { actualStaleness: 100000 },
+      ),
+      candidate(
+        'mid-build/.meta',
+        { architect: 'fresh', builder: 'pending', critic: 'stale' },
+        { actualStaleness: 1000 },
+      ),
+    ];
+
+    const result = selectPhaseCandidate(metas, 1);
+    // Builder (band 2) beats architect (band 3) regardless of staleness
+    expect(result!.node.metaPath).toBe('mid-build/.meta');
+    expect(result!.band).toBe(2);
+    expect(result!.midCycle).toBe(true);
+  });
+
   it('returns correct band and owedPhase', () => {
     const result = selectPhaseCandidate(
       [
