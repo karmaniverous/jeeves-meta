@@ -270,12 +270,19 @@ export async function runBuilder(
       }
     }
 
-    return handlePhaseFailure('builder', err, executor, ps, {
-      metaPath: node.metaPath,
-      current: currentMeta,
-      config,
-      structureHash,
-    }, partialState);
+    return handlePhaseFailure(
+      'builder',
+      err,
+      executor,
+      ps,
+      {
+        metaPath: node.metaPath,
+        current: currentMeta,
+        config,
+        structureHash,
+      },
+      partialState,
+    );
   }
 }
 

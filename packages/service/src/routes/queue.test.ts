@@ -10,8 +10,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
-import type { RouteDeps } from './index.js';
 import { makeTestDeps, makeTestLogger } from './__testUtils.js';
+import type { RouteDeps } from './index.js';
 import { registerQueueRoutes } from './queue.js';
 
 describe('queue routes', () => {

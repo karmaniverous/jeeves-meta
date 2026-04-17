@@ -12,7 +12,11 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { normalizePath } from '../normalizePath.js';
-import { createTestMeta, makeTestDeps, makeTestWatcher } from './__testUtils.js';
+import {
+  createTestMeta,
+  makeTestDeps,
+  makeTestWatcher,
+} from './__testUtils.js';
 import type { RouteDeps } from './index.js';
 import { registerMetasUpdateRoute } from './metasUpdate.js';
 

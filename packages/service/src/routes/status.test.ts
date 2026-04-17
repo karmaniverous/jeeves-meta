@@ -8,8 +8,8 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
-import type { RouteDeps } from './index.js';
 import { makeTestDeps, makeTestLogger } from './__testUtils.js';
+import type { RouteDeps } from './index.js';
 import { registerStatusRoute } from './status.js';
 
 /** Custom stats used by status tests. */
