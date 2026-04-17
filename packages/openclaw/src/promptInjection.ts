@@ -89,6 +89,73 @@ export async function generateMetaMenu(
     depLines.push('> ⚠️ **Gateway**: ' + dependencies.gateway.status);
   }
 
+  // Phase-state summary from /status health
+  const phaseLines: string[] = [];
+  const phaseSummary = status.health.phaseStateSummary as
+    | Record<string, Record<string, number>>
+    | undefined;
+  if (phaseSummary) {
+    // Aggregate counts across all phases
+    const totals: Record<string, number> = {};
+    for (const phase of ['architect', 'builder', 'critic']) {
+      const counts = phaseSummary[phase];
+      for (const [state, count] of Object.entries(counts)) {
+        if (count > 0) {
+          totals[state] = (totals[state] ?? 0) + count;
+        }
+      }
+    }
+    const parts: string[] = [];
+    for (const state of ['fresh', 'pending', 'running', 'failed']) {
+      if (totals[state]) {
+        parts.push(totals[state].toString() + ' ' + state);
+      }
+    }
+    if (parts.length > 0) {
+      phaseLines.push('Phases: ' + parts.join(', '));
+    }
+
+    // Failed-phase alert
+    const failedParts: string[] = [];
+    for (const item of metas.metas) {
+      const ps = item.phaseState as Record<string, string> | undefined;
+      if (!ps) continue;
+      for (const phase of ['architect', 'builder', 'critic']) {
+        if (ps[phase] === 'failed') {
+          const p = item.path as string;
+          failedParts.push(p + ' (' + phase + ')');
+        }
+      }
+    }
+    if (failedParts.length > 0) {
+      phaseLines.push(
+        '> Failed: ' +
+          failedParts.slice(0, 10).join(', ') +
+          (failedParts.length > 10
+            ? ' (+' + (failedParts.length - 10).toString() + ' more)'
+            : ''),
+      );
+    }
+  }
+
+  // Next-phase indicator from /status health
+  const nextPhase = status.health.nextPhase as
+    | { path: string; phase: string; band: number; staleness: number }
+    | undefined;
+  if (nextPhase) {
+    phaseLines.push(
+      'Next: ' +
+        nextPhase.path +
+        ' → ' +
+        nextPhase.phase +
+        ' (band ' +
+        nextPhase.band.toString() +
+        ', staleness ' +
+        formatAge(nextPhase.staleness) +
+        ')',
+    );
+  }
+
   return [
     'The jeeves-meta synthesis engine manages ' +
       summary.total.toString() +
@@ -103,6 +170,7 @@ export async function generateMetaMenu(
     '| Never synthesized | ' + summary.neverSynthesized.toString() + ' |',
     '| Stalest | ' + stalestDisplay + ' |',
     '| Last synthesized | ' + lastSynthDisplay + ' |',
+    ...(phaseLines.length > 0 ? ['', '### Phase State', ...phaseLines] : []),
     ...(depLines.length > 0 ? ['', '### Dependencies', ...depLines] : []),
     '',
     'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.',
