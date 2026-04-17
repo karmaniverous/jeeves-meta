@@ -172,4 +172,119 @@ describe('generateMetaMenu', () => {
     expect(menu).not.toContain('| Tool |');
     expect(menu).toContain('jeeves-meta');
   });
+
+  // ── Phase-state TOOLS.md additions (Task #18c) ──
+
+  it('includes phase-state summary when phaseStateSummary is present', async () => {
+    const client = mockClient({
+      statusOverrides: {
+        health: {
+          phaseStateSummary: {
+            architect: {
+              fresh: 8,
+              stale: 0,
+              pending: 2,
+              running: 0,
+              failed: 0,
+            },
+            builder: { fresh: 7, stale: 1, pending: 1, running: 1, failed: 0 },
+            critic: { fresh: 9, stale: 0, pending: 0, running: 0, failed: 1 },
+          },
+          nextPhase: null,
+          dependencies: {
+            watcher: { status: 'ok', rulesRegistered: true },
+            gateway: { status: 'ok' },
+          },
+        },
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('Phases:');
+    expect(menu).toContain('fresh');
+    expect(menu).toContain('pending');
+  });
+
+  it('includes failed-phase alert when metas have failed phases', async () => {
+    const client = mockClient({
+      statusOverrides: {
+        health: {
+          phaseStateSummary: {
+            architect: {
+              fresh: 10,
+              stale: 0,
+              pending: 0,
+              running: 0,
+              failed: 0,
+            },
+            builder: { fresh: 9, stale: 0, pending: 0, running: 0, failed: 1 },
+            critic: { fresh: 10, stale: 0, pending: 0, running: 0, failed: 0 },
+          },
+          nextPhase: null,
+          dependencies: {
+            watcher: { status: 'ok', rulesRegistered: true },
+            gateway: { status: 'ok' },
+          },
+        },
+      },
+      metasOverrides: {
+        metas: [
+          {
+            stalenessSeconds: 100,
+            path: 'j:/domains/test/.meta',
+            phaseState: {
+              architect: 'fresh',
+              builder: 'failed',
+              critic: 'stale',
+            },
+          },
+        ],
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('Failed:');
+    expect(menu).toContain('j:/domains/test/.meta (builder)');
+  });
+
+  it('includes next-phase indicator when nextPhase is present', async () => {
+    const client = mockClient({
+      statusOverrides: {
+        health: {
+          phaseStateSummary: {
+            architect: {
+              fresh: 10,
+              stale: 0,
+              pending: 0,
+              running: 0,
+              failed: 0,
+            },
+            builder: { fresh: 10, stale: 0, pending: 0, running: 0, failed: 0 },
+            critic: { fresh: 10, stale: 0, pending: 0, running: 0, failed: 0 },
+          },
+          nextPhase: {
+            path: 'j:/domains/email/.meta',
+            phase: 'architect',
+            band: 3,
+            staleness: 172800,
+          },
+          dependencies: {
+            watcher: { status: 'ok', rulesRegistered: true },
+            gateway: { status: 'ok' },
+          },
+        },
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('Next:');
+    expect(menu).toContain('j:/domains/email/.meta');
+    expect(menu).toContain('architect');
+    expect(menu).toContain('band 3');
+  });
+
+  it('omits phase sections when no phaseStateSummary in health', async () => {
+    const client = mockClient();
+    const menu = await generateMetaMenu(client);
+    expect(menu).not.toContain('Phase State');
+    expect(menu).not.toContain('Failed:');
+    expect(menu).not.toContain('Next:');
+  });
 });

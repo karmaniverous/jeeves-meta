@@ -13,7 +13,7 @@ import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { computeEma } from '../ema.js';
-import type { MetaError } from '../schema/index.js';
+import type { MetaError, PhaseState } from '../schema/index.js';
 import { type MetaJson, metaJsonSchema } from '../schema/index.js';
 import type { BuilderOutput } from './parseOutput.js';
 
@@ -54,6 +54,8 @@ export interface MergeOptions {
    * Used for timeout recovery where state advanced but content did not.
    */
   stateOnly?: boolean;
+  /** Phase state record to persist. */
+  phaseState?: PhaseState;
 }
 
 /**
@@ -115,6 +117,9 @@ export async function mergeAndWrite(options: MergeOptions): Promise<MetaJson> {
     // Error handling
     _error: options.error ?? undefined,
 
+    // Phase state machine
+    _phaseState: options.phaseState,
+
     // Spread structured fields from builder
     ...options.builderOutput?.fields,
   };
@@ -134,6 +139,7 @@ export async function mergeAndWrite(options: MergeOptions): Promise<MetaJson> {
   if (merged._error === undefined) delete merged._error;
   if (merged._content === undefined) delete merged._content;
   if (merged._feedback === undefined) delete merged._feedback;
+  if (merged._phaseState === undefined) delete merged._phaseState;
 
   // Validate
   const result = metaJsonSchema.safeParse(merged);

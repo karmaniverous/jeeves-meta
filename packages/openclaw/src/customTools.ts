@@ -51,7 +51,7 @@ function buildMetaListTool(
   return {
     name: 'meta_list',
     description:
-      'List metas with summary stats and per-meta projection. Replaces meta_status + meta_entities.',
+      'List metas with summary stats and per-meta projection. Response includes _phaseState and owedPhase per meta.',
     parameters: {
       type: 'object',
       properties: {
@@ -102,7 +102,7 @@ function buildMetaDetailTool(
   return {
     name: 'meta_detail',
     description:
-      'Full detail for a single meta, with optional archive history.',
+      'Full detail for a single meta, with optional archive history. Response includes _phaseState and owedPhase.',
     parameters: {
       type: 'object',
       properties: {
@@ -140,7 +140,7 @@ function buildMetaPreviewTool(
   return {
     name: 'meta_preview',
     description:
-      'Dry-run: show what inputs would be gathered for the next synthesis cycle without running LLM.',
+      'Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, stalenessInputs, and architectInvalidators.',
     parameters: {
       type: 'object',
       properties: {
@@ -163,7 +163,7 @@ function buildMetaTriggerTool(
   return {
     name: 'meta_trigger',
     description:
-      'Manually trigger synthesis for a specific meta or the next-stalest candidate.',
+      'Trigger synthesis. Path-targeted creates an override queue entry; returns owedPhase. Fully-fresh metas return status:skipped.',
     parameters: {
       type: 'object',
       properties: {
@@ -260,7 +260,7 @@ function buildMetaQueueTool(
   return {
     name: 'meta_queue',
     description:
-      'Queue management: list pending items, clear the queue, or abort current synthesis.',
+      'Queue management. list: 3-layer model (current with phase, overrides, automatic, pending). clear: removes overrides only. abort: returns {status,path,phase} or {status:idle}.',
     parameters: {
       type: 'object',
       properties: {

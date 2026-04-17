@@ -7,65 +7,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import type { Logger } from 'pino';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
+import { makeTestDeps, makeTestLogger } from './__testUtils.js';
 import type { RouteDeps } from './index.js';
 import { registerQueueRoutes } from './queue.js';
-
-function makeLogger(): Logger {
-  return {
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-    fatal: vi.fn(),
-    trace: vi.fn(),
-    child: vi.fn(),
-    level: 'info',
-  } as unknown as Logger;
-}
-
-function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
-  return {
-    config: {
-      watcherUrl: 'http://localhost:3456',
-      gatewayUrl: 'http://127.0.0.1:18789',
-      depthWeight: 0.5,
-      architectEvery: 10,
-      maxArchive: 20,
-      maxLines: 500,
-      architectTimeout: 120,
-      builderTimeout: 600,
-      criticTimeout: 300,
-      thinking: 'low',
-      defaultArchitect: 'arch',
-      defaultCritic: 'crit',
-      skipUnchanged: true,
-      metaProperty: {},
-      metaArchiveProperty: {},
-      port: 1938,
-      schedule: '*/30 * * * *',
-      watcherHealthIntervalMs: 60000,
-      logging: { level: 'info' },
-      autoSeed: [],
-    },
-    logger: makeLogger(),
-    queue: new SynthesisQueue(makeLogger()),
-    watcher: {} as RouteDeps['watcher'],
-    scheduler: null,
-    stats: {
-      totalSyntheses: 0,
-      totalTokens: 0,
-      totalErrors: 0,
-      lastCycleDurationMs: null,
-      lastCycleAt: null,
-    },
-    executor: { abort: vi.fn() } as RouteDeps['executor'],
-    ...overrides,
-  };
-}
 
 describe('queue routes', () => {
   let app: FastifyInstance;
@@ -75,12 +22,12 @@ describe('queue routes', () => {
   });
 
   it('GET /queue returns current, pending, and state', async () => {
-    const queue = new SynthesisQueue(makeLogger());
+    const queue = new SynthesisQueue(makeTestLogger());
     queue.enqueue('/meta/a');
     queue.enqueue('/meta/b');
 
     app = Fastify();
-    registerQueueRoutes(app, makeDeps({ queue }));
+    registerQueueRoutes(app, makeTestDeps({ queue }));
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/queue' });
@@ -97,35 +44,32 @@ describe('queue routes', () => {
     expect(body.state.items).toHaveLength(2);
   });
 
-  it('POST /queue/clear removes pending items only', async () => {
-    const queue = new SynthesisQueue(makeLogger());
+  it('POST /queue/clear removes override entries only', async () => {
+    const queue = new SynthesisQueue(makeTestLogger());
     queue.enqueue('/meta/current');
     queue.dequeue();
-    queue.enqueue('/meta/pending-a');
-    queue.enqueue('/meta/pending-b');
+    queue.enqueueOverride('/meta/override-a');
+    queue.enqueueOverride('/meta/override-b');
 
     app = Fastify();
-    registerQueueRoutes(app, makeDeps({ queue }));
+    registerQueueRoutes(app, makeTestDeps({ queue }));
     await app.ready();
 
     const res = await app.inject({ method: 'POST', url: '/queue/clear' });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ cleared: 2 });
     expect(queue.current?.path).toBe('/meta/current');
-    expect(queue.pending).toHaveLength(0);
+    expect(queue.overrides).toHaveLength(0);
   });
 
-  it('POST /synthesize/abort returns 404 when idle', async () => {
+  it('POST /synthesize/abort returns idle when nothing running', async () => {
     app = Fastify();
-    registerQueueRoutes(app, makeDeps());
+    registerQueueRoutes(app, makeTestDeps());
     await app.ready();
 
     const res = await app.inject({ method: 'POST', url: '/synthesize/abort' });
-    expect(res.statusCode).toBe(404);
-    expect(res.json()).toEqual({
-      error: 'NOT_FOUND',
-      message: 'No synthesis in progress',
-    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ status: 'idle' });
   });
 
   it('POST /synthesize/abort aborts the executor and releases the lock', async () => {
@@ -138,7 +82,7 @@ describe('queue routes', () => {
       JSON.stringify({ _lockPid: process.pid, _lockStartedAt: new Date() }),
     );
 
-    const queue = new SynthesisQueue(makeLogger());
+    const queue = new SynthesisQueue(makeTestLogger());
     queue.enqueue(ownerDir);
     queue.dequeue();
     const abort = vi.fn();
@@ -146,7 +90,7 @@ describe('queue routes', () => {
     app = Fastify();
     registerQueueRoutes(
       app,
-      makeDeps({ queue, executor: { abort } as RouteDeps['executor'] }),
+      makeTestDeps({ queue, executor: { abort } as RouteDeps['executor'] }),
     );
     await app.ready();
 

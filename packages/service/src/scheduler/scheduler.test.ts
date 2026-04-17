@@ -106,4 +106,23 @@ describe('Scheduler', () => {
     expect(scheduler.isRunning).toBe(true);
     expect(secondNext).not.toEqual(firstNext);
   });
+
+  it('resetBackoff sets backoffMultiplier to 1', () => {
+    scheduler.start();
+
+    // Access private backoffMultiplier to verify initial state
+    const getBackoff = () =>
+      (scheduler as unknown as { backoffMultiplier: number }).backoffMultiplier;
+
+    expect(getBackoff()).toBe(1);
+
+    // Simulate backoff increase by calling tick with no candidates multiple times
+    // Instead, directly set the private field to simulate backoff state
+    (scheduler as unknown as { backoffMultiplier: number }).backoffMultiplier =
+      4;
+    expect(getBackoff()).toBe(4);
+
+    scheduler.resetBackoff();
+    expect(getBackoff()).toBe(1);
+  });
 });

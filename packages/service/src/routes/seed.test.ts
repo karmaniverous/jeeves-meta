@@ -9,56 +9,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import type { Logger } from 'pino';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import type { RouteDeps } from './index.js';
+import { makeTestDeps } from './__testUtils.js';
 import { registerSeedRoute } from './seed.js';
 
 const testRoot = join(tmpdir(), `jeeves-meta-seed-${Date.now().toString()}`);
-
-function makeDeps(overrides: Partial<RouteDeps> = {}): RouteDeps {
-  return {
-    config: {
-      watcherUrl: 'http://localhost:3456',
-      gatewayUrl: 'http://127.0.0.1:18789',
-      depthWeight: 1,
-      architectEvery: 10,
-      maxArchive: 20,
-      maxLines: 500,
-      architectTimeout: 120,
-      builderTimeout: 600,
-      criticTimeout: 300,
-      thinking: 'low',
-      defaultArchitect: 'arch',
-      defaultCritic: 'crit',
-      skipUnchanged: true,
-      metaProperty: {},
-      metaArchiveProperty: {},
-      port: 1938,
-      schedule: '*/30 * * * *',
-      watcherHealthIntervalMs: 60000,
-      logging: { level: 'info' },
-      autoSeed: [],
-    },
-    logger: {
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    } as unknown as Logger,
-    queue: {} as RouteDeps['queue'],
-    watcher: {} as RouteDeps['watcher'],
-    scheduler: null,
-    stats: {
-      totalSyntheses: 0,
-      totalTokens: 0,
-      totalErrors: 0,
-      lastCycleDurationMs: null,
-      lastCycleAt: null,
-    },
-    ...overrides,
-  };
-}
 
 describe('POST /seed', () => {
   let app: FastifyInstance;
@@ -66,7 +22,7 @@ describe('POST /seed', () => {
 
   beforeEach(async () => {
     app = Fastify();
-    registerSeedRoute(app, makeDeps());
+    registerSeedRoute(app, makeTestDeps({ config: { depthWeight: 1 } }));
     await app.ready();
     ownerDir = join(testRoot, `owner-${Date.now().toString()}`);
   });

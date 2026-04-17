@@ -17,8 +17,19 @@ export {
   type ProgressCallback,
 } from './orchestrate.js';
 export {
+  orchestratePhase,
+  type OrchestratePhaseResult,
+  type PhaseProgressCallback,
+} from './orchestratePhase.js';
+export {
   type BuilderOutput,
   parseArchitectOutput,
   parseBuilderOutput,
   parseCriticOutput,
 } from './parseOutput.js';
+export {
+  type PhaseResult,
+  runArchitect,
+  runBuilder,
+  runCritic,
+} from './runPhase.js';

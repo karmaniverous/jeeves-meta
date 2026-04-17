@@ -1,0 +1,375 @@
+/**
+ * Per-phase executors for the phase-state machine.
+ *
+ * Each function runs exactly one phase on one meta, updates _phaseState
+ * via pure transitions, and persists via the lock-staged write.
+ *
+ * @module orchestrator/runPhase
+ */
+
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+
+import { createSnapshot, pruneArchive } from '../archive/index.js';
+import type { MetaNode } from '../discovery/index.js';
+import { toMetaError } from '../errors.js';
+import { SpawnTimeoutError } from '../executor/index.js';
+import type { MetaExecutor, WatcherClient } from '../interfaces/index.js';
+import type { MinimalLogger } from '../logger/index.js';
+import {
+  architectSuccess,
+  builderSuccess,
+  criticSuccess,
+  isFullyFresh,
+  phaseFailed,
+  phaseRunning,
+} from '../phaseState/index.js';
+import type { ProgressEvent } from '../progress/index.js';
+import type {
+  MetaConfig,
+  MetaError,
+  MetaJson,
+  PhaseState,
+} from '../schema/index.js';
+import {
+  buildArchitectTask,
+  buildBuilderTask,
+  buildCriticTask,
+} from './buildTask.js';
+import { buildContextPackage } from './contextPackage.js';
+import {
+  parseArchitectOutput,
+  parseBuilderOutput,
+  parseCriticOutput,
+} from './parseOutput.js';
+
+/** Callback for synthesis progress events. */
+export type ProgressCallback = (event: ProgressEvent) => void | Promise<void>;
+
+/** Result of running a single phase. */
+export interface PhaseResult {
+  /** Whether the phase executed (vs. was skipped). */
+  executed: boolean;
+  /** Updated phase state after execution. */
+  phaseState: PhaseState;
+  /** Updated meta.json content (if written). */
+  updatedMeta?: MetaJson;
+  /** Error if the phase failed. */
+  error?: MetaError;
+  /** Whether the full cycle is now complete (all phases fresh). */
+  cycleComplete?: boolean;
+}
+
+/** Shared base options for all finalize calls. */
+export interface FinalizeBase {
+  metaPath: string;
+  current: MetaJson;
+  config: MetaConfig;
+  structureHash: string;
+}
+
+/** Write updated meta with phase state via lock staging. */
+export async function persistPhaseState(
+  base: FinalizeBase,
+  phaseState: PhaseState,
+  updates: Partial<MetaJson>,
+): Promise<MetaJson> {
+  const lockPath = join(base.metaPath, '.lock');
+  const metaJsonPath = join(base.metaPath, 'meta.json');
+
+  const merged: MetaJson = {
+    ...base.current,
+    ...updates,
+    _phaseState: phaseState,
+    _structureHash: base.structureHash,
+  };
+
+  // Clean undefined
+  if (merged._error === undefined) delete merged._error;
+
+  await writeFile(lockPath, JSON.stringify(merged, null, 2) + '\n');
+  await copyFile(lockPath, metaJsonPath);
+  return merged;
+}
+
+/**
+ * Handle phase failure (abort or error).
+ *
+ * Shared error path for all three phase executors. When the executor was
+ * aborted, returns immediately without persisting (abort route handles it).
+ * Otherwise, transitions the phase to failed and persists the error.
+ */
+async function handlePhaseFailure(
+  phase: 'architect' | 'builder' | 'critic',
+  err: unknown,
+  executor: MetaExecutor,
+  ps: PhaseState,
+  base: FinalizeBase,
+  additionalUpdates?: Partial<MetaJson>,
+): Promise<PhaseResult> {
+  if (executor.aborted) {
+    return {
+      executed: true,
+      phaseState: phaseFailed(ps, phase),
+      error: { step: phase, code: 'ABORT', message: 'Aborted by operator' },
+    };
+  }
+
+  const error = toMetaError(phase, err);
+  const failedPs = phaseFailed(ps, phase);
+
+  await persistPhaseState(base, failedPs, {
+    _error: error,
+    ...additionalUpdates,
+  });
+
+  return { executed: true, phaseState: failedPs, error };
+}
+
+// ── Architect executor ─────────────────────────────────────────────────
+
+export async function runArchitect(
+  node: MetaNode,
+  currentMeta: MetaJson,
+  phaseState: PhaseState,
+  config: MetaConfig,
+  executor: MetaExecutor,
+  watcher: WatcherClient,
+  structureHash: string,
+  onProgress?: ProgressCallback,
+  logger?: MinimalLogger,
+): Promise<PhaseResult> {
+  let ps = phaseRunning(phaseState, 'architect');
+
+  const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
+
+  try {
+    await onProgress?.({
+      type: 'phase_start',
+      path: node.ownerPath,
+      phase: 'architect',
+    });
+    const phaseStart = Date.now();
+    const architectTask = buildArchitectTask(ctx, currentMeta, config);
+    const result = await executor.spawn(architectTask, {
+      thinking: config.thinking,
+      timeout: config.architectTimeout,
+      label: 'meta-architect',
+    });
+    const builderBrief = parseArchitectOutput(result.output);
+    const architectTokens = result.tokens;
+
+    // Architect success: architect → fresh, _synthesisCount → 0
+    ps = architectSuccess(ps);
+
+    const updatedMeta = await persistPhaseState(
+      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
+      ps,
+      {
+        _builder: builderBrief,
+        _architect: currentMeta._architect ?? config.defaultArchitect ?? '',
+        _synthesisCount: 0,
+        _architectTokens: architectTokens,
+        _generatedAt: new Date().toISOString(),
+        _error: undefined,
+      },
+    );
+
+    await onProgress?.({
+      type: 'phase_complete',
+      path: node.ownerPath,
+      phase: 'architect',
+      tokens: architectTokens,
+      durationMs: Date.now() - phaseStart,
+    });
+
+    return { executed: true, phaseState: ps, updatedMeta };
+  } catch (err) {
+    return handlePhaseFailure('architect', err, executor, ps, {
+      metaPath: node.metaPath,
+      current: currentMeta,
+      config,
+      structureHash,
+    });
+  }
+}
+
+// ── Builder executor ───────────────────────────────────────────────────
+
+export async function runBuilder(
+  node: MetaNode,
+  currentMeta: MetaJson,
+  phaseState: PhaseState,
+  config: MetaConfig,
+  executor: MetaExecutor,
+  watcher: WatcherClient,
+  structureHash: string,
+  onProgress?: ProgressCallback,
+  logger?: MinimalLogger,
+): Promise<PhaseResult> {
+  let ps = phaseRunning(phaseState, 'builder');
+
+  const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
+
+  try {
+    await onProgress?.({
+      type: 'phase_start',
+      path: node.ownerPath,
+      phase: 'builder',
+    });
+    const builderStart = Date.now();
+    const builderTask = buildBuilderTask(ctx, currentMeta, config);
+    const result = await executor.spawn(builderTask, {
+      thinking: config.thinking,
+      timeout: config.builderTimeout,
+      label: 'meta-builder',
+    });
+    const builderOutput = parseBuilderOutput(result.output);
+    const builderTokens = result.tokens;
+
+    // Builder success: builder → fresh, critic → pending
+    ps = builderSuccess(ps);
+
+    const updatedMeta = await persistPhaseState(
+      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
+      ps,
+      {
+        _content: builderOutput.content,
+        _state: builderOutput.state,
+        _builderTokens: builderTokens,
+        _generatedAt: new Date().toISOString(),
+        _error: undefined,
+        ...builderOutput.fields,
+      },
+    );
+
+    await onProgress?.({
+      type: 'phase_complete',
+      path: node.ownerPath,
+      phase: 'builder',
+      tokens: builderTokens,
+      durationMs: Date.now() - builderStart,
+    });
+
+    return { executed: true, phaseState: ps, updatedMeta };
+  } catch (err) {
+    // §4.6 partial _state recovery on timeout
+    let partialState: Partial<MetaJson> | undefined;
+    if (err instanceof SpawnTimeoutError) {
+      try {
+        const raw = await readFile(err.outputPath, 'utf8');
+        const partial = parseBuilderOutput(raw);
+        if (
+          partial.state !== undefined &&
+          JSON.stringify(partial.state) !== JSON.stringify(currentMeta._state)
+        ) {
+          partialState = { _state: partial.state };
+        }
+      } catch {
+        // Could not read partial output — no state recovery
+      }
+    }
+
+    return handlePhaseFailure(
+      'builder',
+      err,
+      executor,
+      ps,
+      {
+        metaPath: node.metaPath,
+        current: currentMeta,
+        config,
+        structureHash,
+      },
+      partialState,
+    );
+  }
+}
+
+// ── Critic executor ────────────────────────────────────────────────────
+
+export async function runCritic(
+  node: MetaNode,
+  currentMeta: MetaJson,
+  phaseState: PhaseState,
+  config: MetaConfig,
+  executor: MetaExecutor,
+  watcher: WatcherClient,
+  structureHash: string,
+  onProgress?: ProgressCallback,
+  logger?: MinimalLogger,
+): Promise<PhaseResult> {
+  let ps = phaseRunning(phaseState, 'critic');
+
+  const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
+
+  // Build critic task using current meta's _content
+  const metaForCritic: MetaJson = { ...currentMeta };
+
+  try {
+    await onProgress?.({
+      type: 'phase_start',
+      path: node.ownerPath,
+      phase: 'critic',
+    });
+    const criticStart = Date.now();
+    const criticTask = buildCriticTask(ctx, metaForCritic, config);
+    const result = await executor.spawn(criticTask, {
+      thinking: config.thinking,
+      timeout: config.criticTimeout,
+      label: 'meta-critic',
+    });
+    const feedback = parseCriticOutput(result.output);
+    const criticTokens = result.tokens;
+
+    // Critic success: critic → fresh
+    ps = criticSuccess(ps);
+    const cycleComplete = isFullyFresh(ps);
+
+    const updates: Partial<MetaJson> = {
+      _feedback: feedback,
+      _criticTokens: criticTokens,
+      _error: undefined,
+    };
+
+    // Full-cycle completion: increment _synthesisCount, archive, emit.
+    // Per spec: architect resets to 0, full-cycle increments on top.
+    if (cycleComplete) {
+      updates._synthesisCount = (currentMeta._synthesisCount ?? 0) + 1;
+    }
+
+    const updatedMeta = await persistPhaseState(
+      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
+      ps,
+      updates,
+    );
+
+    // Archive on full-cycle only
+    if (cycleComplete) {
+      await createSnapshot(node.metaPath, updatedMeta);
+      await pruneArchive(node.metaPath, config.maxArchive);
+    }
+
+    await onProgress?.({
+      type: 'phase_complete',
+      path: node.ownerPath,
+      phase: 'critic',
+      tokens: criticTokens,
+      durationMs: Date.now() - criticStart,
+    });
+
+    return {
+      executed: true,
+      phaseState: ps,
+      updatedMeta,
+      cycleComplete,
+    };
+  } catch (err) {
+    return handlePhaseFailure('critic', err, executor, ps, {
+      metaPath: node.metaPath,
+      current: currentMeta,
+      config,
+      structureHash,
+    });
+  }
+}

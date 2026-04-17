@@ -33,6 +33,18 @@ export interface ServiceStats {
   lastCycleAt: string | null;
 }
 
+/**
+ * Large generated fields excluded from detail/update response projections.
+ * Shared between metas detail and metasUpdate routes.
+ */
+export const DEFAULT_EXCLUDE_FIELDS = new Set([
+  '_architect',
+  '_builder',
+  '_critic',
+  '_content',
+  '_feedback',
+]);
+
 /** Dependencies injected into route handlers. */
 export interface RouteDeps {
   config: ServiceConfig;

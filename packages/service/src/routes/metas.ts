@@ -19,8 +19,9 @@ import { computeSummary } from '../discovery/computeSummary.js';
 import { getScopeFiles } from '../discovery/index.js';
 import { findNode, listMetas } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
+import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
 import { computeStalenessScore } from '../scheduling/index.js';
-import type { RouteDeps } from './index.js';
+import { DEFAULT_EXCLUDE_FIELDS, type RouteDeps } from './index.js';
 
 const metasQuerySchema = z.object({
   pathPrefix: z.string().optional(),
@@ -110,10 +111,13 @@ export function registerMetasRoutes(
       'architectTokens',
       'builderTokens',
       'criticTokens',
+      'phaseState',
+      'owedPhase',
     ];
     const projectedFields = fieldList ?? defaultFields;
 
     const metas = entries.map((e) => {
+      const ps = derivePhaseState(e.meta);
       const full: Record<string, unknown> = {
         path: e.path,
         depth: e.depth,
@@ -129,6 +133,8 @@ export function registerMetasRoutes(
         architectTokens: e.architectTokens,
         builderTokens: e.builderTokens,
         criticTokens: e.criticTokens,
+        phaseState: ps,
+        owedPhase: getOwedPhase(ps),
       };
       const projected: Record<string, unknown> = {};
       for (const f of projectedFields) {
@@ -162,13 +168,6 @@ export function registerMetasRoutes(
       ) as Record<string, unknown>;
 
       // Field projection
-      const defaultExclude = new Set([
-        '_architect',
-        '_builder',
-        '_critic',
-        '_content',
-        '_feedback',
-      ]);
       const fieldList = query.fields?.split(',');
 
       const projectMeta = (
@@ -181,7 +180,7 @@ export function registerMetasRoutes(
         }
         const r: Record<string, unknown> = {};
         for (const [k, v] of Object.entries(m)) {
-          if (!defaultExclude.has(k)) r[k] = v;
+          if (!DEFAULT_EXCLUDE_FIELDS.has(k)) r[k] = v;
         }
         return r;
       };
@@ -207,6 +206,13 @@ export function registerMetasRoutes(
         config.depthWeight,
       );
 
+      // Phase state
+      const entry = result.entries.find(
+        (e) => e.node.metaPath === targetNode.metaPath,
+      );
+      const phaseState = entry ? derivePhaseState(entry.meta) : null;
+      const owedPhase = phaseState ? getOwedPhase(phaseState) : null;
+
       const response: Record<string, unknown> = {
         path: targetNode.metaPath,
         meta: projectMeta(meta),
@@ -219,6 +225,8 @@ export function registerMetasRoutes(
           seconds: staleSeconds,
           score: Math.round(score * 100) / 100,
         },
+        phaseState,
+        owedPhase,
       };
 
       // Cross-refs status

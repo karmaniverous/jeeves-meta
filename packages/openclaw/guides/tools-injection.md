@@ -10,6 +10,9 @@ The plugin uses `ComponentWriter` from `@karmaniverous/jeeves` to periodically w
 
 The injected section includes:
 - Entity summary table (total, stale, errors, never synthesized, stalest, last synthesized)
+- **Phase-state summary** — aggregate counts of fresh, pending, running, and failed phases across the corpus (when phase-state data is available)
+- **Failed-phase alerts** — lists metas with failed phases (up to 10) with their path and failed phase name
+- **Next-phase indicator** — shows the next candidate path, phase, priority band, and staleness
 - Dependency health warnings (watcher/gateway status, rules registration state)
 - Skill reference pointer
 

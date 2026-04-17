@@ -15,12 +15,23 @@ A `.meta/` directory co-located with source content. Contains:
 
 Meta entities form a hierarchy based on filesystem nesting. A `.meta/` directory **owns** its parent directory and all descendants, except subtrees that contain their own `.meta/`. Child meta syntheses are consumed as rollup inputs by parent metas.
 
-## Synthesis Cycle
+## Synthesis Phases
 
-A three-step LLM pipeline:
+A three-phase LLM pipeline managed by a per-meta phase-state machine:
 1. **Architect** — analyzes scope structure, crafts a task brief (conditional: runs on structure change, steer change, or periodic refresh)
 2. **Builder** — executes the brief, produces `_content` + structured fields
 3. **Critic** — evaluates the synthesis, provides `_feedback` for the next cycle
+
+## Phase-State Machine (`_phaseState`)
+
+Each meta tracks its three phases independently via `_phaseState: { architect, builder, critic }`. Each phase can be in one of five states: `fresh`, `stale`, `pending`, `running`, or `failed`.
+
+The scheduler selects **one phase per tick** across the entire corpus, prioritizing by band (critic > builder > architect) and weighted staleness within each band. This enables:
+
+- **Surgical retries** — only the failed phase reruns; upstream/downstream untouched
+- **Auto-retry** — failed phases are promoted `failed` → `pending` on each tick
+- **Full-cycle completion** — archive snapshot + `_synthesisCount` increment only when all three phases are `fresh`
+- **Backward compatibility** — `derivePhaseState()` reconstructs the state from legacy fields on first load
 
 ## Cross-Meta References (`_crossRefs`)
 

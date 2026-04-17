@@ -174,4 +174,100 @@ describe('metaJsonSchema', () => {
     expect(result.success).toBe(true);
     expect(result.data?._disabled).toBeUndefined();
   });
+
+  it('rejects negative _emphasis', () => {
+    const result = metaJsonSchema.safeParse({
+      _emphasis: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts _emphasis of 0', () => {
+    const result = metaJsonSchema.safeParse({
+      _emphasis: 0,
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._emphasis).toBe(0);
+  });
+
+  it('rejects non-integer _synthesisCount', () => {
+    const result = metaJsonSchema.safeParse({
+      _synthesisCount: 1.5,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects invalid _generatedAt datetime', () => {
+    const result = metaJsonSchema.safeParse({
+      _generatedAt: 'not-a-date',
+    });
+    expect(result.success).toBe(false);
+  });
+
+  // ── _phaseState schema tests (Task #1 gap) ────────────────────────
+
+  it('accepts valid _phaseState with all fresh', () => {
+    const result = metaJsonSchema.safeParse({
+      _phaseState: {
+        architect: 'fresh',
+        builder: 'fresh',
+        critic: 'fresh',
+      },
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?._phaseState).toEqual({
+      architect: 'fresh',
+      builder: 'fresh',
+      critic: 'fresh',
+    });
+  });
+
+  it('accepts valid _phaseState with mixed statuses', () => {
+    const result = metaJsonSchema.safeParse({
+      _phaseState: {
+        architect: 'pending',
+        builder: 'stale',
+        critic: 'failed',
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts _phaseState with running status', () => {
+    const result = metaJsonSchema.safeParse({
+      _phaseState: {
+        architect: 'fresh',
+        builder: 'running',
+        critic: 'stale',
+      },
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects _phaseState with invalid status string', () => {
+    const result = metaJsonSchema.safeParse({
+      _phaseState: {
+        architect: 'fresh',
+        builder: 'invalid_status',
+        critic: 'fresh',
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects _phaseState missing a phase key', () => {
+    const result = metaJsonSchema.safeParse({
+      _phaseState: {
+        architect: 'fresh',
+        builder: 'fresh',
+      },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts meta without _phaseState (optional)', () => {
+    const result = metaJsonSchema.safeParse({});
+    expect(result.success).toBe(true);
+    expect(result.data?._phaseState).toBeUndefined();
+  });
 });

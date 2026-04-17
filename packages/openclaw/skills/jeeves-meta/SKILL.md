@@ -7,6 +7,12 @@ jeeves-meta is the Jeeves platform's knowledge synthesis engine. It discovers
 gathers context from co-located source files, and uses a three-step LLM process
 (architect, builder, critic) to produce structured synthesis artifacts.
 
+Each meta entity carries a **phase-state machine** (`_phaseState`) tracking
+the state of each phase independently: `fresh`, `stale`, `pending`, `running`,
+or `failed`. The scheduler picks **one phase per tick** across the entire
+corpus (critic > builder > architect priority), enabling surgical retries of
+failed phases without re-running the full pipeline.
+
 **Requires:** jeeves-watcher ≥ 0.10.0 (provides `POST /walk` and auto
 rules-reindex on registration).
 
@@ -21,6 +27,8 @@ registration health.
 List all `.meta/` directories with summary stats and per-meta projection.
 Supports filtering by path prefix, error status, staleness, lock state, and
 disabled status. Use for engine health checks and finding stale knowledge.
+Each meta entry includes `phaseState` (`{ architect, builder, critic }`)
+showing the per-phase state.
 
 **Parameters:**
 - `pathPrefix` (optional): Filter by path prefix (e.g. "github/")
@@ -28,7 +36,8 @@ disabled status. Use for engine health checks and finding stale knowledge.
 - `fields` (optional): Property projection array
 
 ### meta_detail
-Full detail for a single meta, with optional archive history.
+Full detail for a single meta, with optional archive history. Includes
+`_phaseState` showing the per-phase state machine status.
 
 **Parameters:**
 - `path` (required): `.meta/` or owner directory path
@@ -36,20 +45,22 @@ Full detail for a single meta, with optional archive history.
 - `includeArchive` (optional): false, true, or number (N most recent)
 
 ### meta_preview
-Dry-run for the next synthesis cycle. Shows scope files, delta files,
-architect trigger reasons, steer status, and structure changes — without
-running any LLM calls. Use before `meta_trigger` to understand what
-will happen.
+Dry-run for the next synthesis candidate. Shows scope files, delta files,
+architect trigger reasons, steer status, structure changes, and the
+phase that would execute next — without running any LLM calls. Includes
+`phaseState` and `owedPhase` (the phase that would run). Use before
+`meta_trigger` to understand what will happen.
 
 **Parameters:**
 - `path` (optional): Specific `.meta/` or owner directory path. If omitted,
   previews the stalest candidate.
 
 ### meta_trigger
-Enqueue a synthesis cycle for a specific meta or the next-stalest candidate.
+Enqueue a synthesis for a specific meta or the next-stalest candidate.
 The synthesis runs asynchronously in the service queue; the tool returns
-immediately with the queue position. The full cycle (architect → builder →
-critic) runs in the background.
+immediately with the queue position. Only one phase runs per tick (the
+owed phase). Includes `owedPhase` in the response showing which phase
+will execute.
 
 **Parameters:**
 - `path` (optional): Specific `.meta/` or owner directory path. If omitted,
@@ -99,14 +110,17 @@ modify `_crossRefs` — without editing `meta.json` directly on the filesystem.
 
 ### meta_queue
 Queue management: list pending items, clear the queue, or abort current
-synthesis. The synthesis queue is single-threaded; use this tool to inspect
-what's running, clear queued work, or abort a stuck synthesis.
+synthesis. The queue has three layers: `current` (the running phase),
+`overrides` (explicitly triggered entries), and `automatic` (scheduler-
+computed candidates). The `pending` and `state` fields provide legacy
+compatibility.
 
 **Parameters:**
 - `action` (required): One of `list`, `clear`, `abort`.
-  - `list`: Show current queue state (current synthesis, pending items).
-  - `clear`: Remove all pending queue items.
-  - `abort`: Stop the currently running synthesis and release its lock.
+  - `list`: Show current queue state (current with phase, overrides,
+    automatic candidates, pending items).
+  - `clear`: Remove all override queue entries.
+  - `abort`: Stop the currently running phase and release its lock.
 
 ## When to Use
 
@@ -158,6 +172,17 @@ what's running, clear queued work, or abort a stuck synthesis.
   (e.g. phased analysis, incremental refinement). On builder timeout, the
   engine attempts to recover partial output — if `_state` advanced, it saves
   the new state without overwriting existing content.
+- **Phase-state machine (`_phaseState`):** Each meta tracks its three phases
+  independently: `{ architect: <state>, builder: <state>, critic: <state> }`.
+  States are `fresh`, `stale`, `pending`, `running`, or `failed`. The
+  scheduler picks the single highest-priority owed phase across all metas
+  each tick (critic > builder > architect, with staleness tiebreaking).
+  Failed phases are automatically retried on the next tick (promoted from
+  `failed` → `pending`). Only the failed phase reruns — upstream/downstream
+  phases are untouched (surgical retries). A full cycle completes only when
+  all three phases are `fresh`, at which point the archive snapshot is taken
+  and `_synthesisCount` increments. Legacy metas without `_phaseState` have
+  their state derived automatically from existing fields on first load.
 
 ## Configuration
 
@@ -516,7 +541,7 @@ The service exposes these endpoints (default port 1938):
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/status` | Service health, queue state, dependency checks |
+| GET | `/status` | Service health, queue state, dependency checks, phase-state summary |
 | GET | `/metas` | List metas with filtering and field projection |
 | GET | `/metas/:path` | Single meta detail with optional archive |
 | PATCH | `/metas/:path` | Update user-settable reserved properties |
@@ -527,8 +552,8 @@ The service exposes these endpoints (default port 1938):
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 | POST | `/config/apply` | Apply a config patch (merge or replace) |
-| GET | `/queue` | Current queue state (current, pending, stats) |
-| POST | `/queue/clear` | Remove all pending queue items |
+| GET | `/queue` | Queue state: current (with phase), overrides, automatic, pending |
+| POST | `/queue/clear` | Remove all override queue entries |
 
 All endpoints return JSON. The OpenClaw plugin tools are thin wrappers
 around these endpoints.
@@ -553,15 +578,22 @@ The `start` command uses `--config`/`-c` instead (port is read from the config f
 Recommended periodic checks:
 - **Errors:** `meta_list` with `filter: { hasError: true }` — investigate
   and retry with `meta_trigger`
+- **Failed phases:** The TOOLS.md injection shows a "Failed:" alert listing
+  metas with failed phases. Failed phases auto-retry on the next scheduler
+  tick. Use `meta_detail` to inspect the `_phaseState` and `_error` fields.
 - **Stuck locks:** `meta_list` with `filter: { locked: true }` — locks
   older than 30 minutes indicate a crashed synthesis; use `jeeves-meta unlock`
 - **Stale knowledge:** `meta_list` with `filter: { staleHours: 48 }` — check
   if the scheduler is running and the watcher is up
+- **Phase health:** `/status` includes `phaseStateSummary` with aggregate
+  counts per phase (`fresh`, `stale`, `pending`, `running`, `failed`) and
+  `nextPhase` showing the next candidate.
 - **Service health:** `/status` endpoint (via `meta_list` summary or direct
   HTTP) includes dependency status for watcher and gateway
 
 The TOOLS.md injection surfaces the most critical stats (entity count, errors,
-stalest entity) in the agent's system prompt automatically.
+stalest entity, phase summary, failed-phase alerts, next-phase indicator) in
+the agent's system prompt automatically.
 
 ## Troubleshooting
 
@@ -622,18 +654,22 @@ progressive work is not lost on timeout — only the content update is skipped.
 3. Check if the LLM provider is slow or rate-limited
 4. Check scope size: large scopes with many files take longer
 
-### LLM errors in synthesis steps
+### LLM errors in synthesis phases
 
-**Symptom:** `meta_detail` shows `_error` field with step/code/message
+**Symptom:** `meta_detail` shows `_error` field with step/code/message, and
+`_phaseState` shows `failed` for one or more phases.
 **Cause:** Subprocess failed (API error, malformed output, rate limit)
 **Fix:**
 1. Check error details: `meta_detail <path>` — `_error.step` tells you
-   which step failed
-2. Architect failure with existing `_builder`: engine reuses cached brief
+   which phase failed; `_phaseState` shows the exact state of each phase
+2. Failed phases are **automatically retried** on the next scheduler tick
+   (promoted from `failed` → `pending`). Only the failed phase reruns —
+   other phases are untouched (surgical retry).
+3. Architect failure with existing `_builder`: engine reuses cached brief
    (self-healing)
-3. Architect failure without `_builder` (first run): retry with `meta_trigger`
-4. Builder failure: meta stays stale, retried next cycle automatically
-5. Critic failure: content saved without feedback, not critical
+4. Architect failure without `_builder` (first run): retry with `meta_trigger`
+5. Builder failure: meta stays stale, retried next tick automatically
+6. Critic failure: content saved without feedback, not critical
 
 ### Discovery returns wrong/stale results
 
@@ -649,8 +685,9 @@ not yet indexed new files
 
 ## Gotchas
 
-- `meta_trigger` runs a full LLM cycle (3 subprocess calls). It can take
-  several minutes.
+- `meta_trigger` enqueues a single phase (not all three). A full cycle
+  requires three separate ticks (one per phase). Use `meta_detail` to
+  check `_phaseState` for progress.
 - A locked meta (another synthesis in progress) will be skipped silently.
 - First-run quality is lower — the feedback loop needs 2-3 cycles to calibrate.
 - Changing `metaProperty` requires both a meta service restart AND a watcher reindex.
@@ -661,9 +698,12 @@ not yet indexed new files
 - All prompts are compiled as Handlebars templates. Avoid using `{{` in prompt
   overrides unless you intend template variable resolution. Escape with `\{{`
   for literal double-braces.
-- The synthesis queue is single-threaded: one synthesis at a time. HTTP-triggered
-  syntheses get priority over scheduler-triggered ones.
+- The synthesis queue is single-threaded with three layers: `current` (the
+  running phase), `overrides` (explicitly triggered entries, highest priority),
+  and `automatic` (scheduler-computed candidates). Override entries are
+  processed before automatic candidates.
 - The scheduler uses adaptive backoff: if no stale candidates are found, it
-  doubles the skip interval (max 4×). Backoff resets after a successful synthesis.
+  doubles the skip interval (max 4×). Backoff resets after any successful
+  phase execution (not just full-cycle completion).
 - All CLI commands except `start` require the service to be running (they call
   the HTTP API).
