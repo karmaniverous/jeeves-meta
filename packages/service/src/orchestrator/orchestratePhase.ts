@@ -9,9 +9,6 @@
  * @module orchestrator/orchestratePhase
  */
 
-import { copyFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
 import { buildMinimalNode } from '../discovery/buildMinimalNode.js';
 import { listMetas } from '../discovery/index.js';
 import { getScopeFiles, getScopePrefix } from '../discovery/scope.js';
@@ -38,6 +35,7 @@ import type {
 } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
 import {
+  persistPhaseState,
   type PhaseResult,
   runArchitect,
   runBuilder,
@@ -149,12 +147,16 @@ export async function orchestratePhase(
         watcher,
       );
       if (!verifiedStale) {
-        const freshMeta = await readMetaJson(winner.node.metaPath);
-        freshMeta._generatedAt = new Date().toISOString();
-        const lockPath = join(winner.node.metaPath, '.lock');
-        const metaJsonPath = join(winner.node.metaPath, 'meta.json');
-        await writeFile(lockPath, JSON.stringify(freshMeta, null, 2) + '\n');
-        await copyFile(lockPath, metaJsonPath);
+        await persistPhaseState(
+          {
+            metaPath: winner.node.metaPath,
+            current: currentMeta,
+            config,
+            structureHash,
+          },
+          phaseState,
+          { _generatedAt: new Date().toISOString() },
+        );
         logger?.debug(
           { path: winner.node.ownerPath },
           'Skipped unchanged meta, bumped _generatedAt',

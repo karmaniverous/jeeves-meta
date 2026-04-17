@@ -10,9 +10,7 @@ import type { Logger } from 'pino';
 
 import { listMetas } from '../discovery/index.js';
 import {
-  derivePhaseState,
-  getOwedPhase,
-  retryPhase,
+  buildPhaseCandidates,
   selectPhaseCandidate,
 } from '../phaseState/index.js';
 import type { SynthesisQueue } from '../queue/index.js';
@@ -216,29 +214,7 @@ export class Scheduler {
     try {
       const result = await listMetas(this.config, this.watcher);
 
-      const candidates = result.entries
-        .map((e) => {
-          let phaseState = derivePhaseState(e.meta);
-
-          // Surgical retry: promote failed phases to pending
-          const owed = getOwedPhase(phaseState);
-          if (owed && phaseState[owed] === 'failed') {
-            phaseState = retryPhase(phaseState, owed);
-          }
-
-          return {
-            node: e.node,
-            meta: e.meta,
-            phaseState,
-            actualStaleness: e.stalenessSeconds,
-            locked: e.locked,
-            disabled: e.disabled,
-          };
-        })
-        .filter((c) => {
-          const owed = getOwedPhase(c.phaseState);
-          return owed !== null;
-        });
+      const candidates = buildPhaseCandidates(result.entries);
 
       const winner = selectPhaseCandidate(candidates, this.config.depthWeight);
 

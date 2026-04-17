@@ -61,7 +61,7 @@ export interface PhaseResult {
 }
 
 /** Shared base options for all finalize calls. */
-interface FinalizeBase {
+export interface FinalizeBase {
   metaPath: string;
   current: MetaJson;
   config: MetaConfig;
@@ -69,7 +69,7 @@ interface FinalizeBase {
 }
 
 /** Write updated meta with phase state via lock staging. */
-async function persistPhaseState(
+export async function persistPhaseState(
   base: FinalizeBase,
   phaseState: PhaseState,
   updates: Partial<MetaJson>,

@@ -36,30 +36,24 @@ export function registerSynthesizeRoute(
 
       // Read meta to determine owed phase
       let owedPhase: string | null = null;
+      let meta;
       try {
-        const meta = await readMetaJson(targetPath);
+        meta = await readMetaJson(targetPath);
         const phaseState = derivePhaseState(meta);
         owedPhase = getOwedPhase(phaseState);
       } catch {
         // Meta unreadable — proceed, phase will be evaluated at dequeue time
       }
 
-      // Fully fresh meta → skip
-      if (owedPhase === null) {
-        try {
-          const meta = await readMetaJson(targetPath);
-          if (meta._phaseState || meta._content) {
-            return await reply.code(200).send({
-              status: 'skipped',
-              path: targetPath,
-              owedPhase: null,
-              queuePosition: -1,
-              alreadyQueued: false,
-            });
-          }
-        } catch {
-          // If we can't read it, still enqueue as override
-        }
+      // Fully fresh meta → skip (reuse meta already read above)
+      if (owedPhase === null && meta && (meta._phaseState || meta._content)) {
+        return await reply.code(200).send({
+          status: 'skipped',
+          path: targetPath,
+          owedPhase: null,
+          queuePosition: -1,
+          alreadyQueued: false,
+        });
       }
 
       const result = queue.enqueueOverride(targetPath);

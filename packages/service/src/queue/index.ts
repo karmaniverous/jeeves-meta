@@ -323,10 +323,12 @@ export class SynthesisQueue {
         } catch (err) {
           this.logger.error({ path: next.path, err }, 'Synthesis failed');
         }
+        this.clearCurrentPhase();
         if (next.source === 'legacy') this.complete();
         next = this.nextItem();
       }
     } finally {
+      this.clearCurrentPhase();
       this.processing = false;
     }
   }

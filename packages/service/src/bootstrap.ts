@@ -120,6 +120,10 @@ export async function startService(
         watcher,
         path,
         async (evt) => {
+          // Wire current-phase tracking for GET /queue and POST /synthesize/abort
+          if (evt.type === 'phase_start' && evt.phase) {
+            queue.setCurrentPhase(ownerPath, evt.phase);
+          }
           // Track token stats from phase completions
           if (evt.type === 'phase_complete') {
             if (evt.tokens !== undefined) {
