@@ -4,13 +4,13 @@ Knowledge synthesis engine for the Jeeves platform. Transforms raw data archives
 
 ## Overview
 
-jeeves-meta is an HTTP service that discovers `.meta/` directories via the jeeves-watcher filesystem walk endpoint (`POST /walk`), builds an ownership tree, and schedules synthesis cycles based on weighted staleness. Each cycle:
+jeeves-meta is an HTTP service that discovers `.meta/` directories via the jeeves-watcher filesystem walk endpoint (`POST /walk`), builds an ownership tree, and schedules synthesis using a **phase-state machine**. Each meta tracks its three phases independently, and the scheduler picks one phase per tick across the entire corpus (critic > builder > architect priority). The three phases:
 
 1. **Architect** — analyzes data shape and crafts a task brief with search strategies
 2. **Builder** — executes the brief, queries the semantic index, and produces a synthesis
 3. **Critic** — spot-checks claims, evaluates against steering prompts, and provides feedback
 
-Results are written to `.meta/meta.json` files with full archive history, enabling self-improving feedback loops.
+Results are written to `.meta/meta.json` files with full archive history, enabling self-improving feedback loops. Failed phases are surgically retried without re-running the full pipeline.
 
 Metas can declare explicit cross-references (`_crossRefs`) to other metas, forming a heterarchical mesh that enables organizational views across source domains.
 
@@ -26,7 +26,7 @@ Metas can declare explicit cross-references (`_crossRefs`) to other metas, formi
 ![Service Architecture](diagrams/assets/service-architecture.png)
 
 - **jeeves-meta service** runs as a standalone HTTP service (NSSM/systemd/launchd)
-- **Built-in scheduler** (croner-based) discovers stale candidates and enqueues them
+- **Built-in scheduler** (croner-based) discovers stale candidates via phase-state machine and enqueues one phase per tick
 - **GatewayExecutor** spawns LLM sessions via the OpenClaw gateway `/tools/invoke` endpoint
 - **jeeves-watcher** provides filesystem enumeration (`POST /walk`) and hosts virtual inference rules
 - **OpenClaw plugin** is a thin HTTP client — all logic lives in the service
