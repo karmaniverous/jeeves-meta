@@ -96,11 +96,18 @@ export {
   mergeAndWrite,
   type MergeOptions,
   orchestrate,
+  orchestratePhase,
+  type OrchestratePhaseResult,
   type OrchestrateResult,
   parseArchitectOutput,
   parseBuilderOutput,
   parseCriticOutput,
+  type PhaseProgressCallback,
+  type PhaseResult,
   type ProgressCallback,
+  runArchitect,
+  runBuilder,
+  runCritic,
 } from './orchestrator/index.js';
 
 // ── Progress ──

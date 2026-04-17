@@ -331,6 +331,8 @@ describe('GET /metas — list with filters', () => {
       'architectTokens',
       'builderTokens',
       'criticTokens',
+      'phaseState',
+      'owedPhase',
     ];
     expect(Object.keys(body.metas[0]).sort()).toEqual(expectedKeys.sort());
   });

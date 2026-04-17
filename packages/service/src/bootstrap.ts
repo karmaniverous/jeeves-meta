@@ -17,7 +17,7 @@ import { listMetas } from './discovery/index.js';
 import { GatewayExecutor } from './executor/index.js';
 import { cleanupStaleLocks } from './lock.js';
 import { createLogger } from './logger/index.js';
-import { orchestrate } from './orchestrator/index.js';
+import { orchestratePhase } from './orchestrator/index.js';
 import { type ProgressPhase, ProgressReporter } from './progress/index.js';
 import { SynthesisQueue } from './queue/index.js';
 import type { RouteDeps, ServiceStats } from './routes/index.js';
@@ -103,10 +103,9 @@ export async function startService(
   // Progress reporter — uses shared config reference so hot-reload propagates
   const progress = new ProgressReporter(config, logger);
 
-  // Wire queue processing — synthesize one meta per dequeue
+  // Wire queue processing — execute one phase per dequeue (phase-state machine)
   const synthesizeFn = async (path: string): Promise<void> => {
     const startMs = Date.now();
-    let cycleTokens: number | undefined = 0;
     // Strip .meta suffix for human-readable progress reporting
     const ownerPath = path.replace(/\/?\.meta\/?$/, '');
     await progress.report({
@@ -115,7 +114,7 @@ export async function startService(
     });
 
     try {
-      const results = await orchestrate(
+      const result = await orchestratePhase(
         config,
         executor,
         watcher,
@@ -125,11 +124,7 @@ export async function startService(
           if (evt.type === 'phase_complete') {
             if (evt.tokens !== undefined) {
               stats.totalTokens += evt.tokens;
-              if (cycleTokens !== undefined) {
-                cycleTokens += evt.tokens;
-              }
             } else {
-              cycleTokens = undefined;
               logger.warn(
                 { path: ownerPath, phase: evt.phase },
                 'Token count unavailable (session lookup may have timed out)',
@@ -140,13 +135,14 @@ export async function startService(
         },
         logger,
       );
-      // orchestrate() always returns exactly one result
-      const result = results[0];
+
       const durationMs = Date.now() - startMs;
 
-      if (!result.synthesized) {
-        // Entity was skipped (e.g. empty scope) — no progress to report.
-        logger.debug({ path: ownerPath }, 'Synthesis skipped');
+      if (!result.executed) {
+        logger.debug(
+          { path: ownerPath },
+          'Phase skipped (fully fresh or locked)',
+        );
         return;
       }
 
@@ -155,20 +151,25 @@ export async function startService(
       stats.lastCycleDurationMs = durationMs;
       stats.lastCycleAt = new Date().toISOString();
 
-      if (result.error) {
+      const phaseResult = result.phaseResult;
+      if (phaseResult?.error) {
         stats.totalErrors++;
         await progress.report({
           type: 'error',
           path: ownerPath,
-          phase: result.error.step as ProgressPhase,
-          error: result.error.message,
+          phase: phaseResult.error.step as ProgressPhase,
+          error: phaseResult.error.message,
         });
       } else {
+        // Task #9: Reset backoff on ANY successful phase execution
         scheduler.resetBackoff();
+      }
+
+      // Emit synthesis_complete only on full-cycle completion
+      if (result.cycleComplete) {
         await progress.report({
           type: 'synthesis_complete',
           path: ownerPath,
-          tokens: cycleTokens,
           durationMs,
         });
       }

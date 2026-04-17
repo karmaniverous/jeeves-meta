@@ -97,12 +97,12 @@ describe('queue routes', () => {
     expect(body.state.items).toHaveLength(2);
   });
 
-  it('POST /queue/clear removes pending items only', async () => {
+  it('POST /queue/clear removes override entries only', async () => {
     const queue = new SynthesisQueue(makeLogger());
     queue.enqueue('/meta/current');
     queue.dequeue();
-    queue.enqueue('/meta/pending-a');
-    queue.enqueue('/meta/pending-b');
+    queue.enqueueOverride('/meta/override-a');
+    queue.enqueueOverride('/meta/override-b');
 
     app = Fastify();
     registerQueueRoutes(app, makeDeps({ queue }));
@@ -112,20 +112,17 @@ describe('queue routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ cleared: 2 });
     expect(queue.current?.path).toBe('/meta/current');
-    expect(queue.pending).toHaveLength(0);
+    expect(queue.overrides).toHaveLength(0);
   });
 
-  it('POST /synthesize/abort returns 404 when idle', async () => {
+  it('POST /synthesize/abort returns idle when nothing running', async () => {
     app = Fastify();
     registerQueueRoutes(app, makeDeps());
     await app.ready();
 
     const res = await app.inject({ method: 'POST', url: '/synthesize/abort' });
-    expect(res.statusCode).toBe(404);
-    expect(res.json()).toEqual({
-      error: 'NOT_FOUND',
-      message: 'No synthesis in progress',
-    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ status: 'idle' });
   });
 
   it('POST /synthesize/abort aborts the executor and releases the lock', async () => {

@@ -22,14 +22,14 @@ export {
   type PhaseProgressCallback,
 } from './orchestratePhase.js';
 export {
-  type PhaseResult,
-  runArchitect,
-  runBuilder,
-  runCritic,
-} from './runPhase.js';
-export {
   type BuilderOutput,
   parseArchitectOutput,
   parseBuilderOutput,
   parseCriticOutput,
 } from './parseOutput.js';
+export {
+  type PhaseResult,
+  runArchitect,
+  runBuilder,
+  runCritic,
+} from './runPhase.js';

@@ -269,6 +269,17 @@ export class SynthesisQueue {
     return index === -1 ? null : index;
   }
 
+  /** Dequeue the next item: overrides first, then legacy queue. */
+  private nextItem():
+    | { path: string; source: 'override' | 'legacy' }
+    | undefined {
+    const override = this.dequeueOverride();
+    if (override) return { path: override.path, source: 'override' };
+    const item = this.dequeue();
+    if (item) return { path: item.path, source: 'legacy' };
+    return undefined;
+  }
+
   /** Return a snapshot of queue state for the /status endpoint. */
   getState(): QueueState {
     return {
@@ -289,8 +300,9 @@ export class SynthesisQueue {
   }
 
   /**
-   * Process queued items one at a time until the queue is empty.
+   * Process queued items one at a time until all queues are empty.
    *
+   * Override entries are processed first (FIFO), then legacy queue items.
    * Re-entry is prevented: if already processing, the call returns
    * immediately. Errors are logged and do not block subsequent items.
    *
@@ -304,15 +316,15 @@ export class SynthesisQueue {
     this.processing = true;
 
     try {
-      let item = this.dequeue();
-      while (item) {
+      let next = this.nextItem();
+      while (next) {
         try {
-          await synthesizeFn(item.path);
+          await synthesizeFn(next.path);
         } catch (err) {
-          this.logger.error({ path: item.path, err }, 'Synthesis failed');
+          this.logger.error({ path: next.path, err }, 'Synthesis failed');
         }
-        this.complete();
-        item = this.dequeue();
+        if (next.source === 'legacy') this.complete();
+        next = this.nextItem();
       }
     } finally {
       this.processing = false;

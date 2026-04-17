@@ -127,11 +127,11 @@ describe('POST /synthesize', () => {
       alreadyQueued: boolean;
     }>();
 
-    expect(body.status).toBe('accepted');
+    expect(body.status).toBe('queued');
     expect(body.path).toBe('/meta/target/.meta');
     expect(body.queuePosition).toBe(0);
     expect(body.alreadyQueued).toBe(false);
-    expect(queue.depth).toBe(1);
+    expect(queue.overrides).toHaveLength(1);
   });
 
   it('normalizes owner path to .meta path', async () => {
@@ -150,9 +150,9 @@ describe('POST /synthesize', () => {
 
     expect(res.statusCode).toBe(202);
     const body = res.json<{ status: string; path: string }>();
-    expect(body.status).toBe('accepted');
+    expect(body.status).toBe('queued');
     expect(body.path).toMatch(/[/\\]some[/\\]owner[/\\]dir[/\\]\.meta$/);
-    expect(queue.depth).toBe(1);
+    expect(queue.overrides).toHaveLength(1);
   });
 
   it('preserves path already ending in .meta', async () => {
@@ -171,9 +171,9 @@ describe('POST /synthesize', () => {
 
     expect(res.statusCode).toBe(202);
     const body = res.json<{ status: string; path: string }>();
-    expect(body.status).toBe('accepted');
+    expect(body.status).toBe('queued');
     expect(body.path).toBe('/some/owner/dir/.meta');
-    expect(queue.depth).toBe(1);
+    expect(queue.overrides).toHaveLength(1);
   });
 
   it('returns queue position', async () => {
@@ -227,7 +227,7 @@ describe('POST /synthesize', () => {
       alreadyQueued: boolean;
     }>();
 
-    expect(body.status).toBe('accepted');
+    expect(body.status).toBe('queued');
     expect(body.alreadyQueued).toBe(true);
   });
 
@@ -299,9 +299,9 @@ describe('POST /synthesize', () => {
     });
     expect(resExplicit.statusCode).toBe(202);
     const bodyExplicit = resExplicit.json<{ status: string; path: string }>();
-    expect(bodyExplicit.status).toBe('accepted');
+    expect(bodyExplicit.status).toBe('queued');
     expect(bodyExplicit.path).toContain('disabled-stale');
-    expect(queue.depth).toBe(1);
+    expect(queue.overrides).toHaveLength(1);
   });
 
   it('returns 503 when watcher unreachable and no path provided', async () => {
