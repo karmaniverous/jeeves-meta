@@ -151,6 +151,16 @@ export async function runArchitect(
 
     return { executed: true, phaseState: ps, updatedMeta };
   } catch (err) {
+    // If aborted by operator, the abort route already persisted _error.
+    if (executor.aborted) {
+      ps = phaseFailed(ps, 'architect');
+      return {
+        executed: true,
+        phaseState: ps,
+        error: { step: 'architect', code: 'ABORT', message: 'Aborted by operator' },
+      };
+    }
+
     const error = toMetaError('architect', err);
     ps = phaseFailed(ps, 'architect');
 
@@ -223,6 +233,16 @@ export async function runBuilder(
 
     return { executed: true, phaseState: ps, updatedMeta };
   } catch (err) {
+    // If aborted by operator, the abort route already persisted _error.
+    if (executor.aborted) {
+      ps = phaseFailed(ps, 'builder');
+      return {
+        executed: true,
+        phaseState: ps,
+        error: { step: 'builder', code: 'ABORT', message: 'Aborted by operator' },
+      };
+    }
+
     const error = toMetaError('builder', err);
     ps = phaseFailed(ps, 'builder');
 
@@ -332,6 +352,16 @@ export async function runCritic(
       cycleComplete,
     };
   } catch (err) {
+    // If aborted by operator, the abort route already persisted _error.
+    if (executor.aborted) {
+      ps = phaseFailed(ps, 'critic');
+      return {
+        executed: true,
+        phaseState: ps,
+        error: { step: 'critic', code: 'ABORT', message: 'Aborted by operator' },
+      };
+    }
+
     const error = toMetaError('critic', err);
     ps = phaseFailed(ps, 'critic');
 

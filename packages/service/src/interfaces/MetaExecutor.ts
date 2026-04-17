@@ -40,4 +40,11 @@ export interface MetaExecutor {
    * @returns The subprocess result with output and optional token count.
    */
   spawn(task: string, options?: MetaSpawnOptions): Promise<MetaSpawnResult>;
+
+  /**
+   * Whether the executor has been aborted by the operator.
+   * When true, runPhase catch blocks should skip persisting _error
+   * because the abort route has already written the correct state.
+   */
+  readonly aborted?: boolean;
 }

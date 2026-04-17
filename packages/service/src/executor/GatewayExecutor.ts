@@ -158,6 +158,11 @@ export class GatewayExecutor implements MetaExecutor {
     }
   }
 
+  /** Whether this executor has been aborted by the operator. */
+  get aborted(): boolean {
+    return this.controller.signal.aborted;
+  }
+
   /** Abort the currently running spawn, if any. */
   abort(): void {
     this.controller.abort();
