@@ -685,8 +685,9 @@ not yet indexed new files
 
 ## Gotchas
 
-- `meta_trigger` runs a full LLM cycle (3 subprocess calls). It can take
-  several minutes.
+- `meta_trigger` enqueues a single phase (not all three). A full cycle
+  requires three separate ticks (one per phase). Use `meta_detail` to
+  check `_phaseState` for progress.
 - A locked meta (another synthesis in progress) will be skipped silently.
 - First-run quality is lower — the feedback loop needs 2-3 cycles to calibrate.
 - Changing `metaProperty` requires both a meta service restart AND a watcher reindex.
@@ -700,6 +701,7 @@ not yet indexed new files
 - The synthesis queue is single-threaded: one synthesis at a time. HTTP-triggered
   syntheses get priority over scheduler-triggered ones.
 - The scheduler uses adaptive backoff: if no stale candidates are found, it
-  doubles the skip interval (max 4×). Backoff resets after a successful synthesis.
+  doubles the skip interval (max 4×). Backoff resets after any successful
+  phase execution (not just full-cycle completion).
 - All CLI commands except `start` require the service to be running (they call
   the HTTP API).
