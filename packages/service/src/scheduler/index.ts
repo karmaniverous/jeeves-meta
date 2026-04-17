@@ -1,6 +1,6 @@
 /**
- * Croner-based scheduler that discovers the stalest meta candidate each tick
- * and enqueues it for synthesis.
+ * Croner-based scheduler that discovers the highest-priority ready phase
+ * across the corpus each tick and enqueues it for execution.
  *
  * @module scheduler
  */
@@ -9,17 +9,30 @@ import { Cron } from 'croner';
 import type { Logger } from 'pino';
 
 import { listMetas } from '../discovery/index.js';
+import {
+  derivePhaseState,
+  getOwedPhase,
+  retryPhase,
+  selectPhaseCandidate,
+} from '../phaseState/index.js';
 import type { SynthesisQueue } from '../queue/index.js';
 import type { RuleRegistrar } from '../rules/index.js';
-import { discoverStalestPath } from '../scheduling/index.js';
 import type { ServiceConfig } from '../schema/config.js';
 import { autoSeedPass } from '../seed/index.js';
 import type { HttpWatcherClient } from '../watcher-client/index.js';
 
 const MAX_BACKOFF_MULTIPLIER = 4;
 
+/** Result of a scheduler tick's candidate discovery. */
+export interface TickCandidate {
+  path: string;
+  phase: 'architect' | 'builder' | 'critic';
+  band: number;
+}
+
 /**
- * Periodic scheduler that discovers stale meta candidates and enqueues them.
+ * Periodic scheduler that discovers the highest-priority ready phase
+ * across all metas and enqueues it for execution.
  *
  * Supports adaptive backoff when no candidates are found and hot-reloadable
  * cron expressions via {@link Scheduler.updateSchedule}.
@@ -89,10 +102,10 @@ export class Scheduler {
     }
   }
 
-  /** Reset backoff multiplier (call after successful synthesis). */
+  /** Reset backoff multiplier (call after successful phase execution). */
   resetBackoff(): void {
     if (this.backoffMultiplier > 1) {
-      this.logger.debug('Backoff reset after successful synthesis');
+      this.logger.debug('Backoff reset after successful phase execution');
     }
     this.backoffMultiplier = 1;
   }
@@ -109,10 +122,9 @@ export class Scheduler {
   }
 
   /**
-   * Single tick: discover stalest candidate and enqueue it.
+   * Single tick: discover the highest-priority ready phase and enqueue it.
    *
-   * Skips if the queue is currently processing. Applies adaptive backoff
-   * when no candidates are found.
+   * Applies adaptive backoff when no candidates are found.
    */
   private async tick(): Promise<void> {
     this.tickCount++;
@@ -151,7 +163,7 @@ export class Scheduler {
       }
     }
 
-    const candidate = await this.discoverStalest();
+    const candidate = await this.discoverNextPhase();
 
     if (!candidate) {
       this.backoffMultiplier = Math.min(
@@ -160,13 +172,17 @@ export class Scheduler {
       );
       this.logger.debug(
         { backoffMultiplier: this.backoffMultiplier },
-        'No stale candidates found, increasing backoff',
+        'No ready phases found, increasing backoff',
       );
       return;
     }
 
-    this.queue.enqueue(candidate);
-    this.logger.info({ path: candidate }, 'Enqueued stale candidate');
+    // Enqueue using the legacy queue path (backward compat with processQueue)
+    this.queue.enqueue(candidate.path);
+    this.logger.info(
+      { path: candidate.path, phase: candidate.phase, band: candidate.band },
+      'Enqueued phase candidate',
+    );
 
     // Opportunistic watcher restart detection
     if (this.registrar) {
@@ -190,21 +206,51 @@ export class Scheduler {
   }
 
   /**
-   * Discover the stalest meta candidate via watcher.
+   * Discover the highest-priority ready phase across the corpus.
+   *
+   * Uses phase-state-aware scheduling: priority order is
+   * critic (band 1) \> builder (band 2) \> architect (band 3),
+   * with weighted staleness as tiebreaker within a band.
    */
-  private async discoverStalest(): Promise<string | null> {
+  private async discoverNextPhase(): Promise<TickCandidate | null> {
     try {
       const result = await listMetas(this.config, this.watcher);
-      const stale = result.entries
-        .filter((e) => e.stalenessSeconds > 0 && !e.disabled)
-        .map((e) => ({
-          node: e.node,
-          meta: e.meta,
-          actualStaleness: e.stalenessSeconds,
-        }));
-      return discoverStalestPath(stale, this.config.depthWeight);
+
+      const candidates = result.entries
+        .map((e) => {
+          let phaseState = derivePhaseState(e.meta);
+
+          // Surgical retry: promote failed phases to pending
+          const owed = getOwedPhase(phaseState);
+          if (owed && phaseState[owed] === 'failed') {
+            phaseState = retryPhase(phaseState, owed);
+          }
+
+          return {
+            node: e.node,
+            meta: e.meta,
+            phaseState,
+            actualStaleness: e.stalenessSeconds,
+            locked: e.locked,
+            disabled: e.disabled,
+          };
+        })
+        .filter((c) => {
+          const owed = getOwedPhase(c.phaseState);
+          return owed !== null;
+        });
+
+      const winner = selectPhaseCandidate(candidates, this.config.depthWeight);
+
+      if (!winner) return null;
+
+      return {
+        path: winner.node.metaPath,
+        phase: winner.owedPhase,
+        band: winner.band,
+      };
     } catch (err) {
-      this.logger.warn({ err }, 'Failed to discover stalest candidate');
+      this.logger.warn({ err }, 'Failed to discover next phase candidate');
       return null;
     }
   }

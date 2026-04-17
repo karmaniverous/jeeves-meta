@@ -7,7 +7,7 @@
  * @module orchestrator/runPhase
  */
 
-import { copyFile, writeFile } from 'node:fs/promises';
+import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import { createSnapshot, pruneArchive } from '../archive/index.js';
@@ -42,7 +42,6 @@ import {
   parseBuilderOutput,
   parseCriticOutput,
 } from './parseOutput.js';
-import { attemptTimeoutRecovery } from './timeoutRecovery.js';
 
 /** Callback for synthesis progress events. */
 export type ProgressCallback = (event: ProgressEvent) => void | Promise<void>;
@@ -201,8 +200,6 @@ export async function runBuilder(
     // Builder success: builder → fresh, critic → pending
     ps = builderSuccess(ps);
 
-    const synthesisCount = (currentMeta._synthesisCount ?? 0) + 1;
-
     const updatedMeta = await persistPhaseState(
       { metaPath: node.metaPath, current: currentMeta, config, structureHash },
       ps,
@@ -210,7 +207,6 @@ export async function runBuilder(
         _content: builderOutput.content,
         _state: builderOutput.state,
         _builderTokens: builderTokens,
-        _synthesisCount: synthesisCount,
         _generatedAt: new Date().toISOString(),
         _error: undefined,
         ...builderOutput.fields,
@@ -227,45 +223,30 @@ export async function runBuilder(
 
     return { executed: true, phaseState: ps, updatedMeta };
   } catch (err) {
-    // §4.6 partial _state recovery on timeout
-    if (err instanceof SpawnTimeoutError) {
-      const recovered = await attemptTimeoutRecovery({
-        err,
-        currentMeta,
-        metaPath: node.metaPath,
-        config,
-        builderBrief: currentMeta._builder ?? '',
-        structureHash,
-        synthesisCount: (currentMeta._synthesisCount ?? 0) + 1,
-      });
-      if (recovered) {
-        // Even with recovery, builder still failed from phase-state perspective
-        ps = phaseFailed(ps, 'builder');
-        await persistPhaseState(
-          {
-            metaPath: node.metaPath,
-            current: currentMeta,
-            config,
-            structureHash,
-          },
-          ps,
-          { _error: toMetaError('builder', err) },
-        );
-        return {
-          executed: true,
-          phaseState: ps,
-          error: toMetaError('builder', err),
-        };
-      }
-    }
-
     const error = toMetaError('builder', err);
     ps = phaseFailed(ps, 'builder');
+
+    // §4.6 partial _state recovery on timeout
+    const stateUpdates: Partial<MetaJson> = { _error: error };
+    if (err instanceof SpawnTimeoutError) {
+      try {
+        const raw = await readFile(err.outputPath, 'utf8');
+        const partial = parseBuilderOutput(raw);
+        if (
+          partial.state !== undefined &&
+          JSON.stringify(partial.state) !== JSON.stringify(currentMeta._state)
+        ) {
+          stateUpdates._state = partial.state;
+        }
+      } catch {
+        // Could not read partial output — no state recovery
+      }
+    }
 
     await persistPhaseState(
       { metaPath: node.metaPath, current: currentMeta, config, structureHash },
       ps,
-      { _error: error },
+      stateUpdates,
     );
 
     return { executed: true, phaseState: ps, error };
@@ -318,25 +299,9 @@ export async function runCritic(
       _error: undefined,
     };
 
-    // Full-cycle completion: increment _synthesisCount, archive, emit
+    // Full-cycle completion: increment _synthesisCount, archive, emit.
+    // Per spec: architect resets to 0, full-cycle increments on top.
     if (cycleComplete) {
-      // _synthesisCount was already set during builder phase; this is the
-      // closing increment per spec. But per spec, _synthesisCount tracks
-      // cycles since last architect refresh. Architect resets to 0 on success,
-      // and the full-cycle completion increments it.
-      // Actually, _synthesisCount was already incremented during builder.
-      // The full-cycle completion archives but does NOT increment again —
-      // the builder already did that. Spec says: "Increment of _synthesisCount"
-      // on full cycle. Let's re-read the spec...
-      // Spec: "_synthesisCount tracks full cycles completed since the last
-      // architect refresh. Full-cycle completion increments it; successful
-      // architect completion resets it to 0."
-      // And: "within a single cycle, a successful architect zeroes the counter
-      // first, and the cycle's closing increment lands on top of that zero."
-      // So the increment happens at full-cycle, not at builder phase.
-      // BUT the existing code increments at builder (synthesisCount++).
-      // We need to match the spec: increment at cycle completion.
-      // Since in the new model, builder doesn't increment, we do it here.
       updates._synthesisCount = (currentMeta._synthesisCount ?? 0) + 1;
     }
 

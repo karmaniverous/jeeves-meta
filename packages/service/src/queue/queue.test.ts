@@ -205,4 +205,119 @@ describe('SynthesisQueue', () => {
     expect(queue.getPosition('/meta/b')).toBe(1);
     expect(queue.getPosition('/meta/c')).toBeNull();
   });
+
+  // ── 3-Layer Model (Override + CurrentPhase) ─────────────────────────
+
+  describe('override layer', () => {
+    it('enqueueOverride adds an entry', () => {
+      const result = queue.enqueueOverride('/meta/x');
+      expect(result.alreadyQueued).toBe(false);
+      expect(result.position).toBe(0);
+      expect(queue.overrides).toHaveLength(1);
+      expect(queue.overrides[0]?.path).toBe('/meta/x');
+    });
+
+    it('enqueueOverride deduplicates by path', () => {
+      queue.enqueueOverride('/meta/x');
+      const result = queue.enqueueOverride('/meta/x');
+      expect(result.alreadyQueued).toBe(true);
+      expect(result.position).toBe(0);
+      expect(queue.overrides).toHaveLength(1);
+    });
+
+    it('enqueueOverride detects current phase item', () => {
+      queue.setCurrentPhase('/meta/x', 'builder');
+      const result = queue.enqueueOverride('/meta/x');
+      expect(result.alreadyQueued).toBe(true);
+      expect(result.position).toBe(0);
+    });
+
+    it('enqueueOverride detects legacy current item', () => {
+      queue.enqueue('/meta/x');
+      queue.dequeue();
+      const result = queue.enqueueOverride('/meta/x');
+      expect(result.alreadyQueued).toBe(true);
+    });
+
+    it('dequeueOverride returns entries in FIFO order', () => {
+      queue.enqueueOverride('/meta/a');
+      queue.enqueueOverride('/meta/b');
+      queue.enqueueOverride('/meta/c');
+
+      expect(queue.dequeueOverride()?.path).toBe('/meta/a');
+      expect(queue.dequeueOverride()?.path).toBe('/meta/b');
+      expect(queue.dequeueOverride()?.path).toBe('/meta/c');
+      expect(queue.dequeueOverride()).toBeUndefined();
+    });
+
+    it('clearOverrides removes all override entries', () => {
+      queue.enqueueOverride('/meta/a');
+      queue.enqueueOverride('/meta/b');
+      const count = queue.clearOverrides();
+      expect(count).toBe(2);
+      expect(queue.overrides).toHaveLength(0);
+    });
+
+    it('hasOverride checks override layer', () => {
+      queue.enqueueOverride('/meta/a');
+      expect(queue.hasOverride('/meta/a')).toBe(true);
+      expect(queue.hasOverride('/meta/b')).toBe(false);
+    });
+
+    it('has checks override layer', () => {
+      queue.enqueueOverride('/meta/a');
+      expect(queue.has('/meta/a')).toBe(true);
+    });
+
+    it('getPosition checks overrides first', () => {
+      queue.enqueueOverride('/meta/a');
+      queue.enqueue('/meta/b');
+      expect(queue.getPosition('/meta/a')).toBe(0);
+      expect(queue.getPosition('/meta/b')).toBe(0);
+    });
+
+    it('getState includes overrides in depth and items', () => {
+      queue.enqueueOverride('/meta/a');
+      queue.enqueue('/meta/b');
+      const state = queue.getState();
+      expect(state.depth).toBe(2);
+      expect(state.items).toHaveLength(2);
+      expect(state.items[0]?.path).toBe('/meta/a');
+      expect(state.items[0]?.priority).toBe(true);
+    });
+
+    it('warns when override depth exceeds threshold', () => {
+      queue.enqueueOverride('/meta/a');
+      queue.enqueueOverride('/meta/b');
+      queue.enqueueOverride('/meta/c');
+      expect(logger.warn).not.toHaveBeenCalled();
+
+      queue.enqueueOverride('/meta/d');
+      expect(logger.warn).toHaveBeenCalledWith(
+        { depth: 4 },
+        'Override queue depth exceeds threshold',
+      );
+    });
+  });
+
+  describe('currentPhase tracking', () => {
+    it('setCurrentPhase / clearCurrentPhase', () => {
+      expect(queue.currentPhase).toBeNull();
+
+      queue.setCurrentPhase('/meta/x', 'architect');
+      expect(queue.currentPhase).not.toBeNull();
+      expect(queue.currentPhase?.path).toBe('/meta/x');
+      expect(queue.currentPhase?.phase).toBe('architect');
+      expect(queue.currentPhase?.startedAt).toBeDefined();
+
+      queue.clearCurrentPhase();
+      expect(queue.currentPhase).toBeNull();
+    });
+
+    it('has detects currentPhase item', () => {
+      queue.setCurrentPhase('/meta/x', 'critic');
+      expect(queue.has('/meta/x')).toBe(true);
+      expect(queue.has('/meta/y')).toBe(false);
+    });
+  });
 });
