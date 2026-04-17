@@ -4,40 +4,44 @@ title: Orchestration
 
 # Orchestration
 
-The `orchestrate()` function runs a single synthesis cycle in 13 steps:
+The `orchestratePhase()` function runs **one phase per tick** using the phase-state machine:
 
 1. **Discover** — walk watcher filesystem for `.meta/meta.json` files (no Qdrant dependency)
 2. **Read** — parse `meta.json` for each discovered path
-3. **Build tree** — construct the ownership tree from valid paths
-4. **Select candidate** — rank by effective staleness, acquire lock on winner
-5. **Compute context** — scope files, delta files, child meta outputs, previous content/feedback
-6. **Structure hash** — SHA-256 of sorted scope file listing (computed from context)
-7. **Steer detection** — compare current `_steer` vs latest archive
-8. **Architect** (conditional) — runs if: no cached builder, structure changed, steer changed, or periodic refresh
-9. **Builder** — executes the architect's brief, produces `_content` + structured fields
-10. **Critic** — evaluates the synthesis, produces `_feedback`
-11. **Merge & finalize** — stage result in `.lock`, copy to `meta.json`
-12. **Archive & prune** — create timestamped archive snapshot, prune beyond `maxArchive`
-13. **Release lock** — delete `.lock` file (in `finally` block)
+3. **Derive phase state** — `derivePhaseState()` reconstructs `_phaseState` from legacy fields on first load
+4. **Auto-retry** — failed phases are promoted from `failed` → `pending`
+5. **Select candidate** — `selectPhaseCandidate()` picks the highest-priority owed phase across the corpus (critic > builder > architect, weighted staleness tiebreak)
+6. **Execute phase** — run exactly one of `runArchitect`, `runBuilder`, or `runCritic`
+7. **Persist** — lock-staged write of updated `_phaseState` and phase output
+8. **Archive** (on full-cycle only) — when all three phases are `fresh`, create snapshot and prune
+
+### Phase-State Machine
+
+Each meta carries `_phaseState: { architect, builder, critic }` where each value is one of: `fresh`, `stale`, `pending`, `running`, `failed`.
+
+**Key transitions:**
+- File change detected → `architect: stale` (cascade: `builder: pending`, `critic: pending`)
+- Architect success → `architect: fresh` (cascade: `builder: pending` if was stale)
+- Builder success → `builder: fresh`, `critic: pending`
+- Critic success → `critic: fresh`; if all three fresh → full-cycle complete (archive + increment `_synthesisCount`)
+- Any phase failure → that phase: `failed`; other phases untouched (surgical retry)
+- Next tick → `failed` phases promoted to `pending` for auto-retry
 
 ### Module Structure
 
-The orchestration pipeline is split into focused modules following SOLID/DRY principles:
-
 | Module | Responsibility |
 |--------|---------------|
-| `orchestrate.ts` | Discovery, staleness ranking, lock management, delegates to `synthesizeNode` |
-| `synthesizeNode.ts` | Single-node architect → builder → critic pipeline |
-| `finalizeCycle.ts` | Lock-staged writes: `.lock` → `meta.json` → archive → prune |
-| `timeoutRecovery.ts` | `SpawnTimeoutError` recovery with partial `_state` salvage |
+| `orchestratePhase.ts` | Per-tick driver: discover → derive → select → execute one phase |
+| `runPhase.ts` | Per-phase executors: `runArchitect`, `runBuilder`, `runCritic` |
+| `synthesizeNode.ts` | Legacy single-node full pipeline (retained for compatibility) |
+| `finalizeCycle.ts` | Legacy lock-staged writes |
 
 ### Error Handling
 
-- **Architect failure with cached builder**: continues with existing `_builder`
-- **Architect failure without cached builder**: cycle ends, error recorded
-- **Builder failure**: cycle ends, error recorded
-- **Builder timeout (`SpawnTimeoutError`)**: attempts to salvage advanced `_state` from partial output via `timeoutRecovery`; if `_state` progressed, it is persisted (state-only finalize) and the cycle is recorded as a partial success
-- **Critic failure**: synthesis is preserved, error attached
+- **Phase failure**: the phase transitions to `failed`; other phases are untouched
+- **Auto-retry**: failed phases are promoted to `pending` on the next scheduler tick
+- **Architect failure with cached builder**: engine can still run builder on next tick
+- **Builder timeout (`SpawnTimeoutError`)**: attempts to salvage advanced `_state` from partial output; if `_state` progressed, it is persisted alongside the `failed` phase state
 - **Errors never block the queue**: logged, reported, queue advances
 
 ### Lock Staging ("Never Write Worse")

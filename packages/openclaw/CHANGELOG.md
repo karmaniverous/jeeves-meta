@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [0.12.0](https://github.com/karmaniverous/jeeves-meta/compare/0.11.0...0.12.0)
+
+- feat: phase-aware tool descriptions for meta_list, meta_detail, meta_preview, meta_trigger, meta_queue
+- feat: TOOLS.md injection includes phase-state summary, failed-phase alerts, and next-phase indicator
+- feat: meta_queue tool documents three-layer queue model (current/overrides/automatic)
+- docs: update SKILL.md with phase-state machine awareness, troubleshooting, and operational monitoring
+- docs: update tools-injection guide with phase-state content
+
+**Migration notes:**
+- Requires @karmaniverous/jeeves-meta ≥ 0.15.0 (phase-state machine)
+- All tool response changes are **additive** (new fields only) — no breaking changes
+- TOOLS.md injection now shows phase-state summary and next-phase indicator when data is available
+
 #### [0.11.0](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.10.7...0.11.0)
 
 - feat: add _disabled flag and meta_update tool (#123, #124) [`#125`](https://github.com/karmaniverous/jeeves-meta/pull/125)

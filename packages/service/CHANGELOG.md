@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
+#### [0.15.0](https://github.com/karmaniverous/jeeves-meta/compare/0.14.0...0.15.0)
+
+- feat: add phase-state machine foundation — per-meta `_phaseState` tracking `{ architect, builder, critic }` × `{ fresh, stale, pending, running, failed }`
+- feat: phase-addressable scheduling — scheduler picks one phase per tick across entire corpus (critic > builder > architect priority)
+- feat: three-layer synthesis queue — `current` (running phase) + `overrides` (explicit triggers) + `automatic` (scheduler candidates)
+- feat: surgical retry of failed phases without re-running the full pipeline
+- feat: auto-retry — failed phases promoted `failed` → `pending` on each scheduler tick
+- feat: full-cycle completion — archive snapshot + `_synthesisCount` increment only when all three phases are `fresh`
+- feat: adaptive backoff resets on any successful phase execution
+- feat: `derivePhaseState()` backward compatibility for legacy metas without `_phaseState`
+- feat: `phaseStateSummary` and `nextPhase` in GET /status health response
+- feat: phase-aware GET /queue with three-layer model
+- feat: phase-aware POST /synthesize/abort response
+- docs: update guides for phase-state machine, scheduling, orchestration, concepts
+
+**Migration notes:**
+- `_phaseState` is auto-derived from existing fields on first load — no manual migration needed
+- All API response changes are **additive** (new fields only) — no breaking changes
+- GET /queue now returns `{ current, overrides, automatic, pending, state }` — `pending` and `state` fields are retained for backward compatibility
+- POST /queue/clear now removes only override entries (not legacy queue items)
+
 #### [0.14.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.13.11...0.14.0)
 
 - feat: add _disabled flag and meta_update tool (#123, #124) [`#125`](https://github.com/karmaniverous/jeeves-meta/pull/125)

@@ -6,7 +6,8 @@ OpenClaw plugin for [jeeves-meta](../service/). A thin HTTP client that register
 
 - **Twelve tools** — standard: `meta_status`, `meta_config`, `meta_config_apply`, `meta_service`; custom: `meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_queue` (list/clear/abort), `meta_update`
 - **MetaServiceClient** — typed HTTP client delegating all operations to the running service
-- **TOOLS.md injection** — periodic refresh of entity stats via `ComponentWriter` from `@karmaniverous/jeeves` (73-second prime interval)
+- **TOOLS.md injection** — periodic refresh of entity stats, phase-state summary, failed-phase alerts, and next-phase indicator via `ComponentWriter` from `@karmaniverous/jeeves` (73-second prime interval)
+- **Phase-state awareness** — tools expose per-meta `_phaseState`, `owedPhase`, and phase-state summary from the service's phase-state machine
 - **Cleanup escalation** — passes `gatewayUrl` into `ComponentWriter` so managed-content cleanup can request a gateway session when needed
 - **Dependency health** — shows warnings when watcher/gateway are degraded
 - **Consumer skill** — `SKILL.md` for agent integration
