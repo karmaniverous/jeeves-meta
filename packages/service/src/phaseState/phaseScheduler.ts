@@ -49,21 +49,6 @@ export function buildPhaseCandidates(
   }));
 }
 
-const PHASE_ORDER: PhaseName[] = ['architect', 'builder', 'critic'];
-
-/**
- * A meta is mid-cycle when at least one phase preceding its owed phase
- * is already fresh. This means work has been invested in this cycle and
- * finishing it should be prioritized over starting new cycles elsewhere.
- */
-function isMidCycle(state: PhaseState, owedPhase: PhaseName): boolean {
-  const owedIdx = PHASE_ORDER.indexOf(owedPhase);
-  for (let i = 0; i < owedIdx; i++) {
-    if (state[PHASE_ORDER[i]] === 'fresh') return true;
-  }
-  return false;
-}
-
 /** A candidate for phase-level scheduling. */
 export interface PhaseCandidate {
   node: MetaNode;
@@ -73,8 +58,6 @@ export interface PhaseCandidate {
   band: 1 | 2 | 3;
   actualStaleness: number;
   effectiveStaleness: number;
-  /** True when this meta has at least one fresh phase ahead of its owed phase (mid-cycle). */
-  midCycle: boolean;
 }
 
 /**
@@ -124,17 +107,12 @@ export function rankPhaseCandidates(
       band: getPriorityBand(m.phaseState)!,
       actualStaleness: ws.actualStaleness,
       effectiveStaleness: ws.effectiveStaleness,
-      midCycle: isMidCycle(m.phaseState, owedPhase),
     };
   });
 
-  // Sort by:
-  // 1. Band ascending (critic=1 > builder=2 > architect=3)
-  // 2. Mid-cycle first (finish started work before starting new)
-  // 3. Effective staleness descending (tiebreak)
+  // Sort by band (ascending = critic first) then effective staleness (descending)
   candidates.sort((a, b) => {
     if (a.band !== b.band) return a.band - b.band;
-    if (a.midCycle !== b.midCycle) return a.midCycle ? -1 : 1;
     return b.effectiveStaleness - a.effectiveStaleness;
   });
 
