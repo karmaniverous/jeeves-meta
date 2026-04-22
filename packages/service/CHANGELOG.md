@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.15.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.15.0...0.15.1)
+#### [0.15.2](https://github.com/karmaniverous/jeeves-meta/compare/service/0.15.1...0.15.2)
+
+- updated jeeves core [`ae050f5`](https://github.com/karmaniverous/jeeves-meta/commit/ae050f57384fe56c4097dc6063b876c062295965)
+
+#### [service/0.15.1](https://github.com/karmaniverous/jeeves-meta/compare/service/0.15.0...service/0.15.1)
+
+> 17 April 2026
 
 - fix: stateless gateway session spawning [`#128`](https://github.com/karmaniverous/jeeves-meta/pull/128)
 - fix: drop synthetic parent sessionKey from GatewayExecutor — spawn statelessly like runner [`8fd051f`](https://github.com/karmaniverous/jeeves-meta/commit/8fd051f2e083eb12fde7a6a59a898709e418b04c)
 - chore: release @karmaniverous/jeeves-meta-openclaw v0.12.0 [`5c00eeb`](https://github.com/karmaniverous/jeeves-meta/commit/5c00eeb96060fc2dae459a4196e8af8ea667fd9f)
+- chore: release @karmaniverous/jeeves-meta v0.15.1 [`ead324e`](https://github.com/karmaniverous/jeeves-meta/commit/ead324ecb72c99d8a3a94fbb7a1606b904325bec)
 
 #### [service/0.15.0](https://github.com/karmaniverous/jeeves-meta/compare/service/0.14.0...service/0.15.0)
 
