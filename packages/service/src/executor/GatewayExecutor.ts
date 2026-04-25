@@ -190,7 +190,7 @@ export class GatewayExecutor implements MetaExecutor {
       'Write your complete output to a file using the Write tool at:\n' +
       outputPath +
       '\n\n' +
-      'Reply with ONLY the file path you wrote to. No other text.';
+      'After writing the file, reply with ONLY: NO_REPLY';
 
     // Step 1: Spawn the sub-agent session (unique label per cycle to avoid
     // "label already in use" errors — gateway labels persist after session completion)
