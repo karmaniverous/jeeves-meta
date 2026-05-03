@@ -41,7 +41,7 @@
     "node": ">=22"
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.5.8",
+    "@karmaniverous/jeeves": "^0.5.9",
     "commander": "^14",
     "croner": "^10",
     "fastify": "^5.8",
