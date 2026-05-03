@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.12.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.12.0...0.12.1)
+#### [0.12.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.12.1...0.12.2)
+
+- updated jeeves-core [`2b52161`](https://github.com/karmaniverous/jeeves-meta/commit/2b521615f1a4b68703ce09093eff1a0b7ef1daed)
+- chore: release @karmaniverous/jeeves-meta v0.15.3 [`7df8289`](https://github.com/karmaniverous/jeeves-meta/commit/7df828970eaba0e98be48267d8d2a1129bc1a455)
+- Merge pull request #134 from karmaniverous/fix/suppress-subagent-chat-reply [`14c7f0d`](https://github.com/karmaniverous/jeeves-meta/commit/14c7f0d2a547afc8870cbcb3393aea4404eb1e64)
+- fix: instruct sub-agent to reply NO_REPLY instead of file path\n\nThe GatewayExecutor spawns sub-agent sessions for each synthesis phase.\nPreviously the task told the sub-agent to reply with the output file path,\nwhich leaked to the parent chat channel (user DMs). The executor\nalready reads output from the staged file on disk, so the chat reply\nserved no purpose.\n\nChange the OUTPUT DELIVERY instruction to reply with NO_REPLY, which\nOpenClaw treats as a silent acknowledgment and does not surface to chat. [`4c404a4`](https://github.com/karmaniverous/jeeves-meta/commit/4c404a4767ca4abcf0330f7e5137b2f2fd871b43)
+
+#### [openclaw/0.12.1](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.12.0...openclaw/0.12.1)
+
+> 22 April 2026
 
 - fix: stateless gateway session spawning [`#128`](https://github.com/karmaniverous/jeeves-meta/pull/128)
 - fix: drop synthetic parent sessionKey from GatewayExecutor — spawn statelessly like runner [`8fd051f`](https://github.com/karmaniverous/jeeves-meta/commit/8fd051f2e083eb12fde7a6a59a898709e418b04c)
 - updated jeeves core [`ae050f5`](https://github.com/karmaniverous/jeeves-meta/commit/ae050f57384fe56c4097dc6063b876c062295965)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.12.1 [`3301da6`](https://github.com/karmaniverous/jeeves-meta/commit/3301da68625bd6da8f06f85664888f35660c67f8)
 - chore: release @karmaniverous/jeeves-meta v0.15.1 [`ead324e`](https://github.com/karmaniverous/jeeves-meta/commit/ead324ecb72c99d8a3a94fbb7a1606b904325bec)
 - chore: release @karmaniverous/jeeves-meta v0.15.2 [`2f2d915`](https://github.com/karmaniverous/jeeves-meta/commit/2f2d91520f5920d7c3c8629d9a8dc4711628429d)
 
