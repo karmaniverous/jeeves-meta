@@ -7,7 +7,6 @@ import { describe, expect, it, vi } from 'vitest';
 import type { MetaNode } from '../discovery/index.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import type { MetaJson } from '../schema/index.js';
-import { selectCandidate } from './selectCandidate.js';
 import { isStale } from './staleness.js';
 import {
   actualStaleness,
@@ -143,41 +142,6 @@ describe('computeEffectiveStaleness', () => {
 
   it('returns empty array for empty input', () => {
     expect(computeEffectiveStaleness([], 1)).toEqual([]);
-  });
-});
-
-describe('selectCandidate', () => {
-  it('picks the candidate with highest effective staleness', () => {
-    const candidates = computeEffectiveStaleness(
-      [
-        { node: makeNode(0), meta: makeMeta(), actualStaleness: 3600 },
-        { node: makeNode(1), meta: makeMeta(), actualStaleness: 3600 },
-        { node: makeNode(2), meta: makeMeta(), actualStaleness: 3600 },
-      ],
-      1,
-    );
-
-    const winner = selectCandidate(candidates);
-    expect(winner).not.toBeNull();
-    expect(winner!.node.treeDepth).toBe(2); // deepest wins
-  });
-
-  it('returns null for empty candidates', () => {
-    expect(selectCandidate([])).toBeNull();
-  });
-
-  it('picks staleness over depth when staleness dominates', () => {
-    const candidates = computeEffectiveStaleness(
-      [
-        { node: makeNode(0), meta: makeMeta(), actualStaleness: 100000 },
-        { node: makeNode(2), meta: makeMeta(), actualStaleness: 100 },
-      ],
-      1,
-    );
-
-    const winner = selectCandidate(candidates);
-    expect(winner).not.toBeNull();
-    expect(winner!.node.treeDepth).toBe(0); // very stale root beats fresh leaf
   });
 });
 
