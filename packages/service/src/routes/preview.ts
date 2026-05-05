@@ -141,7 +141,8 @@ export function registerPreviewRoute(
     // Architect invalidators
     const architectInvalidators: ArchitectInvalidator[] = [];
     if (owedPhase === 'architect') {
-      if (structureChanged) architectInvalidators.push('structureHash');
+      if (structureChanged && meta._state === undefined)
+        architectInvalidators.push('structureHash');
       if (steerChanged) architectInvalidators.push('steer');
       if (architectChanged) architectInvalidators.push('_architect');
       if (crossRefsDeclChanged) architectInvalidators.push('_crossRefs');

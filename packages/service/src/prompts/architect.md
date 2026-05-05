@@ -91,6 +91,23 @@ Define what "verify before asserting" means for this data shape:
 Always require: exact entity titles/names (not paraphrases), evidence citations,
 partial implementation notes, config default verification from schema files.
 
+{{#if (gt scope.fileCount 500)}}
+## LARGE SCOPE — SAMPLING MODE
+
+This entity has {{scope.fileCount}} files. Do NOT attempt to read or
+explore the full scope. Instead:
+
+1. Read _state and _content from previous cycles to understand existing
+   data shape knowledge
+2. Sample at most 5–10 representative files to verify the data shape
+   hasn't fundamentally changed
+3. Focus your brief updates on what the _feedback says needs improving
+4. Preserve the existing progressive processing strategy unless the
+   data shape has materially changed
+
+Your job on re-runs is refinement, not rediscovery.
+{{/if}}
+
 ### 7. Progressive Processing (_state)
 
 When the scope is large (hundreds of files or more), instruct the Builder to

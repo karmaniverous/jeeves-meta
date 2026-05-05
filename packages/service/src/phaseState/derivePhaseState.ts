@@ -77,8 +77,12 @@ export function derivePhaseState(
 
   // Check architect invalidation (when inputs are provided)
   if (inputs) {
+    // Progressive metas: structure changes invalidate builder, not architect
+    const structureInvalidatesArchitect =
+      inputs.structureChanged && meta._state === undefined;
+
     const architectInvalidated =
-      inputs.structureChanged ||
+      structureInvalidatesArchitect ||
       inputs.steerChanged ||
       inputs.architectChanged ||
       inputs.crossRefsChanged ||
@@ -88,6 +92,15 @@ export function derivePhaseState(
       return {
         architect: 'pending',
         builder: 'stale',
+        critic: 'stale',
+      };
+    }
+
+    // Progressive meta with structure change: builder-only invalidation
+    if (inputs.structureChanged && meta._state !== undefined) {
+      return {
+        architect: 'fresh',
+        builder: 'pending',
         critic: 'stale',
       };
     }
