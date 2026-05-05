@@ -30,6 +30,16 @@ export function createServer(options: ServerOptions) {
     requestTimeout: 30_000,
   });
 
+  // Readiness gate: return 503 while service is initializing
+  app.addHook('onRequest', async (request, reply) => {
+    if (options.deps.ready) return;
+    const url = request.url;
+    if (url === '/config' || url.startsWith('/config/apply')) return;
+    return reply
+      .status(503)
+      .send({ status: 'starting', message: 'Service initializing' });
+  });
+
   registerRoutes(app, options.deps);
 
   return app;

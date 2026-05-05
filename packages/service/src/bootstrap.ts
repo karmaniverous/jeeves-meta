@@ -78,6 +78,7 @@ export async function startService(
     scheduler,
     stats,
     cache,
+    ready: false,
     executor,
     configPath,
   };
@@ -216,11 +217,18 @@ export async function startService(
   const registrar = new RuleRegistrar(config, logger, watcher);
   scheduler.setRegistrar(registrar);
   routeDeps.registrar = registrar;
-  void registrar.register().then(() => {
-    if (registrar.isRegistered) {
-      void verifyRuleApplication(watcher, logger);
-    }
-  });
+  void registrar.register().then(
+    () => {
+      routeDeps.ready = true;
+      if (registrar.isRegistered) {
+        void verifyRuleApplication(watcher, logger);
+      }
+    },
+    () => {
+      // Registration failed after max retries — mark ready anyway
+      routeDeps.ready = true;
+    },
+  );
 
   // Periodic watcher health check (independent of scheduler)
   const healthCheck = new WatcherHealthCheck({

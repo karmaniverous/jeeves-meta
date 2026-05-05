@@ -56,6 +56,8 @@ export interface RouteDeps {
   stats: ServiceStats;
   /** Cached listMetas results with TTL. */
   cache: MetaCache;
+  /** Service readiness flag — false during startup. */
+  ready: boolean;
   /** Rule registrar for reporting registration state in /status. */
   registrar?: RuleRegistrar;
   /** Executor instance for abort support. */

@@ -84,6 +84,7 @@ export function makeTestDeps(overrides: TestDepsOverrides = {}): RouteDeps {
     scheduler: rest.scheduler ?? null,
     stats: rest.stats ?? { ...DEFAULT_TEST_STATS },
     cache: rest.cache ?? new MetaCache(),
+    ready: rest.ready ?? true,
     ...rest,
   };
 }
