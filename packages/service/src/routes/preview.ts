@@ -11,14 +11,15 @@ import { findNode, getDeltaFiles, getScopeFiles } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
 import {
   type ArchitectInvalidator,
+  buildPhaseCandidates,
   derivePhaseState,
   getOwedPhase,
   getPriorityBand,
+  selectPhaseCandidate,
 } from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
 import {
   computeStalenessScore,
-  discoverStalestPath,
   hasSteerChanged,
   isArchitectTriggered,
 } from '../scheduling/index.js';
@@ -54,19 +55,16 @@ export function registerPreviewRoute(
         };
       }
     } else {
-      // Select stalest candidate
-      const stale = result.entries
-        .filter((e) => e.stalenessSeconds > 0)
-        .map((e) => ({
-          node: e.node,
-          meta: e.meta,
-          actualStaleness: e.stalenessSeconds,
-        }));
-      const stalestPath = discoverStalestPath(stale, config.depthWeight);
-      if (!stalestPath) {
+      // Select best phase candidate
+      const candidates = buildPhaseCandidates(
+        result.entries,
+        config.architectEvery,
+      );
+      const winner = selectPhaseCandidate(candidates, config.depthWeight);
+      if (!winner) {
         return { message: 'No stale metas found. Nothing to synthesize.' };
       }
-      targetNode = findNode(result.tree, stalestPath)!;
+      targetNode = findNode(result.tree, winner.node.metaPath)!;
     }
 
     const meta = await readMetaJson(targetNode.metaPath);

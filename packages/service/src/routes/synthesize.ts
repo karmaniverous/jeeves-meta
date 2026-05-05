@@ -11,9 +11,13 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
 import { resolveMetaDir } from '../lock.js';
-import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
+import {
+  buildPhaseCandidates,
+  derivePhaseState,
+  getOwedPhase,
+  selectPhaseCandidate,
+} from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
-import { discoverStalestPath } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
 const synthesizeBodySchema = z.object({
@@ -75,21 +79,19 @@ export function registerSynthesizeRoute(
         message: 'Watcher unreachable — cannot discover candidates',
       });
     }
-    const stale = result.entries
-      .filter((e) => e.stalenessSeconds > 0 && !e.disabled)
-      .map((e) => ({
-        node: e.node,
-        meta: e.meta,
-        actualStaleness: e.stalenessSeconds,
-      }));
-    const stalest = discoverStalestPath(stale, config.depthWeight);
-    if (!stalest) {
+    const candidates = buildPhaseCandidates(
+      result.entries,
+      config.architectEvery,
+    );
+    const winner = selectPhaseCandidate(candidates, config.depthWeight);
+    if (!winner) {
       return reply.code(200).send({
         status: 'skipped',
         message: 'No stale metas found. Nothing to synthesize.',
       });
     }
 
+    const stalest = winner.node.metaPath;
     const enqueueResult = queue.enqueue(stalest);
 
     return reply.code(202).send({
