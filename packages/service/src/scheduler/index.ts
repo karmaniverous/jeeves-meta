@@ -217,7 +217,10 @@ export class Scheduler {
     try {
       const result = await this.cache.get(this.config, this.watcher);
 
-      const candidates = buildPhaseCandidates(result.entries);
+      const candidates = buildPhaseCandidates(
+        result.entries,
+        this.config.architectEvery,
+      );
 
       const winner = selectPhaseCandidate(candidates, this.config.depthWeight);
 

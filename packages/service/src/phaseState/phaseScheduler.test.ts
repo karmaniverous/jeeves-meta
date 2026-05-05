@@ -293,7 +293,7 @@ describe('buildPhaseCandidates', () => {
     const entries: MetaEntry[] = [
       makeEntry('a/.meta', {}), // never-synthesized → architect pending
     ];
-    const candidates = buildPhaseCandidates(entries);
+    const candidates = buildPhaseCandidates(entries, 10);
     expect(candidates).toHaveLength(1);
     expect(candidates[0].phaseState.architect).toBe('pending');
     expect(candidates[0].phaseState.builder).toBe('stale');
@@ -302,6 +302,7 @@ describe('buildPhaseCandidates', () => {
   it('auto-retries failed phases', () => {
     const entries: MetaEntry[] = [
       makeEntry('a/.meta', {
+        _builder: 'cached brief',
         _phaseState: {
           architect: 'fresh',
           builder: 'failed',
@@ -309,7 +310,7 @@ describe('buildPhaseCandidates', () => {
         },
       }),
     ];
-    const candidates = buildPhaseCandidates(entries);
+    const candidates = buildPhaseCandidates(entries, 10);
     expect(candidates[0].phaseState.builder).toBe('pending');
   });
 
@@ -321,7 +322,7 @@ describe('buildPhaseCandidates', () => {
         { locked: true, disabled: true, stalenessSeconds: 9999 },
       ),
     ];
-    const candidates = buildPhaseCandidates(entries);
+    const candidates = buildPhaseCandidates(entries, 10);
     expect(candidates[0].locked).toBe(true);
     expect(candidates[0].disabled).toBe(true);
     expect(candidates[0].actualStaleness).toBe(9999);

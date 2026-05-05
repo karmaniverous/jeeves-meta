@@ -67,7 +67,10 @@ export function registerQueueRoutes(
     }> = [];
     try {
       const metaResult = await deps.cache.get(deps.config, deps.watcher);
-      const candidates = buildPhaseCandidates(metaResult.entries);
+      const candidates = buildPhaseCandidates(
+        metaResult.entries,
+        deps.config.architectEvery,
+      );
       const ranked = rankPhaseCandidates(candidates, deps.config.depthWeight);
       automatic = ranked.map((c) => ({
         path: c.node.metaPath,

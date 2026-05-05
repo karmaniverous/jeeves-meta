@@ -107,7 +107,10 @@ export async function orchestratePhase(
   if (metaResult.entries.length === 0) return { executed: false };
 
   // Build candidates with phase state (including invalidation + auto-retry)
-  const candidates = buildPhaseCandidates(metaResult.entries);
+  const candidates = buildPhaseCandidates(
+    metaResult.entries,
+    config.architectEvery,
+  );
 
   // Select best phase candidate
   const winner = selectPhaseCandidate(candidates, config.depthWeight);

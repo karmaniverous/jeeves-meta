@@ -124,7 +124,10 @@ export function registerStatusRoute(
         }
 
         // Build candidates (with auto-retry) for scheduling
-        const candidates = buildPhaseCandidates(metaResult.entries);
+        const candidates = buildPhaseCandidates(
+          metaResult.entries,
+          config.architectEvery,
+        );
 
         // Find next phase candidate
         const winner = selectPhaseCandidate(candidates, config.depthWeight);
