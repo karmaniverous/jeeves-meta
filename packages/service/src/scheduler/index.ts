@@ -8,7 +8,7 @@
 import { Cron } from 'croner';
 import type { Logger } from 'pino';
 
-import { listMetas } from '../discovery/index.js';
+import type { MetaCache } from '../cache.js';
 import {
   buildPhaseCandidates,
   selectPhaseCandidate,
@@ -43,6 +43,7 @@ export class Scheduler {
   private readonly queue: SynthesisQueue;
   private readonly logger: Logger;
   private readonly watcher: HttpWatcherClient;
+  private readonly cache: MetaCache;
   private registrar: RuleRegistrar | null = null;
   private currentExpression: string;
 
@@ -51,11 +52,13 @@ export class Scheduler {
     queue: SynthesisQueue,
     logger: Logger,
     watcher: HttpWatcherClient,
+    cache: MetaCache,
   ) {
     this.config = config;
     this.queue = queue;
     this.logger = logger;
     this.watcher = watcher;
+    this.cache = cache;
     this.currentExpression = config.schedule;
   }
 
@@ -212,7 +215,7 @@ export class Scheduler {
    */
   private async discoverNextPhase(): Promise<TickCandidate | null> {
     try {
-      const result = await listMetas(this.config, this.watcher);
+      const result = await this.cache.get(this.config, this.watcher);
 
       const candidates = buildPhaseCandidates(result.entries);
 

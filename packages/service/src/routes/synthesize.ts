@@ -10,7 +10,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { listMetas } from '../discovery/index.js';
 import { resolveMetaDir } from '../lock.js';
 import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
@@ -28,7 +27,7 @@ export function registerSynthesizeRoute(
 ): void {
   app.post('/synthesize', async (request, reply) => {
     const body = synthesizeBodySchema.parse(request.body);
-    const { config, watcher, queue } = deps;
+    const { config, watcher, queue, cache } = deps;
 
     if (body.path) {
       // Path-targeted trigger: create override entry
@@ -69,7 +68,7 @@ export function registerSynthesizeRoute(
     // Corpus-wide trigger: discover stalest candidate
     let result;
     try {
-      result = await listMetas(config, watcher);
+      result = await cache.get(config, watcher);
     } catch {
       return reply.status(503).send({
         error: 'SERVICE_UNAVAILABLE',

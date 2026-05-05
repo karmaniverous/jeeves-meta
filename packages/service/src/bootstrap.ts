@@ -8,6 +8,7 @@ import { watchFile } from 'node:fs';
 
 import { getBindAddress } from '@karmaniverous/jeeves';
 
+import { MetaCache } from './cache.js';
 import {
   applyHotReloadedConfig,
   registerConfigHotReloadRuntime,
@@ -64,9 +65,10 @@ export async function startService(
   };
 
   const queue = new SynthesisQueue(logger);
+  const cache = new MetaCache();
 
   // Scheduler (needs watcher for discovery)
-  const scheduler = new Scheduler(config, queue, logger, watcher);
+  const scheduler = new Scheduler(config, queue, logger, watcher, cache);
 
   const routeDeps: RouteDeps = {
     config,
@@ -75,6 +77,7 @@ export async function startService(
     watcher,
     scheduler,
     stats,
+    cache,
     executor,
     configPath,
   };
@@ -139,6 +142,9 @@ export async function startService(
         },
         logger,
       );
+
+      // Invalidate cache after any phase execution attempt
+      cache.invalidate();
 
       const durationMs = Date.now() - startMs;
 

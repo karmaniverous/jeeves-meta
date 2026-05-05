@@ -7,12 +7,7 @@
 import type { FastifyInstance } from 'fastify';
 
 import { readLatestArchive } from '../archive/index.js';
-import {
-  findNode,
-  getDeltaFiles,
-  getScopeFiles,
-  listMetas,
-} from '../discovery/index.js';
+import { findNode, getDeltaFiles, getScopeFiles } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
 import {
   type ArchitectInvalidator,
@@ -35,12 +30,12 @@ export function registerPreviewRoute(
   deps: RouteDeps,
 ): void {
   app.get('/preview', async (request, reply) => {
-    const { config, watcher } = deps;
+    const { config, watcher, cache } = deps;
     const query = request.query as { path?: string };
 
     let result;
     try {
-      result = await listMetas(config, watcher);
+      result = await cache.get(config, watcher);
     } catch {
       return reply.status(503).send({
         error: 'SERVICE_UNAVAILABLE',

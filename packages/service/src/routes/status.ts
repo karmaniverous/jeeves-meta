@@ -11,7 +11,6 @@ import { createStatusHandler } from '@karmaniverous/jeeves';
 import type { FastifyInstance } from 'fastify';
 
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
-import { listMetas } from '../discovery/index.js';
 import {
   buildPhaseCandidates,
   derivePhaseState,
@@ -91,7 +90,7 @@ export function registerStatusRoute(
     name: SERVICE_NAME,
     version: SERVICE_VERSION,
     getHealth: async () => {
-      const { config, queue, scheduler, stats, watcher } = deps;
+      const { config, queue, scheduler, stats, watcher, cache } = deps;
 
       // On-demand dependency checks
       const [watcherHealth, gatewayHealth] = await Promise.all([
@@ -114,7 +113,7 @@ export function registerStatusRoute(
       } | null = null;
 
       try {
-        const metaResult = await listMetas(config, watcher);
+        const metaResult = await cache.get(config, watcher);
 
         // Count raw phase states (before retry) for display
         for (const entry of metaResult.entries) {

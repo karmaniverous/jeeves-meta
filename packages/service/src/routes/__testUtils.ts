@@ -13,6 +13,7 @@ import { join } from 'node:path';
 import type { Logger } from 'pino';
 import { vi } from 'vitest';
 
+import { MetaCache } from '../cache.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import { SynthesisQueue } from '../queue/index.js';
 import type { RouteDeps, ServiceStats } from './index.js';
@@ -82,6 +83,7 @@ export function makeTestDeps(overrides: TestDepsOverrides = {}): RouteDeps {
     watcher: rest.watcher ?? ({} as RouteDeps['watcher']),
     scheduler: rest.scheduler ?? null,
     stats: rest.stats ?? { ...DEFAULT_TEST_STATS },
+    cache: rest.cache ?? new MetaCache(),
     ...rest,
   };
 }

@@ -1,6 +1,7 @@
 import type { Logger } from 'pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { MetaCache } from '../cache.js';
 import { SynthesisQueue } from '../queue/index.js';
 import type { HttpWatcherClient } from '../watcher-client/index.js';
 import { Scheduler } from './index.js';
@@ -60,7 +61,13 @@ describe('Scheduler', () => {
     logger = createTestLogger();
     queue = new SynthesisQueue(logger);
     watcher = createMockWatcher();
-    scheduler = new Scheduler(createTestConfig(), queue, logger, watcher);
+    scheduler = new Scheduler(
+      createTestConfig(),
+      queue,
+      logger,
+      watcher,
+      new MetaCache(),
+    );
   });
 
   afterEach(() => {
