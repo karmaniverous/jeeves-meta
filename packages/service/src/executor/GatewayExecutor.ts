@@ -132,10 +132,10 @@ export class GatewayExecutor implements MetaExecutor {
     return data;
   }
 
-  /** Look up totalTokens for a session via sessions_list. */
-  private async getSessionTokens(
+  /** Look up session metadata (tokens, completion status) via sessions_list. */
+  private async getSessionInfo(
     sessionKey: string,
-  ): Promise<number | undefined> {
+  ): Promise<{ tokens?: number; completed: boolean }> {
     try {
       const result = await this.invoke('sessions_list', {
         limit: 20,
@@ -144,12 +144,22 @@ export class GatewayExecutor implements MetaExecutor {
 
       const sessions = (result.result?.details?.sessions ??
         result.result?.sessions ??
-        []) as Array<{ key: string; totalTokens?: number }>;
+        []) as Array<{
+        key: string;
+        totalTokens?: number;
+        status?: string;
+      }>;
 
       const match = sessions.find((s) => s.key === sessionKey);
-      return match?.totalTokens ?? undefined;
+      if (!match) {
+        // Session absent from list — cleaned up after completion
+        return { completed: true };
+      }
+
+      const done = match.status === 'completed' || match.status === 'done';
+      return { tokens: match.totalTokens, completed: done };
     } catch {
-      return undefined;
+      return { completed: false };
     }
   }
 
@@ -245,51 +255,57 @@ export class GatewayExecutor implements MetaExecutor {
           usage?: { totalTokens?: number };
         }>;
 
+        // Check 1: terminal stop reason in history
+        let historyDone = false;
         if (msgArray.length > 0) {
           const lastMsg = msgArray[msgArray.length - 1];
-
-          // Complete when last message is assistant with a terminal stop reason
           if (
             lastMsg.role === 'assistant' &&
             lastMsg.stopReason &&
             lastMsg.stopReason !== 'toolUse' &&
             lastMsg.stopReason !== 'error'
           ) {
-            // Fetch token usage from session metadata
-            const tokens = await this.getSessionTokens(sessionKey);
-
-            // Read output from file (sub-agent wrote it via Write tool)
-            if (existsSync(outputPath)) {
-              try {
-                const output = readFileSync(outputPath, 'utf8');
-                return { output, tokens };
-              } finally {
-                try {
-                  unlinkSync(outputPath);
-                } catch {
-                  /* cleanup best-effort */
-                }
-              }
-            }
-
-            // Fallback: extract from message content if file wasn't written
-            for (let i = msgArray.length - 1; i >= 0; i--) {
-              const msg = msgArray[i];
-              if (msg.role === 'assistant' && msg.content) {
-                const text =
-                  typeof msg.content === 'string'
-                    ? msg.content
-                    : Array.isArray(msg.content)
-                      ? msg.content
-                          .filter((b) => b.type === 'text' && b.text)
-                          .map((b) => b.text!)
-                          .join('\n')
-                      : '';
-                if (text) return { output: text, tokens };
-              }
-            }
-            return { output: '', tokens };
+            historyDone = true;
           }
+        }
+
+        // Check 2: session completion status via sessions_list
+        const sessionInfo = await this.getSessionInfo(sessionKey);
+
+        if (historyDone || sessionInfo.completed) {
+          const tokens = sessionInfo.tokens;
+
+          // Read output from file (sub-agent wrote it via Write tool)
+          if (existsSync(outputPath)) {
+            try {
+              const output = readFileSync(outputPath, 'utf8');
+              return { output, tokens };
+            } finally {
+              try {
+                unlinkSync(outputPath);
+              } catch {
+                /* cleanup best-effort */
+              }
+            }
+          }
+
+          // Fallback: extract from message content if file wasn't written
+          for (let i = msgArray.length - 1; i >= 0; i--) {
+            const msg = msgArray[i];
+            if (msg.role === 'assistant' && msg.content) {
+              const text =
+                typeof msg.content === 'string'
+                  ? msg.content
+                  : Array.isArray(msg.content)
+                    ? msg.content
+                        .filter((b) => b.type === 'text' && b.text)
+                        .map((b) => b.text!)
+                        .join('\n')
+                    : '';
+              if (text) return { output: text, tokens };
+            }
+          }
+          return { output: '', tokens };
         }
       } catch {
         // Transient poll failure — keep trying
