@@ -2,9 +2,33 @@
 
 All notable changes to this project will be documented in this file. Dates are displayed in UTC.
 
-#### [0.12.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.12.1...0.12.2)
+#### [0.12.3](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.12.2...0.12.3)
+
+- fix: address Gemini review — sessions_list limit and cache invalidation gate [`#143`](https://github.com/karmaniverous/jeeves-meta/pull/143)
+- feat: 0.16.0 — bug fixes and phase-state completion [`#142`](https://github.com/karmaniverous/jeeves-meta/pull/142)
+- chore: convert rollup configs from mjs to ts [`#103`](https://github.com/karmaniverous/jeeves-meta/pull/103)
+- refactor!: remove legacy orchestration path [`#138`](https://github.com/karmaniverous/jeeves-meta/pull/138)
+- fix: replace legacy staleness selector with phase-state scheduler in routes [`#137`](https://github.com/karmaniverous/jeeves-meta/pull/137)
+- fix: apply Tier 1 cheap invalidation at tick time [`#139`](https://github.com/karmaniverous/jeeves-meta/pull/139)
+- fix: skip architect invalidation on structure change for progressive metas, add large-scope sampling [`#135`](https://github.com/karmaniverous/jeeves-meta/pull/135)
+- perf: cache listMetas result with 60s TTL [`#132`](https://github.com/karmaniverous/jeeves-meta/pull/132)
+- fix: detect completed sessions via sessions_list in GatewayExecutor polling [`#141`](https://github.com/karmaniverous/jeeves-meta/pull/141)
+- fix: add Fastify global request timeout [`#133`](https://github.com/karmaniverous/jeeves-meta/pull/133)
+- chore: remove dead meta-config rule [`#116`](https://github.com/karmaniverous/jeeves-meta/pull/116)
+- chore: add npm-pack-check CI workflow [`#136`](https://github.com/karmaniverous/jeeves-meta/pull/136)
+- test: improve coverage for 0.16.0 touched code [`0a18b4a`](https://github.com/karmaniverous/jeeves-meta/commit/0a18b4abe966eb0528955584bcb40a91733aa126)
+- refactor: SOLID/DRY pass across 0.16.0 touched code [`9cd2940`](https://github.com/karmaniverous/jeeves-meta/commit/9cd294037b55bebe418375d7c86f54f1bc51519a)
+- fix: startup readiness gate and heartbeat timeout (#131, #130) [`11f0400`](https://github.com/karmaniverous/jeeves-meta/commit/11f04000c23b7f834afa957dc308818dc2f7ef0d)
+- chore: release @karmaniverous/jeeves-meta v0.15.4 [`d525927`](https://github.com/karmaniverous/jeeves-meta/commit/d5259279da15f46cbf598868c208e5083a87db5e)
+- chore: add npm publish safety net (.npmignore + gitignore *.local) [`e6e2332`](https://github.com/karmaniverous/jeeves-meta/commit/e6e2332e5323e9b56a5c385550107ec2535a2307)
+- fix: raise sessions_list limit and gate cache invalidation on execution [`c5007bb`](https://github.com/karmaniverous/jeeves-meta/commit/c5007bbcdce887acdfa46d180ec4631dcc37006e)
+
+#### [openclaw/0.12.2](https://github.com/karmaniverous/jeeves-meta/compare/openclaw/0.12.1...openclaw/0.12.2)
+
+> 3 May 2026
 
 - updated jeeves-core [`2b52161`](https://github.com/karmaniverous/jeeves-meta/commit/2b521615f1a4b68703ce09093eff1a0b7ef1daed)
+- chore: release @karmaniverous/jeeves-meta-openclaw v0.12.2 [`4c3a9c8`](https://github.com/karmaniverous/jeeves-meta/commit/4c3a9c8fc8d292e63ad7e533d22732d97b71da28)
 - chore: release @karmaniverous/jeeves-meta v0.15.3 [`7df8289`](https://github.com/karmaniverous/jeeves-meta/commit/7df828970eaba0e98be48267d8d2a1129bc1a455)
 - Merge pull request #134 from karmaniverous/fix/suppress-subagent-chat-reply [`14c7f0d`](https://github.com/karmaniverous/jeeves-meta/commit/14c7f0d2a547afc8870cbcb3393aea4404eb1e64)
 - fix: instruct sub-agent to reply NO_REPLY instead of file path\n\nThe GatewayExecutor spawns sub-agent sessions for each synthesis phase.\nPreviously the task told the sub-agent to reply with the output file path,\nwhich leaked to the parent chat channel (user DMs). The executor\nalready reads output from the staged file on disk, so the chat reply\nserved no purpose.\n\nChange the OUTPUT DELIVERY instruction to reply with NO_REPLY, which\nOpenClaw treats as a silent acknowledgment and does not surface to chat. [`4c404a4`](https://github.com/karmaniverous/jeeves-meta/commit/4c404a4767ca4abcf0330f7e5137b2f2fd871b43)
