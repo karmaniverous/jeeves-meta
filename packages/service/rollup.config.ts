@@ -2,12 +2,12 @@ import commonjsPlugin from '@rollup/plugin-commonjs';
 import jsonPlugin from '@rollup/plugin-json';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import typescriptPlugin from '@rollup/plugin-typescript';
+import type { RollupOptions } from 'rollup';
 import copyPlugin from 'rollup-plugin-copy';
 import dtsPlugin from 'rollup-plugin-dts';
 
-/** @type {import('rollup').RollupOptions['onwarn']} */
-const onwarn = (warning, warn) => {
-  if (warning?.code === 'CIRCULAR_DEPENDENCY') return;
+const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
+  if (warning.code === 'CIRCULAR_DEPENDENCY') return;
   warn(warning);
 };
 
@@ -36,7 +36,7 @@ const external = [
   /^node:/,
 ];
 
-const buildLibrary = {
+const buildLibrary: RollupOptions = {
   input: 'src/index.ts',
   external,
   onwarn,
@@ -52,7 +52,7 @@ const buildLibrary = {
   ],
 };
 
-const buildTypes = {
+const buildTypes: RollupOptions = {
   input: 'src/index.ts',
   external: [/^node:/],
   onwarn,
@@ -60,7 +60,7 @@ const buildTypes = {
   plugins: [dtsPlugin()],
 };
 
-const buildCli = {
+const buildCli: RollupOptions = {
   input: 'src/cli.ts',
   external,
   onwarn,
