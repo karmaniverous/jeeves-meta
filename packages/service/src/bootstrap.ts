@@ -144,8 +144,8 @@ export async function startService(
         logger,
       );
 
-      // Invalidate cache after any phase execution attempt
-      cache.invalidate();
+      // Invalidate cache only when a phase was actually executed
+      if (result.executed) cache.invalidate();
 
       const durationMs = Date.now() - startMs;
 
