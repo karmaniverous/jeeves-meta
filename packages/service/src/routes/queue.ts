@@ -13,7 +13,6 @@ import { join } from 'node:path';
 
 import type { FastifyInstance } from 'fastify';
 
-import { listMetas } from '../discovery/index.js';
 import { releaseLock, resolveMetaDir } from '../lock.js';
 import {
   buildPhaseCandidates,
@@ -67,8 +66,11 @@ export function registerQueueRoutes(
       effectiveStaleness: number;
     }> = [];
     try {
-      const metaResult = await listMetas(deps.config, deps.watcher);
-      const candidates = buildPhaseCandidates(metaResult.entries);
+      const metaResult = await deps.cache.get(deps.config, deps.watcher);
+      const candidates = buildPhaseCandidates(
+        metaResult.entries,
+        deps.config.architectEvery,
+      );
       const ranked = rankPhaseCandidates(candidates, deps.config.depthWeight);
       automatic = ranked.map((c) => ({
         path: c.node.metaPath,

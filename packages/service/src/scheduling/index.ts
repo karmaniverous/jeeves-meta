@@ -4,7 +4,6 @@
  * @module scheduling
  */
 
-export { discoverStalestPath, selectCandidate } from './selectCandidate.js';
 export {
   actualStaleness,
   computeStalenessScore,

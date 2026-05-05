@@ -10,13 +10,14 @@
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import typescriptPlugin from '@rollup/plugin-typescript';
+import type { RollupOptions } from 'rollup';
 
-function onwarn(warning, warn) {
-  if (warning?.code === 'CIRCULAR_DEPENDENCY') return;
+const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
+  if (warning.code === 'CIRCULAR_DEPENDENCY') return;
   warn(warning);
-}
+};
 
-const pluginConfig = {
+const pluginConfig: RollupOptions = {
   input: 'src/index.ts',
   output: { dir: 'dist', format: 'esm' },
   external: ['@karmaniverous/jeeves-meta', /^node:/],
@@ -36,7 +37,7 @@ const pluginConfig = {
   ],
 };
 
-const cliConfig = {
+const cliConfig: RollupOptions = {
   input: 'src/cli.ts',
   external: [/^node:/],
   onwarn,

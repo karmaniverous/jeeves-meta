@@ -151,4 +151,47 @@ describe('derivePhaseState', () => {
     });
     expect(result.architect).toBe('pending');
   });
+
+  it('progressive meta with structure change: builder-only invalidation', () => {
+    const meta: MetaJson = {
+      _builder: 'brief',
+      _content: 'content',
+      _feedback: 'ok',
+      _generatedAt: new Date().toISOString(),
+      _state: { cursor: 5 },
+    };
+    const result = derivePhaseState(meta, {
+      structureChanged: true,
+      steerChanged: false,
+      architectChanged: false,
+      crossRefsChanged: false,
+      architectEvery: 10,
+    });
+    expect(result).toEqual({
+      architect: 'fresh',
+      builder: 'pending',
+      critic: 'stale',
+    });
+  });
+
+  it('non-progressive meta with structure change: full architect invalidation', () => {
+    const meta: MetaJson = {
+      _builder: 'brief',
+      _content: 'content',
+      _feedback: 'ok',
+      _generatedAt: new Date().toISOString(),
+    };
+    const result = derivePhaseState(meta, {
+      structureChanged: true,
+      steerChanged: false,
+      architectChanged: false,
+      crossRefsChanged: false,
+      architectEvery: 10,
+    });
+    expect(result).toEqual({
+      architect: 'pending',
+      builder: 'stale',
+      critic: 'stale',
+    });
+  });
 });

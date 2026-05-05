@@ -293,7 +293,7 @@ describe('buildPhaseCandidates', () => {
     const entries: MetaEntry[] = [
       makeEntry('a/.meta', {}), // never-synthesized → architect pending
     ];
-    const candidates = buildPhaseCandidates(entries);
+    const candidates = buildPhaseCandidates(entries, 10);
     expect(candidates).toHaveLength(1);
     expect(candidates[0].phaseState.architect).toBe('pending');
     expect(candidates[0].phaseState.builder).toBe('stale');
@@ -302,6 +302,7 @@ describe('buildPhaseCandidates', () => {
   it('auto-retries failed phases', () => {
     const entries: MetaEntry[] = [
       makeEntry('a/.meta', {
+        _builder: 'cached brief',
         _phaseState: {
           architect: 'fresh',
           builder: 'failed',
@@ -309,8 +310,76 @@ describe('buildPhaseCandidates', () => {
         },
       }),
     ];
-    const candidates = buildPhaseCandidates(entries);
+    const candidates = buildPhaseCandidates(entries, 10);
     expect(candidates[0].phaseState.builder).toBe('pending');
+  });
+
+  it('Tier 1 cheap invalidation: forces architect pending when no _builder', () => {
+    const entries: MetaEntry[] = [
+      makeEntry('a/.meta', {
+        _content: 'old content',
+        _feedback: 'ok',
+        _phaseState: {
+          architect: 'fresh',
+          builder: 'fresh',
+          critic: 'fresh',
+        },
+      }),
+    ];
+    const candidates = buildPhaseCandidates(entries, 10);
+    // No _builder → needs architect, was fresh → forced to pending
+    expect(candidates[0].phaseState.architect).toBe('pending');
+    expect(candidates[0].phaseState.builder).toBe('stale');
+    expect(candidates[0].phaseState.critic).toBe('stale');
+  });
+
+  it('Tier 1 cheap invalidation: forces architect pending when synthesisCount >= architectEvery', () => {
+    const entries: MetaEntry[] = [
+      makeEntry('a/.meta', {
+        _builder: 'brief',
+        _content: 'content',
+        _feedback: 'ok',
+        _synthesisCount: 10,
+        _phaseState: {
+          architect: 'fresh',
+          builder: 'fresh',
+          critic: 'fresh',
+        },
+      }),
+    ];
+    const candidates = buildPhaseCandidates(entries, 10);
+    expect(candidates[0].phaseState.architect).toBe('pending');
+    expect(candidates[0].phaseState.builder).toBe('stale');
+  });
+
+  it('Tier 1 cheap invalidation: no-op when architect already non-fresh', () => {
+    const entries: MetaEntry[] = [
+      makeEntry('a/.meta', {
+        _content: 'old content',
+        _phaseState: {
+          architect: 'pending',
+          builder: 'stale',
+          critic: 'stale',
+        },
+      }),
+    ];
+    const candidates = buildPhaseCandidates(entries, 10);
+    // Already pending — shouldn't change
+    expect(candidates[0].phaseState.architect).toBe('pending');
+  });
+
+  it('Tier 1 cheap invalidation: skipped when no persisted _phaseState', () => {
+    // Meta without _phaseState goes through derivePhaseState only (no Tier 1 check)
+    const entries: MetaEntry[] = [
+      makeEntry('a/.meta', {
+        _builder: 'brief',
+        _content: 'content',
+        _feedback: 'ok',
+      }),
+    ];
+    const candidates = buildPhaseCandidates(entries, 10);
+    // Derived as fully fresh (has builder, content, feedback)
+    expect(candidates[0].phaseState.architect).toBe('fresh');
   });
 
   it('maps staleness, locked, and disabled from entry', () => {
@@ -321,7 +390,7 @@ describe('buildPhaseCandidates', () => {
         { locked: true, disabled: true, stalenessSeconds: 9999 },
       ),
     ];
-    const candidates = buildPhaseCandidates(entries);
+    const candidates = buildPhaseCandidates(entries, 10);
     expect(candidates[0].locked).toBe(true);
     expect(candidates[0].disabled).toBe(true);
     expect(candidates[0].actualStaleness).toBe(9999);

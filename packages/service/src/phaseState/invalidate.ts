@@ -93,7 +93,14 @@ export async function computeInvalidation(
     : currentRefs.length > 0;
 
   const architectInvalidators: ArchitectInvalidator[] = [];
-  if (structureChanged) architectInvalidators.push('structureHash');
+  if (structureChanged) {
+    if (meta._state !== undefined) {
+      // Progressive entity: new files → builder only (cursor handles incremental)
+      phaseState = invalidateBuilder(phaseState);
+    } else {
+      architectInvalidators.push('structureHash');
+    }
+  }
   if (steerChanged) architectInvalidators.push('steer');
   if (architectChanged) architectInvalidators.push('_architect');
   if (crossRefsDeclChanged) architectInvalidators.push('_crossRefs');

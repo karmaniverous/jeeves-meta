@@ -140,46 +140,6 @@ function buildMetaRules(config: MetaConfig) {
       },
       renderAs: 'md',
     },
-    {
-      name: 'meta-config',
-      description: 'jeeves-meta configuration file',
-      match: {
-        properties: {
-          file: {
-            properties: {
-              path: {
-                type: 'string',
-                glob: '**/jeeves-meta{.config.json,/config.json}',
-              },
-            },
-          },
-        },
-      },
-      schema: ['base', { properties: { domains: { set: ['meta-config'] } } }],
-      render: {
-        frontmatter: [
-          'watcherUrl',
-          'gatewayUrl',
-          'architectEvery',
-          'depthWeight',
-          'maxArchive',
-          'maxLines',
-        ],
-        body: [
-          {
-            path: 'json.defaultArchitect',
-            heading: 2,
-            label: 'Default Architect Prompt',
-          },
-          {
-            path: 'json.defaultCritic',
-            heading: 2,
-            label: 'Default Critic Prompt',
-          },
-        ],
-      },
-      renderAs: 'md',
-    },
   ];
 }
 

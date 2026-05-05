@@ -230,4 +230,132 @@ describe('GatewayExecutor.spawn', () => {
       'returned no sessionKey',
     );
   });
+
+  it('completes via sessionInfo.completed when history has no terminal stopReason', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+
+      if (body.tool === 'sessions_spawn') {
+        return jsonResponse({
+          ok: true,
+          result: { details: { childSessionKey: 'sess-info-test' } },
+        });
+      }
+
+      if (body.tool === 'sessions_history') {
+        // Write the output file to simulate sub-agent
+        const spawnBody = mockFetch.mock.calls[0]?.[1] as RequestInit;
+        const spawnArgs = (
+          JSON.parse(spawnBody.body as string) as Record<string, unknown>
+        ).args as Record<string, unknown>;
+        const task = spawnArgs.task as string;
+        const pathMatch = task.match(
+          /Write tool at:\n(.+?output-[a-f0-9-]+\.json)/,
+        );
+        if (pathMatch?.[1] && !existsSync(pathMatch[1])) {
+          writeFileSync(pathMatch[1], 'Session info completion output');
+        }
+
+        // No terminal stopReason — history alone would NOT signal done
+        return jsonResponse({
+          ok: true,
+          result: {
+            details: {
+              messages: [
+                { role: 'assistant', content: 'Working...', stopReason: null },
+              ],
+            },
+          },
+        });
+      }
+
+      if (body.tool === 'sessions_list') {
+        // Session reports completed status — this should trigger completion
+        return jsonResponse({
+          ok: true,
+          result: {
+            details: {
+              sessions: [
+                {
+                  key: 'sess-info-test',
+                  totalTokens: 3000,
+                  status: 'completed',
+                },
+              ],
+            },
+          },
+        });
+      }
+
+      return jsonResponse({ ok: true });
+    });
+
+    const result = await executor.spawn('Task', { timeout: 30 });
+    expect(result.output).toBe('Session info completion output');
+    expect(result.tokens).toBe(3000);
+  });
+
+  it('treats missing session in sessions_list as completed', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+
+      if (body.tool === 'sessions_spawn') {
+        return jsonResponse({
+          ok: true,
+          result: { details: { childSessionKey: 'sess-gone' } },
+        });
+      }
+
+      if (body.tool === 'sessions_history') {
+        // Write output file
+        const spawnBody = mockFetch.mock.calls[0]?.[1] as RequestInit;
+        const spawnArgs = (
+          JSON.parse(spawnBody.body as string) as Record<string, unknown>
+        ).args as Record<string, unknown>;
+        const task = spawnArgs.task as string;
+        const pathMatch = task.match(
+          /Write tool at:\n(.+?output-[a-f0-9-]+\.json)/,
+        );
+        if (pathMatch?.[1] && !existsSync(pathMatch[1])) {
+          writeFileSync(pathMatch[1], 'Gone session output');
+        }
+
+        return jsonResponse({
+          ok: true,
+          result: {
+            details: {
+              messages: [
+                { role: 'assistant', content: 'Hmm', stopReason: null },
+              ],
+            },
+          },
+        });
+      }
+
+      if (body.tool === 'sessions_list') {
+        // Session NOT in list — treated as cleaned up / completed
+        return jsonResponse({
+          ok: true,
+          result: { details: { sessions: [] } },
+        });
+      }
+
+      return jsonResponse({ ok: true });
+    });
+
+    const result = await executor.spawn('Task', { timeout: 30 });
+    expect(result.output).toBe('Gone session output');
+  });
 });

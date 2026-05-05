@@ -10,12 +10,6 @@ export {
   buildCriticTask,
 } from './buildTask.js';
 export { buildContextPackage } from './contextPackage.js';
-export { mergeAndWrite, type MergeOptions } from './merge.js';
-export {
-  orchestrate,
-  type OrchestrateResult,
-  type ProgressCallback,
-} from './orchestrate.js';
 export {
   orchestratePhase,
   type OrchestratePhaseResult,

@@ -7,6 +7,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
+import type { MetaCache } from '../cache.js';
 import type { GatewayExecutor } from '../executor/index.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import type { SynthesisQueue } from '../queue/index.js';
@@ -53,6 +54,10 @@ export interface RouteDeps {
   watcher: WatcherClient;
   scheduler: Scheduler | null;
   stats: ServiceStats;
+  /** Cached listMetas results with TTL. */
+  cache: MetaCache;
+  /** Service readiness flag — false during startup. */
+  ready: boolean;
   /** Rule registrar for reporting registration state in /status. */
   registrar?: RuleRegistrar;
   /** Executor instance for abort support. */

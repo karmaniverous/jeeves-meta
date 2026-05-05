@@ -8,6 +8,7 @@ import { watchFile } from 'node:fs';
 
 import { getBindAddress } from '@karmaniverous/jeeves';
 
+import { MetaCache } from './cache.js';
 import {
   applyHotReloadedConfig,
   registerConfigHotReloadRuntime,
@@ -64,9 +65,10 @@ export async function startService(
   };
 
   const queue = new SynthesisQueue(logger);
+  const cache = new MetaCache();
 
   // Scheduler (needs watcher for discovery)
-  const scheduler = new Scheduler(config, queue, logger, watcher);
+  const scheduler = new Scheduler(config, queue, logger, watcher, cache);
 
   const routeDeps: RouteDeps = {
     config,
@@ -75,6 +77,8 @@ export async function startService(
     watcher,
     scheduler,
     stats,
+    cache,
+    ready: false,
     executor,
     configPath,
   };
@@ -139,6 +143,9 @@ export async function startService(
         },
         logger,
       );
+
+      // Invalidate cache after any phase execution attempt
+      cache.invalidate();
 
       const durationMs = Date.now() - startMs;
 
@@ -210,11 +217,18 @@ export async function startService(
   const registrar = new RuleRegistrar(config, logger, watcher);
   scheduler.setRegistrar(registrar);
   routeDeps.registrar = registrar;
-  void registrar.register().then(() => {
-    if (registrar.isRegistered) {
-      void verifyRuleApplication(watcher, logger);
-    }
-  });
+  void registrar.register().then(
+    () => {
+      routeDeps.ready = true;
+      if (registrar.isRegistered) {
+        void verifyRuleApplication(watcher, logger);
+      }
+    },
+    () => {
+      // Registration failed after max retries — mark ready anyway
+      routeDeps.ready = true;
+    },
+  );
 
   // Periodic watcher health check (independent of scheduler)
   const healthCheck = new WatcherHealthCheck({

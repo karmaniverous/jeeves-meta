@@ -10,6 +10,8 @@
 
 import Handlebars from 'handlebars';
 
+Handlebars.registerHelper('gt', (a: number, b: number) => a > b);
+
 import type { MetaContext } from '../interfaces/index.js';
 import {
   DEFAULT_ARCHITECT_PROMPT,

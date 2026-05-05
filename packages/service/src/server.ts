@@ -27,6 +27,17 @@ export function createServer(options: ServerOptions) {
   // Fastify 5 requires `loggerInstance` for external pino loggers
   const app = Fastify({
     loggerInstance: options.logger as unknown as FastifyBaseLogger,
+    requestTimeout: 30_000,
+  });
+
+  // Readiness gate: return 503 while service is initializing
+  app.addHook('onRequest', async (request, reply) => {
+    if (options.deps.ready) return;
+    const url = request.url;
+    if (url === '/config' || url.startsWith('/config/apply')) return;
+    return reply
+      .status(503)
+      .send({ status: 'starting', message: 'Service initializing' });
   });
 
   registerRoutes(app, options.deps);

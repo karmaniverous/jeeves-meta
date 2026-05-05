@@ -10,11 +10,14 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { listMetas } from '../discovery/index.js';
 import { resolveMetaDir } from '../lock.js';
-import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
+import {
+  buildPhaseCandidates,
+  derivePhaseState,
+  getOwedPhase,
+  selectPhaseCandidate,
+} from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
-import { discoverStalestPath } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
 const synthesizeBodySchema = z.object({
@@ -28,7 +31,7 @@ export function registerSynthesizeRoute(
 ): void {
   app.post('/synthesize', async (request, reply) => {
     const body = synthesizeBodySchema.parse(request.body);
-    const { config, watcher, queue } = deps;
+    const { config, watcher, queue, cache } = deps;
 
     if (body.path) {
       // Path-targeted trigger: create override entry
@@ -69,28 +72,26 @@ export function registerSynthesizeRoute(
     // Corpus-wide trigger: discover stalest candidate
     let result;
     try {
-      result = await listMetas(config, watcher);
+      result = await cache.get(config, watcher);
     } catch {
       return reply.status(503).send({
         error: 'SERVICE_UNAVAILABLE',
         message: 'Watcher unreachable — cannot discover candidates',
       });
     }
-    const stale = result.entries
-      .filter((e) => e.stalenessSeconds > 0 && !e.disabled)
-      .map((e) => ({
-        node: e.node,
-        meta: e.meta,
-        actualStaleness: e.stalenessSeconds,
-      }));
-    const stalest = discoverStalestPath(stale, config.depthWeight);
-    if (!stalest) {
+    const candidates = buildPhaseCandidates(
+      result.entries,
+      config.architectEvery,
+    );
+    const winner = selectPhaseCandidate(candidates, config.depthWeight);
+    if (!winner) {
       return reply.code(200).send({
         status: 'skipped',
         message: 'No stale metas found. Nothing to synthesize.',
       });
     }
 
+    const stalest = winner.node.metaPath;
     const enqueueResult = queue.enqueue(stalest);
 
     return reply.code(202).send({

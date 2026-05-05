@@ -33,20 +33,36 @@ export interface PhaseCandidateInput {
 /**
  * Build phase candidates from listMetas entries.
  *
- * Derives phase state and auto-retries failed phases for each entry.
+ * Derives phase state, auto-retries failed phases, and applies Tier 1
+ * cheap-invalidation (no I/O) for metas with persisted _phaseState.
  * Used by orchestratePhase, queue route, and status route.
  */
 export function buildPhaseCandidates(
   entries: MetaEntry[],
+  architectEvery: number,
 ): PhaseCandidateInput[] {
-  return entries.map((entry) => ({
-    node: entry.node,
-    meta: entry.meta,
-    phaseState: retryAllFailed(derivePhaseState(entry.meta)),
-    actualStaleness: entry.stalenessSeconds,
-    locked: entry.locked,
-    disabled: entry.disabled,
-  }));
+  return entries.map((entry) => {
+    let ps = retryAllFailed(derivePhaseState(entry.meta));
+
+    // Tier 1 cheap invalidation for metas with persisted _phaseState
+    if (entry.meta._phaseState) {
+      const needsArchitect =
+        !entry.meta._builder ||
+        (entry.meta._synthesisCount ?? 0) >= architectEvery;
+      if (needsArchitect && ps.architect === 'fresh') {
+        ps = { architect: 'pending', builder: 'stale', critic: 'stale' };
+      }
+    }
+
+    return {
+      node: entry.node,
+      meta: entry.meta,
+      phaseState: ps,
+      actualStaleness: entry.stalenessSeconds,
+      locked: entry.locked,
+      disabled: entry.disabled,
+    };
+  });
 }
 
 /** A candidate for phase-level scheduling. */

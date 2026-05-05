@@ -6,28 +6,21 @@
 
 import type { FastifyInstance } from 'fastify';
 
-import { readLatestArchive } from '../archive/index.js';
-import {
-  findNode,
-  getDeltaFiles,
-  getScopeFiles,
-  listMetas,
-} from '../discovery/index.js';
+import { findNode, getDeltaFiles, getScopeFiles } from '../discovery/index.js';
 import { normalizePath } from '../normalizePath.js';
 import {
-  type ArchitectInvalidator,
+  buildPhaseCandidates,
+  computeInvalidation,
   derivePhaseState,
   getOwedPhase,
   getPriorityBand,
+  selectPhaseCandidate,
 } from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
 import {
   computeStalenessScore,
-  discoverStalestPath,
-  hasSteerChanged,
   isArchitectTriggered,
 } from '../scheduling/index.js';
-import { computeStructureHash } from '../structureHash.js';
 import type { RouteDeps } from './index.js';
 
 export function registerPreviewRoute(
@@ -35,12 +28,12 @@ export function registerPreviewRoute(
   deps: RouteDeps,
 ): void {
   app.get('/preview', async (request, reply) => {
-    const { config, watcher } = deps;
+    const { config, watcher, cache } = deps;
     const query = request.query as { path?: string };
 
     let result;
     try {
-      result = await listMetas(config, watcher);
+      result = await cache.get(config, watcher);
     } catch {
       return reply.status(503).send({
         error: 'SERVICE_UNAVAILABLE',
@@ -59,19 +52,16 @@ export function registerPreviewRoute(
         };
       }
     } else {
-      // Select stalest candidate
-      const stale = result.entries
-        .filter((e) => e.stalenessSeconds > 0)
-        .map((e) => ({
-          node: e.node,
-          meta: e.meta,
-          actualStaleness: e.stalenessSeconds,
-        }));
-      const stalestPath = discoverStalestPath(stale, config.depthWeight);
-      if (!stalestPath) {
+      // Select best phase candidate
+      const candidates = buildPhaseCandidates(
+        result.entries,
+        config.architectEvery,
+      );
+      const winner = selectPhaseCandidate(candidates, config.depthWeight);
+      if (!winner) {
         return { message: 'No stale metas found. Nothing to synthesize.' };
       }
-      targetNode = findNode(result.tree, stalestPath)!;
+      targetNode = findNode(result.tree, winner.node.metaPath)!;
     }
 
     const meta = await readMetaJson(targetNode.metaPath);
@@ -79,30 +69,18 @@ export function registerPreviewRoute(
     // Scope files
     const { scopeFiles } = await getScopeFiles(targetNode, watcher);
 
-    const structureHash = computeStructureHash(scopeFiles);
-    const structureChanged = structureHash !== meta._structureHash;
-
-    const latestArchive = await readLatestArchive(targetNode.metaPath);
-    const steerChanged = hasSteerChanged(
-      meta._steer,
-      latestArchive?._steer,
-      Boolean(latestArchive),
+    // Compute invalidation inputs (DRY: reuse phaseState/invalidate logic)
+    const invalidation = await computeInvalidation(
+      meta,
+      scopeFiles,
+      config,
+      targetNode,
     );
-
-    // _architect change detection
-    const architectChanged = latestArchive
-      ? (meta._architect ?? '') !== (latestArchive._architect ?? '')
-      : Boolean(meta._architect);
-
-    // _crossRefs declaration change detection
-    const currentRefs = (meta._crossRefs ?? []).slice().sort().join(',');
-    const archiveRefs = (latestArchive?._crossRefs ?? [])
-      .slice()
-      .sort()
-      .join(',');
-    const crossRefsDeclChanged = latestArchive
-      ? currentRefs !== archiveRefs
-      : currentRefs.length > 0;
+    const { architectInvalidators, stalenessInputs } = invalidation;
+    const { structureHash } = invalidation;
+    const structureChanged = structureHash !== meta._structureHash;
+    const { steerChanged } = invalidation;
+    const { architectChanged, crossRefsDeclChanged } = stalenessInputs;
 
     const architectTriggered = isArchitectTriggered(
       meta,
@@ -142,28 +120,6 @@ export function registerPreviewRoute(
     });
     const owedPhase = getOwedPhase(phaseState);
     const priorityBand = getPriorityBand(phaseState);
-
-    // Architect invalidators
-    const architectInvalidators: ArchitectInvalidator[] = [];
-    if (owedPhase === 'architect') {
-      if (structureChanged) architectInvalidators.push('structureHash');
-      if (steerChanged) architectInvalidators.push('steer');
-      if (architectChanged) architectInvalidators.push('_architect');
-      if (crossRefsDeclChanged) architectInvalidators.push('_crossRefs');
-      if ((meta._synthesisCount ?? 0) >= config.architectEvery) {
-        architectInvalidators.push('architectEvery');
-      }
-    }
-
-    // Staleness inputs
-    const stalenessInputs = {
-      structureHash,
-      steerChanged,
-      architectChanged,
-      crossRefsDeclChanged,
-      scopeMtimeMax: null as string | null,
-      crossRefContentChanged: false,
-    };
 
     return {
       path: targetNode.metaPath,
