@@ -138,7 +138,7 @@ export class GatewayExecutor implements MetaExecutor {
   ): Promise<{ tokens?: number; completed: boolean }> {
     try {
       const result = await this.invoke('sessions_list', {
-        limit: 20,
+        limit: 200,
         messageLimit: 0,
       });
 
@@ -152,7 +152,10 @@ export class GatewayExecutor implements MetaExecutor {
 
       const match = sessions.find((s) => s.key === sessionKey);
       if (!match) {
-        // Session absent from list — cleaned up after completion
+        // Session absent from list — likely cleaned up after completion.
+        // With limit=200 this is reliable; a false positive here only
+        // means we read the output file slightly early (still correct
+        // if the file exists).
         return { completed: true };
       }
 
