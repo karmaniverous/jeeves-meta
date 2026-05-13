@@ -77,7 +77,7 @@ export function makeTestDeps(overrides: TestDepsOverrides = {}): RouteDeps {
     config: {
       ...DEFAULT_TEST_CONFIG,
       ...configOverrides,
-    } as RouteDeps['config'],
+    },
     logger: rest.logger ?? makeTestLogger(),
     queue: rest.queue ?? new SynthesisQueue(makeTestLogger()),
     watcher: rest.watcher ?? ({} as RouteDeps['watcher']),

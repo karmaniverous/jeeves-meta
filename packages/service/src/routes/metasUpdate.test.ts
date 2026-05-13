@@ -17,7 +17,6 @@ import {
   makeTestDeps,
   makeTestWatcher,
 } from './__testUtils.js';
-import type { RouteDeps } from './index.js';
 import { registerMetasUpdateRoute } from './metasUpdate.js';
 
 const root = join(
@@ -55,7 +54,7 @@ describe('PATCH /metas/:path', () => {
 
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasUpdateRoute(app, deps);
@@ -82,7 +81,7 @@ describe('PATCH /metas/:path', () => {
     const { metaJsonPath, metaDir } = createMeta(owner);
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasUpdateRoute(app, deps);
@@ -108,7 +107,7 @@ describe('PATCH /metas/:path', () => {
     });
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasUpdateRoute(app, deps);
@@ -132,7 +131,7 @@ describe('PATCH /metas/:path', () => {
     const { metaJsonPath } = createMeta(owner);
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasUpdateRoute(app, deps);
@@ -153,7 +152,7 @@ describe('PATCH /metas/:path', () => {
   it('returns 404 for unknown path', async () => {
     const watcher = makeTestWatcher([]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasUpdateRoute(app, deps);
@@ -183,7 +182,7 @@ describe('PATCH /metas/:path', () => {
     });
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasUpdateRoute(app, deps);

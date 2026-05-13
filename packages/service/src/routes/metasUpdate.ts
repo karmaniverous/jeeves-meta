@@ -51,7 +51,7 @@ export function registerMetasUpdateRoute(
 
       let meta: Record<string, unknown>;
       try {
-        meta = (await readMetaJson(metaDir)) as Record<string, unknown>;
+        meta = await readMetaJson(metaDir);
       } catch {
         return reply.status(404).send({
           error: 'NOT_FOUND',

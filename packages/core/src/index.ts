@@ -6,23 +6,23 @@
 
 export { META_COMPONENT } from './constants.js';
 export {
-  type DepHealth,
-  type GatewayDepHealth,
-  type MetaListSummary,
-  type MetasItem,
-  type MetasResponse,
-  type ServiceState,
-  type WatcherDepHealth,
+  DepHealth,
+  GatewayDepHealth,
+  MetaListSummary,
+  MetasItem,
+  MetasResponse,
+  ServiceState,
+  WatcherDepHealth,
 } from './contracts.js';
-export { type MetaError, metaErrorSchema } from './errors.js';
-export { type MetaConfig, metaConfigSchema } from './metaConfig.js';
+export { MetaError, metaErrorSchema } from './errors.js';
+export { MetaConfig, metaConfigSchema } from './metaConfig.js';
 export { normalizePath } from './normalizePath.js';
 export {
-  type PhaseName,
+  PhaseName,
   phaseNames,
-  type PhaseState,
+  PhaseState,
   phaseStateSchema,
-  type PhaseStatus,
+  PhaseStatus,
   phaseStatuses,
   phaseStatusSchema,
 } from './phases.js';

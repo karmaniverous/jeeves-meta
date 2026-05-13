@@ -21,7 +21,7 @@ function makeApi(config?: Record<string, unknown>): PluginApi {
       },
     },
     registerTool: () => {},
-  } as unknown as PluginApi;
+  };
 }
 
 describe('resolvePluginSetting', () => {

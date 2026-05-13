@@ -56,9 +56,6 @@ export interface StatusResponse {
   };
 }
 
-/** Summary block in the metas response (alias for core type). */
-export type MetasSummary = MetaListSummary;
-
 /** Constructor config. */
 interface MetaServiceConfig {
   /** Base URL of the jeeves-meta service (e.g. http://127.0.0.1:1938). */

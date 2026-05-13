@@ -19,7 +19,7 @@ import { GatewayExecutor } from './executor/index.js';
 import { cleanupStaleLocks } from './lock.js';
 import { createLogger } from './logger/index.js';
 import { orchestratePhase } from './orchestrator/index.js';
-import { type ProgressPhase, ProgressReporter } from './progress/index.js';
+import { ProgressReporter } from './progress/index.js';
 import { SynthesisQueue } from './queue/index.js';
 import type { RouteDeps, ServiceStats } from './routes/index.js';
 import { WatcherHealthCheck } from './rules/healthCheck.js';
@@ -168,7 +168,7 @@ export async function startService(
         await progress.report({
           type: 'error',
           path: ownerPath,
-          phase: phaseResult.error.step as ProgressPhase,
+          phase: phaseResult.error.step,
           error: phaseResult.error.message,
         });
       } else {

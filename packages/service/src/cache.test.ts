@@ -43,11 +43,11 @@ function makeConfig(): ServiceConfig {
     watcherHealthIntervalMs: 60000,
     logging: { level: 'info' },
     autoSeed: [],
-  } as unknown as ServiceConfig;
+  };
 }
 
 function makeWatcher(): WatcherClient {
-  return { walk: vi.fn(), registerRules: vi.fn() } as unknown as WatcherClient;
+  return { walk: vi.fn(), registerRules: vi.fn() };
 }
 
 function fakeResult(tag: string) {
