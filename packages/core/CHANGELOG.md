@@ -11,3 +11,7 @@ All notable changes to this project will be documented in this file.
 ### 🚜 Refactor
 
 - Hoist shared types and constants to core package for DRY
+
+### ⚙️ Miscellaneous Tasks
+
+- Bump deps, standardize rollup build, align with jeeves-server
