@@ -19,5 +19,21 @@
         "description": "Absolute path to the platform config root (e.g. j:/config). Used by @karmaniverous/jeeves core for config directory resolution."
       }
     }
+  },
+  "contracts": {
+    "tools": [
+      "meta_status",
+      "meta_config",
+      "meta_config_apply",
+      "meta_service",
+      "meta_list",
+      "meta_detail",
+      "meta_preview",
+      "meta_trigger",
+      "meta_seed",
+      "meta_unlock",
+      "meta_queue",
+      "meta_update"
+    ]
   }
 }
