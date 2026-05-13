@@ -2,25 +2,32 @@
  * Thin HTTP client for the jeeves-meta service.
  *
  * Plugin delegates all operations to the running service via HTTP.
- * Response types are defined here as the single source of truth —
- * consumers should not redefine them.
+ * Shared response types are imported from `@karmaniverous/jeeves-meta-core`.
  *
  * @module serviceClient
  */
 
 import { fetchJson, postJson } from '@karmaniverous/jeeves';
+import type {
+  DepHealth,
+  GatewayDepHealth,
+  MetaListSummary,
+  MetasItem,
+  MetasResponse,
+  ServiceState,
+  WatcherDepHealth,
+} from '@karmaniverous/jeeves-meta-core';
 
-/** Watcher dependency health within the status response. */
-export interface WatcherDepHealth {
-  status: string;
-  rulesRegistered?: boolean;
-  indexing?: boolean;
-}
-
-/** Gateway dependency health within the status response. */
-export interface GatewayDepHealth {
-  status: string;
-}
+// Re-export core types for consumers that import from this module.
+export type {
+  DepHealth,
+  GatewayDepHealth,
+  MetaListSummary,
+  MetasItem,
+  MetasResponse,
+  ServiceState,
+  WatcherDepHealth,
+};
 
 /**
  * Service status response from GET /status.
@@ -40,7 +47,7 @@ export interface StatusResponse {
   /** Component-specific health details from getHealth(). */
   health: {
     /** Service-specific lifecycle state. */
-    serviceState?: 'idle' | 'synthesizing' | 'waiting' | 'stopping';
+    serviceState?: ServiceState;
     dependencies: {
       watcher: WatcherDepHealth;
       gateway: GatewayDepHealth;
@@ -49,29 +56,8 @@ export interface StatusResponse {
   };
 }
 
-/** Summary block in the metas response. */
-export interface MetasSummary {
-  total: number;
-  stale: number;
-  errors: number;
-  neverSynthesized: number;
-  stalestPath: string | null;
-  lastSynthesizedPath: string | null;
-  lastSynthesizedAt: string | null;
-  tokens: { architect: number; builder: number; critic: number };
-}
-
-/** Per-meta item in the metas response. */
-export interface MetasItem {
-  stalenessSeconds: number | null;
-  [key: string]: unknown;
-}
-
-/** Response from GET /metas. */
-export interface MetasResponse {
-  summary: MetasSummary;
-  metas: MetasItem[];
-}
+/** Summary block in the metas response (alias for core type). */
+export type MetasSummary = MetaListSummary;
 
 /** Constructor config. */
 interface MetaServiceConfig {

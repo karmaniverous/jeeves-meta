@@ -8,6 +8,8 @@
  * @module discovery/listMetas
  */
 
+import type { MetaListSummary } from '@karmaniverous/jeeves-meta-core';
+
 import type { WatcherClient } from '../interfaces/index.js';
 import { isLocked } from '../lock.js';
 import { normalizePath } from '../normalizePath.js';
@@ -51,23 +53,8 @@ export interface MetaEntry {
   meta: MetaJson;
 }
 
-/** Summary statistics computed from the meta list. */
-export interface MetaListSummary {
-  total: number;
-  stale: number;
-  errors: number;
-  locked: number;
-  disabled: number;
-  neverSynthesized: number;
-  tokens: {
-    architect: number;
-    builder: number;
-    critic: number;
-  };
-  stalestPath: string | null;
-  lastSynthesizedPath: string | null;
-  lastSynthesizedAt: string | null;
-}
+// Re-export for consumers that import from this module.
+export type { MetaListSummary };
 
 /** Full result from listMetas(). */
 export interface MetaListResult {

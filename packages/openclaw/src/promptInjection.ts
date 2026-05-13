@@ -7,6 +7,8 @@
  * @module promptInjection
  */
 
+import { phaseNames } from '@karmaniverous/jeeves-meta-core';
+
 import type {
   MetaServiceClient,
   MetasResponse,
@@ -97,7 +99,7 @@ export async function generateMetaMenu(
   if (phaseSummary) {
     // Aggregate counts across all phases
     const totals: Record<string, number> = {};
-    for (const phase of ['architect', 'builder', 'critic']) {
+    for (const phase of phaseNames) {
       const counts = phaseSummary[phase];
       for (const [state, count] of Object.entries(counts)) {
         if (count > 0) {
@@ -120,7 +122,7 @@ export async function generateMetaMenu(
     for (const item of metas.metas) {
       const ps = item.phaseState as Record<string, string> | undefined;
       if (!ps) continue;
-      for (const phase of ['architect', 'builder', 'critic']) {
+      for (const phase of phaseNames) {
         if (ps[phase] === 'failed') {
           const p = item.path as string;
           failedParts.push(p + ' (' + phase + ')');

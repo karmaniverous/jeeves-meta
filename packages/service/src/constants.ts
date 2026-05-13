@@ -8,10 +8,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { META_COMPONENT } from '@karmaniverous/jeeves-meta-core';
 import { packageDirectorySync } from 'package-directory';
 
 /** Default HTTP port for the jeeves-meta service. */
-export const DEFAULT_PORT = 1938;
+export const DEFAULT_PORT = META_COMPONENT.defaultPort;
 
 /** Default port as a string (for Commander CLI defaults). */
 export const DEFAULT_PORT_STR = String(DEFAULT_PORT);

@@ -6,7 +6,9 @@
  * @module discovery/computeSummary
  */
 
-import type { MetaEntry, MetaListSummary } from './listMetas.js';
+import type { MetaListSummary } from '@karmaniverous/jeeves-meta-core';
+
+import type { MetaEntry } from './listMetas.js';
 
 /**
  * Compute summary statistics from a list of meta entries.

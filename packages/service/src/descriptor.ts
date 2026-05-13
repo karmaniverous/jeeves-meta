@@ -11,6 +11,7 @@ import {
   type JeevesComponentDescriptor,
   jeevesComponentDescriptorSchema,
 } from '@karmaniverous/jeeves';
+import { META_COMPONENT } from '@karmaniverous/jeeves-meta-core';
 
 import { startService } from './bootstrap.js';
 import {
@@ -30,11 +31,11 @@ export { RESTART_REQUIRED_FIELDS };
  */
 export const metaDescriptor: JeevesComponentDescriptor =
   jeevesComponentDescriptorSchema.parse({
-    name: 'meta',
+    name: META_COMPONENT.name,
     version: SERVICE_VERSION,
-    servicePackage: '@karmaniverous/jeeves-meta',
-    pluginPackage: '@karmaniverous/jeeves-meta-openclaw',
-    defaultPort: 1938,
+    servicePackage: META_COMPONENT.servicePackage,
+    pluginPackage: META_COMPONENT.pluginPackage,
+    defaultPort: META_COMPONENT.defaultPort,
     // The runtime Zod custom validator only checks for a .parse() method.
     // Use unknown cast to bridge the Zod v4 (service) → v3 (core SDK) type gap.
     configSchema: serviceConfigSchema as unknown,
