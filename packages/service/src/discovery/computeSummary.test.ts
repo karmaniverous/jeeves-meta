@@ -25,7 +25,7 @@ function makeEntry(overrides: Partial<MetaEntry> = {}): MetaEntry {
     disabled: overrides.disabled ?? false,
     children: overrides.children ?? 0,
     node: overrides.node ?? ({} as MetaEntry['node']),
-    meta: overrides.meta ?? ({} as MetaEntry['meta']),
+    meta: overrides.meta ?? {},
   };
 }
 

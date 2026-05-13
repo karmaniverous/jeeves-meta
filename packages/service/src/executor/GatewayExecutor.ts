@@ -218,10 +218,10 @@ export class GatewayExecutor implements MetaExecutor {
       ...(options?.model ? { model: options.model } : {}),
     });
 
-    const details = (spawnResult.result?.details ?? spawnResult.result) as
-      | Record<string, unknown>
-      | undefined;
-    const sessionKey = details?.childSessionKey ?? details?.sessionKey;
+    const details = (spawnResult.result?.details ??
+      spawnResult.result ??
+      {}) as Record<string, unknown>;
+    const sessionKey = details.childSessionKey ?? details.sessionKey;
 
     if (typeof sessionKey !== 'string' || !sessionKey) {
       throw new Error(

@@ -49,30 +49,20 @@
       "./dist/index.js"
     ]
   },
-  "auto-changelog": {
-    "output": "CHANGELOG.md",
-    "unreleased": true,
-    "commitLimit": false,
-    "hideCredit": true,
-    "tagPrefix": "openclaw/"
-  },
   "devDependencies": {
-    "@commander-js/extra-typings": "^14.0.0",
-    "@dotenvx/dotenvx": "^1.59.1",
+    "@dotenvx/dotenvx": "^1.65.0",
     "@rollup/plugin-commonjs": "^29.0.2",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
-    "auto-changelog": "^2.5.0",
     "cross-env": "^10.1.0",
-    "knip": "^5.87.0",
-    "release-it": "^19.2.4",
-    "rollup": "^4.60.1",
+    "release-it": "^20.0.1",
+    "rollup": "^4.60.3",
     "tslib": "^2.8.1",
-    "vitest": "^4.1.2"
+    "vitest": "^4.1.6"
   },
   "scripts": {
     "build": "npm run build:plugin && npm run build:skills && npm run build:content",
-    "changelog": "auto-changelog",
+    "changelog": "git-cliff -o CHANGELOG.md",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "release": "dotenvx run -f .env.local -- release-it",
@@ -87,7 +77,7 @@
   },
   "release-it": {
     "git": {
-      "changelog": "npx auto-changelog --unreleased-only --stdout --template https://raw.githubusercontent.com/release-it/release-it/main/templates/changelog-compact.hbs",
+      "changelog": "npx git-cliff --unreleased --strip header",
       "commitMessage": "chore: release @karmaniverous/jeeves-meta-openclaw v${version}",
       "tagName": "openclaw/${version}",
       "requireBranch": "main"
@@ -97,8 +87,11 @@
     },
     "hooks": {
       "after:bump": [
-        "npx auto-changelog -p",
-        "git add CHANGELOG.md"
+        "node -e \"const f='openclaw.plugin.json';const j=JSON.parse(require('fs').readFileSync(f,'utf8'));j.version='${version}';require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'')\""
+      ],
+      "before:npm:release": [
+        "npx git-cliff -o CHANGELOG.md",
+        "git add -A"
       ],
       "after:init": [
         "npm run lint",
@@ -117,6 +110,7 @@
     }
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.5.9"
+    "@karmaniverous/jeeves": "^0.5.10",
+    "@karmaniverous/jeeves-meta-core": "^0.1.0"
   }
 }

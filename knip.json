@@ -1,0 +1,13 @@
+{
+  "workspaces": {
+    "packages/service": {
+      "includeEntryExports": true
+    },
+    "packages/openclaw": {
+      "ignoreBinaries": ["plantuml"]
+    },
+    "packages/core": {}
+  },
+  "ignoreDependencies": ["@commander-js/extra-typings"],
+  "ignoreExportsUsedInFile": true
+}

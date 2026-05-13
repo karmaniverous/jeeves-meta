@@ -4,7 +4,6 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 import typescriptPlugin from '@rollup/plugin-typescript';
 import type { RollupOptions } from 'rollup';
 import copyPlugin from 'rollup-plugin-copy';
-import dtsPlugin from 'rollup-plugin-dts';
 
 const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
   if (warning.code === 'CIRCULAR_DEPENDENCY') return;
@@ -13,15 +12,16 @@ const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
 
 const typescript = typescriptPlugin({
   tsconfig: './tsconfig.json',
-  outputToFilesystem: false,
-  include: ['src/**/*.ts'],
-  exclude: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**'],
+  outputToFilesystem: true,
+  exclude: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**', '**/*.d.ts'],
   noEmit: false,
-  declaration: false,
+  declaration: true,
+  declarationDir: 'dist',
   declarationMap: false,
   incremental: false,
   allowJs: false,
   checkJs: false,
+  rootDir: './src',
 });
 
 const external = [
@@ -52,14 +52,6 @@ const buildLibrary: RollupOptions = {
   ],
 };
 
-const buildTypes: RollupOptions = {
-  input: 'src/index.ts',
-  external: [/^node:/],
-  onwarn,
-  output: [{ file: 'dist/index.d.ts', format: 'esm' }],
-  plugins: [dtsPlugin()],
-};
-
 const buildCli: RollupOptions = {
   input: 'src/cli.ts',
   external,
@@ -79,11 +71,11 @@ const buildCli: RollupOptions = {
       tsconfig: './tsconfig.json',
       outputToFilesystem: false,
       outDir: 'dist/cli/jeeves-meta',
-      include: ['src/**/*.ts'],
-      exclude: ['**/*.test.ts'],
+      exclude: ['**/*.test.ts', '**/*.d.ts'],
       noEmit: false,
       declaration: false,
       incremental: false,
+      rootDir: './src',
     }),
     copyPlugin({
       targets: [{ src: 'src/prompts/*.md', dest: 'dist/cli/jeeves-meta' }],
@@ -91,4 +83,4 @@ const buildCli: RollupOptions = {
   ],
 };
 
-export default [buildLibrary, buildTypes, buildCli];
+export default [buildLibrary, buildCli];

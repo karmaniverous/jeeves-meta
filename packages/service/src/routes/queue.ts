@@ -90,7 +90,7 @@ export function registerQueueRoutes(
       })),
       ...automatic.map((a) => ({
         path: a.path,
-        owedPhase: a.owedPhase as string | null,
+        owedPhase: a.owedPhase,
       })),
       ...queue.pending.map((item) => ({
         path: item.path,

@@ -11,7 +11,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
 import { makeTestDeps, makeTestLogger } from './__testUtils.js';
-import type { RouteDeps } from './index.js';
 import { registerQueueRoutes } from './queue.js';
 
 describe('queue routes', () => {
@@ -88,10 +87,7 @@ describe('queue routes', () => {
     const abort = vi.fn();
 
     app = Fastify();
-    registerQueueRoutes(
-      app,
-      makeTestDeps({ queue, executor: { abort } as RouteDeps['executor'] }),
-    );
+    registerQueueRoutes(app, makeTestDeps({ queue, executor: { abort } }));
     await app.ready();
 
     const res = await app.inject({ method: 'POST', url: '/synthesize/abort' });

@@ -53,7 +53,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([pathA]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -85,7 +85,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([pathA, pathB]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -123,7 +123,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([pathOk, pathErr]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -155,7 +155,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([pathRecent, pathOld]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -186,7 +186,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([pathSynth, pathFresh]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -226,7 +226,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([path]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -251,7 +251,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([path]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -292,7 +292,7 @@ describe('GET /metas — list with filters', () => {
     });
     const watcher = makeTestWatcher([pathActive, pathDisabled]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerMetasRoutes(app, deps);
@@ -359,7 +359,7 @@ describe('GET /metas/:path — crossRefs status', () => {
     // refDirB has no .meta directory (missing)
     const watcher = makeTestWatcher([join(metaDir, 'meta.json')]);
     const deps = makeDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
 
     app = Fastify();
@@ -481,10 +481,7 @@ describe('GET /metas/:path — archive reads', () => {
 
     const watcher = makeTestWatcher([join(metaDir, 'meta.json')], scan);
     app = Fastify();
-    registerMetasRoutes(
-      app,
-      makeDeps({ watcher: watcher as unknown as RouteDeps['watcher'] }),
-    );
+    registerMetasRoutes(app, makeDeps({ watcher: watcher }));
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(ownerDir));
@@ -508,10 +505,7 @@ describe('GET /metas/:path — archive reads', () => {
       vi.fn().mockRejectedValue(new Error('watcher down')),
     );
     app = Fastify();
-    registerMetasRoutes(
-      app,
-      makeDeps({ watcher: watcher as unknown as RouteDeps['watcher'] }),
-    );
+    registerMetasRoutes(app, makeDeps({ watcher: watcher }));
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(ownerDir));

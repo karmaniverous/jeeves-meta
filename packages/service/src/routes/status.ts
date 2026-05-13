@@ -8,6 +8,12 @@
  */
 
 import { createStatusHandler } from '@karmaniverous/jeeves';
+import type {
+  DepHealth,
+  PhaseName,
+  PhaseStatus,
+  ServiceState,
+} from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
@@ -16,14 +22,7 @@ import {
   derivePhaseState,
   selectPhaseCandidate,
 } from '../phaseState/index.js';
-import type { PhaseName, PhaseStatus } from '../schema/meta.js';
 import type { RouteDeps } from './index.js';
-
-interface DepHealth {
-  url: string;
-  status: string;
-  checkedAt: string | null;
-}
 
 interface WatcherHealth extends DepHealth {
   indexing?: boolean;
@@ -64,8 +63,8 @@ async function checkWatcher(url: string): Promise<WatcherHealth> {
   }
 }
 
-/** Service-specific lifecycle state. */
-export type ServiceState = 'idle' | 'synthesizing' | 'waiting' | 'stopping';
+// Re-export for consumers that import from this module.
+export type { ServiceState };
 
 /** Derive service-specific state from current activity and lifecycle. */
 function deriveServiceState(deps: RouteDeps): ServiceState {

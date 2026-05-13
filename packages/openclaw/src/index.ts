@@ -19,6 +19,7 @@ import {
   resolveWorkspacePath,
   WORKSPACE_CONFIG_DEFAULTS,
 } from '@karmaniverous/jeeves';
+import { META_COMPONENT } from '@karmaniverous/jeeves-meta-core';
 
 import { getConfigRoot, getServiceUrl } from './helpers.js';
 import { generateMetaMenu } from './promptInjection.js';
@@ -61,11 +62,11 @@ export default function register(api: PluginApi): void {
 
   const descriptor: JeevesComponentDescriptor =
     jeevesComponentDescriptorSchema.parse({
-      name: 'meta',
+      name: META_COMPONENT.name,
       version: getPackageVersion(import.meta.url),
-      servicePackage: '@karmaniverous/jeeves-meta',
-      pluginPackage: '@karmaniverous/jeeves-meta-openclaw',
-      defaultPort: 1938,
+      servicePackage: META_COMPONENT.servicePackage,
+      pluginPackage: META_COMPONENT.pluginPackage,
+      defaultPort: META_COMPONENT.defaultPort,
       // The runtime Zod custom validator only checks for a .parse() method.
       // Use unknown cast to bridge the Zod v4 (service) → v3 (core SDK) type gap.
       configSchema: { parse: (v: unknown) => v } as unknown,

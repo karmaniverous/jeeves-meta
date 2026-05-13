@@ -463,7 +463,7 @@ describe('I/O integration (Tasks #14-17)', () => {
       walk: vi.fn().mockResolvedValue([]),
       registerRules: vi.fn().mockResolvedValue(undefined),
       scan: vi.fn().mockResolvedValue({ points: [] }),
-    } as unknown as WatcherClient;
+    };
   });
 
   afterEach(() => {

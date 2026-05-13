@@ -19,7 +19,6 @@ import {
   makeTestLogger,
   makeTestWatcher,
 } from './__testUtils.js';
-import type { RouteDeps } from './index.js';
 import { registerSynthesizeRoute } from './synthesize.js';
 
 const synthRoot = join(
@@ -173,7 +172,7 @@ describe('POST /synthesize', () => {
 
     const deps = makeTestDeps({
       queue,
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerSynthesizeRoute(app, deps);
@@ -204,7 +203,7 @@ describe('POST /synthesize', () => {
 
     const deps = makeTestDeps({
       queue,
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerSynthesizeRoute(app, deps);
@@ -240,7 +239,7 @@ describe('POST /synthesize', () => {
 
     const deps = makeTestDeps({
       queue,
-      watcher: makeFailingTestWatcher() as unknown as RouteDeps['watcher'],
+      watcher: makeFailingTestWatcher(),
     });
     app = Fastify();
     registerSynthesizeRoute(app, deps);

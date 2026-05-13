@@ -5,9 +5,5 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**', '**/.rollup.cache/**'],
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'lcov'],
-    },
   },
 });

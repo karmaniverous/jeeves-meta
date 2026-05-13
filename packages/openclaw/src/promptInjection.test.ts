@@ -13,6 +13,21 @@ import type {
   StatusResponse,
 } from './serviceClient.js';
 
+/** Default watcher dependency health for test fixtures. */
+const defaultWatcher = {
+  url: 'http://127.0.0.1:1936',
+  status: 'ok',
+  checkedAt: '2026-03-15T00:00:00Z',
+  rulesRegistered: true,
+} as const;
+
+/** Default gateway dependency health for test fixtures. */
+const defaultGateway = {
+  url: 'http://127.0.0.1:18789',
+  status: 'ok',
+  checkedAt: '2026-03-15T00:00:00Z',
+} as const;
+
 function mockClient(overrides?: {
   statusOverrides?: Partial<StatusResponse>;
   metasOverrides?: Partial<MetasResponse>;
@@ -23,8 +38,8 @@ function mockClient(overrides?: {
     status: 'healthy',
     health: {
       dependencies: {
-        watcher: { status: 'ok', rulesRegistered: true },
-        gateway: { status: 'ok' },
+        watcher: { ...defaultWatcher },
+        gateway: { ...defaultGateway },
       },
     },
   };
@@ -34,6 +49,8 @@ function mockClient(overrides?: {
       total: 10,
       stale: 5,
       errors: 0,
+      locked: 0,
+      disabled: 0,
       neverSynthesized: 0,
       stalestPath: 'j:/domains/email/.meta',
       lastSynthesizedPath: 'j:/domains/github/.meta',
@@ -66,8 +83,8 @@ describe('generateMetaMenu', () => {
       statusOverrides: {
         health: {
           dependencies: {
-            watcher: { status: 'ok', rulesRegistered: false },
-            gateway: { status: 'ok' },
+            watcher: { ...defaultWatcher, rulesRegistered: false },
+            gateway: { ...defaultGateway },
           },
         },
       },
@@ -87,8 +104,12 @@ describe('generateMetaMenu', () => {
       statusOverrides: {
         health: {
           dependencies: {
-            watcher: { status: 'unreachable', rulesRegistered: false },
-            gateway: { status: 'ok' },
+            watcher: {
+              ...defaultWatcher,
+              status: 'unreachable',
+              rulesRegistered: false,
+            },
+            gateway: { ...defaultGateway },
           },
         },
       },
@@ -104,11 +125,11 @@ describe('generateMetaMenu', () => {
         health: {
           dependencies: {
             watcher: {
+              ...defaultWatcher,
               status: 'indexing',
-              rulesRegistered: true,
               indexing: true,
             },
-            gateway: { status: 'ok' },
+            gateway: { ...defaultGateway },
           },
         },
       },
@@ -135,6 +156,8 @@ describe('generateMetaMenu', () => {
           total: 0,
           stale: 0,
           errors: 0,
+          locked: 0,
+          disabled: 0,
           neverSynthesized: 0,
           stalestPath: null,
           lastSynthesizedPath: null,
@@ -154,8 +177,8 @@ describe('generateMetaMenu', () => {
       statusOverrides: {
         health: {
           dependencies: {
-            watcher: { status: 'ok', rulesRegistered: true },
-            gateway: { status: 'unreachable' },
+            watcher: { ...defaultWatcher },
+            gateway: { ...defaultGateway, status: 'unreachable' },
           },
         },
       },
@@ -192,8 +215,8 @@ describe('generateMetaMenu', () => {
           },
           nextPhase: null,
           dependencies: {
-            watcher: { status: 'ok', rulesRegistered: true },
-            gateway: { status: 'ok' },
+            watcher: { ...defaultWatcher },
+            gateway: { ...defaultGateway },
           },
         },
       },
@@ -221,8 +244,8 @@ describe('generateMetaMenu', () => {
           },
           nextPhase: null,
           dependencies: {
-            watcher: { status: 'ok', rulesRegistered: true },
-            gateway: { status: 'ok' },
+            watcher: { ...defaultWatcher },
+            gateway: { ...defaultGateway },
           },
         },
       },
@@ -267,8 +290,8 @@ describe('generateMetaMenu', () => {
             staleness: 172800,
           },
           dependencies: {
-            watcher: { status: 'ok', rulesRegistered: true },
-            gateway: { status: 'ok' },
+            watcher: { ...defaultWatcher },
+            gateway: { ...defaultGateway },
           },
         },
       },

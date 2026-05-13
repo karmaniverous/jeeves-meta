@@ -17,7 +17,6 @@ import {
   makeTestDeps,
   makeTestWatcher,
 } from './__testUtils.js';
-import type { RouteDeps } from './index.js';
 import { registerPreviewRoute } from './preview.js';
 
 const previewRoot = join(
@@ -46,7 +45,7 @@ describe('GET /preview', () => {
     });
     const watcher = makeTestWatcher([pathA, pathB]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerPreviewRoute(app, deps);
@@ -69,7 +68,7 @@ describe('GET /preview', () => {
     });
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerPreviewRoute(app, deps);
@@ -89,7 +88,7 @@ describe('GET /preview', () => {
   it('returns 503 when watcher is unreachable', async () => {
     const watcher = makeFailingTestWatcher();
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerPreviewRoute(app, deps);
@@ -114,7 +113,7 @@ describe('GET /preview', () => {
     });
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerPreviewRoute(app, deps);
@@ -148,7 +147,7 @@ describe('GET /preview', () => {
     });
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({
-      watcher: watcher as unknown as RouteDeps['watcher'],
+      watcher: watcher,
     });
     app = Fastify();
     registerPreviewRoute(app, deps);

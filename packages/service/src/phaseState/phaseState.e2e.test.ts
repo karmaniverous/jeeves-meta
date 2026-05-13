@@ -99,7 +99,7 @@ describe('phase-state e2e smoke test (Task #19)', () => {
       walk: vi.fn().mockResolvedValue([]),
       registerRules: vi.fn().mockResolvedValue(undefined),
       scan: vi.fn().mockResolvedValue({ points: [] }),
-    } as unknown as WatcherClient;
+    };
   });
 
   afterEach(() => {

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "isolatedModules": false,
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*", "rollup.config.ts", "vitest.config.ts"],
+  "exclude": ["dist", "node_modules", ".rollup.cache"]
+}
