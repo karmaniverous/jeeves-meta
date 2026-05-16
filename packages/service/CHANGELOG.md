@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Pin jeeves-meta-core dependency to ^0.1.1
+## [0.15.5] - 2026-05-13
+
 ### 🚀 Features
 
 - Phase 10 bundle — core package, git-cliff, contracts.tools, cleanup
@@ -17,6 +22,7 @@ All notable changes to this project will be documented in this file.
 
 - Move changelog generation to after:bump hook
 - Bump deps, standardize rollup build, align with jeeves-server
+- Release @karmaniverous/jeeves-meta v0.15.5
 ## [0.15.4] - 2026-05-05
 
 ### 🐛 Bug Fixes
