@@ -111,6 +111,6 @@
   },
   "dependencies": {
     "@karmaniverous/jeeves": "^0.5.10",
-    "@karmaniverous/jeeves-meta-core": "^0.1.0"
+    "@karmaniverous/jeeves-meta-core": "^0.1.1"
   }
 }
