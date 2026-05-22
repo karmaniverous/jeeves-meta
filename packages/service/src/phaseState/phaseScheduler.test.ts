@@ -7,6 +7,7 @@ import {
   buildPhaseCandidates,
   rankPhaseCandidates,
   selectPhaseCandidate,
+  selectTier2Candidate,
 } from './phaseScheduler.js';
 
 /** Helper to create a minimal MetaNode stub. */
@@ -462,5 +463,76 @@ describe('rankPhaseCandidates', () => {
     ];
     const ranked = rankPhaseCandidates(metas, 1);
     expect(ranked).toEqual([]);
+  });
+});
+
+describe('selectTier2Candidate', () => {
+  it('picks the stalest all-fresh meta', () => {
+    const metas = [
+      candidate(
+        'a/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 1000 },
+      ),
+      candidate(
+        'b/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 5000 },
+      ),
+      candidate(
+        'c/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 3000 },
+      ),
+    ];
+
+    const result = selectTier2Candidate(metas);
+    expect(result).not.toBeNull();
+    expect(result!.node.metaPath).toBe('b/.meta');
+  });
+
+  it('returns null when no all-fresh metas exist', () => {
+    const metas = [
+      candidate('a/.meta', {
+        architect: 'pending',
+        builder: 'stale',
+        critic: 'stale',
+      }),
+      candidate('b/.meta', {
+        architect: 'fresh',
+        builder: 'pending',
+        critic: 'stale',
+      }),
+    ];
+
+    expect(selectTier2Candidate(metas)).toBeNull();
+  });
+
+  it('skips locked and disabled metas', () => {
+    const metas = [
+      candidate(
+        'locked/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 9000, locked: true },
+      ),
+      candidate(
+        'disabled/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 8000, disabled: true },
+      ),
+      candidate(
+        'eligible/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 1000 },
+      ),
+    ];
+
+    const result = selectTier2Candidate(metas);
+    expect(result).not.toBeNull();
+    expect(result!.node.metaPath).toBe('eligible/.meta');
+  });
+
+  it('returns null for empty input', () => {
+    expect(selectTier2Candidate([])).toBeNull();
   });
 });
