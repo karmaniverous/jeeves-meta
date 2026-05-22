@@ -272,23 +272,17 @@ async function orchestrateTier2(
   try {
     const currentMeta = await readMetaJson(tier2.node.metaPath);
     const { scopeFiles } = await getScopeFiles(tier2.node, watcher);
-    const structureHash = computeStructureHash(scopeFiles);
 
-    const { phaseState, architectInvalidators } = await computeInvalidation(
+    const { phaseState, structureHash } = await computeInvalidation(
       currentMeta,
       scopeFiles,
       config,
       tier2.node,
     );
 
-    if (architectInvalidators.length > 0) {
+    const owedPhase = getOwedPhase(phaseState);
+    if (owedPhase) {
       // Something changed — persist invalidated state and execute owed phase
-      const owedPhase = getOwedPhase(phaseState);
-      if (!owedPhase) {
-        // Shouldn't happen after invalidation, but be safe
-        return { executed: false };
-      }
-
       await persistPhaseState(
         {
           metaPath: tier2.node.metaPath,
