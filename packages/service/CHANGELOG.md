@@ -6,7 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
+- Wire Tier 2 invalidation into scheduling path (fixes #154)
+- Use getOwedPhase for Tier 2 change detection, remove redundant hash calc
+## [0.15.6] - 2026-05-16
+
+### 🐛 Bug Fixes
+
 - Pin jeeves-meta-core dependency to ^0.1.1
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.15.6
 ## [0.15.5] - 2026-05-13
 
 ### 🚀 Features
