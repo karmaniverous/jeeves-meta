@@ -19,10 +19,12 @@ import type { MinimalLogger } from '../logger/index.js';
 import { normalizePath } from '../normalizePath.js';
 import {
   buildPhaseCandidates,
+  computeInvalidation,
   derivePhaseState,
   getOwedPhase,
   retryAllFailed,
   selectPhaseCandidate,
+  selectTier2Candidate,
 } from '../phaseState/index.js';
 import type { ProgressEvent } from '../progress/index.js';
 import { readMetaJson } from '../readMetaJson.js';
@@ -115,7 +117,15 @@ export async function orchestratePhase(
   // Select best phase candidate
   const winner = selectPhaseCandidate(candidates, config.depthWeight);
   if (!winner) {
-    return { executed: false };
+    // ── Tier 2 fallback: deep invalidation on stalest all-fresh meta ──
+    return orchestrateTier2(
+      candidates,
+      config,
+      executor,
+      watcher,
+      onProgress,
+      logger,
+    );
   }
 
   // Acquire lock
@@ -232,6 +242,97 @@ async function orchestrateTargeted(
     );
   } finally {
     releaseLock(node.metaPath);
+  }
+}
+
+/**
+ * Tier 2 invalidation fallback: pick the stalest all-fresh meta,
+ * run computeInvalidation (structure hash, steer, cross-refs), and
+ * either execute the owed phase or bump _generatedAt.
+ */
+async function orchestrateTier2(
+  candidates: Parameters<typeof selectTier2Candidate>[0],
+  config: MetaConfig,
+  executor: MetaExecutor,
+  watcher: WatcherClient,
+  onProgress?: PhaseProgressCallback,
+  logger?: MinimalLogger,
+): Promise<OrchestratePhaseResult> {
+  const tier2 = selectTier2Candidate(candidates);
+  if (!tier2) return { executed: false };
+
+  if (!acquireLock(tier2.node.metaPath)) {
+    logger?.debug(
+      { path: tier2.node.metaPath },
+      'Tier 2 candidate is locked, skipping',
+    );
+    return { executed: false };
+  }
+
+  try {
+    const currentMeta = await readMetaJson(tier2.node.metaPath);
+    const { scopeFiles } = await getScopeFiles(tier2.node, watcher);
+    const structureHash = computeStructureHash(scopeFiles);
+
+    const { phaseState, architectInvalidators } = await computeInvalidation(
+      currentMeta,
+      scopeFiles,
+      config,
+      tier2.node,
+    );
+
+    if (architectInvalidators.length > 0) {
+      // Something changed — persist invalidated state and execute owed phase
+      const owedPhase = getOwedPhase(phaseState);
+      if (!owedPhase) {
+        // Shouldn't happen after invalidation, but be safe
+        return { executed: false };
+      }
+
+      await persistPhaseState(
+        {
+          metaPath: tier2.node.metaPath,
+          current: currentMeta,
+          config,
+          structureHash,
+        },
+        phaseState,
+        {},
+      );
+
+      return await executePhase(
+        tier2.node,
+        currentMeta,
+        phaseState,
+        owedPhase,
+        config,
+        executor,
+        watcher,
+        structureHash,
+        onProgress,
+        logger,
+      );
+    }
+
+    // Nothing changed — bump _generatedAt to delay re-checking
+    await persistPhaseState(
+      {
+        metaPath: tier2.node.metaPath,
+        current: currentMeta,
+        config,
+        structureHash,
+      },
+      phaseState,
+      { _generatedAt: new Date().toISOString() },
+    );
+    logger?.debug(
+      { path: tier2.node.ownerPath },
+      'Tier 2: no invalidation detected, bumped _generatedAt',
+    );
+
+    return { executed: false };
+  } finally {
+    releaseLock(tier2.node.metaPath);
   }
 }
 

@@ -17,6 +17,8 @@ export {
   type PhaseCandidateInput,
   rankPhaseCandidates,
   selectPhaseCandidate,
+  selectTier2Candidate,
+  type Tier2Candidate,
 } from './phaseScheduler.js';
 export {
   architectSuccess,

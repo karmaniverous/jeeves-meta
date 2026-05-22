@@ -16,6 +16,7 @@ import { derivePhaseState } from './derivePhaseState.js';
 import {
   getOwedPhase,
   getPriorityBand,
+  isFullyFresh,
   retryAllFailed,
 } from './phaseTransitions.js';
 
@@ -147,4 +148,30 @@ export function selectPhaseCandidate(
   depthWeight: number,
 ): PhaseCandidate | null {
   return rankPhaseCandidates(metas, depthWeight)[0] ?? null;
+}
+
+/** Result of Tier 2 candidate selection. */
+export interface Tier2Candidate {
+  node: MetaNode;
+  meta: MetaJson;
+}
+
+/**
+ * Select the stalest all-fresh, non-disabled, non-locked meta for Tier 2
+ * invalidation. These are metas that Tier 1 considers fully fresh but may
+ * have structural or steer changes detectable only via I/O.
+ *
+ * @param metas - Phase candidate inputs (after Tier 1 filtering).
+ * @returns The stalest all-fresh candidate, or null if none exist.
+ */
+export function selectTier2Candidate(
+  metas: PhaseCandidateInput[],
+): Tier2Candidate | null {
+  const eligible = metas
+    .filter((m) => !m.locked && !m.disabled && isFullyFresh(m.phaseState))
+    .sort((a, b) => b.actualStaleness - a.actualStaleness);
+
+  if (eligible.length === 0) return null;
+
+  return { node: eligible[0].node, meta: eligible[0].meta };
 }
