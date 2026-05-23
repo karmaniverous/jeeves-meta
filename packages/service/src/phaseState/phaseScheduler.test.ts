@@ -6,6 +6,7 @@ import type { MetaJson, PhaseState } from '../schema/meta.js';
 import {
   buildPhaseCandidates,
   rankPhaseCandidates,
+  selectAllTier2Candidates,
   selectPhaseCandidate,
   selectTier2Candidate,
 } from './phaseScheduler.js';
@@ -534,5 +535,77 @@ describe('selectTier2Candidate', () => {
 
   it('returns null for empty input', () => {
     expect(selectTier2Candidate([])).toBeNull();
+  });
+});
+
+describe('selectAllTier2Candidates', () => {
+  it('returns all all-fresh candidates sorted by staleness descending', () => {
+    const metas = [
+      candidate(
+        'a/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 1000 },
+      ),
+      candidate(
+        'b/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 5000 },
+      ),
+      candidate(
+        'c/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 3000 },
+      ),
+    ];
+
+    const result = selectAllTier2Candidates(metas);
+    expect(result).toHaveLength(3);
+    expect(result[0].node.metaPath).toBe('b/.meta');
+    expect(result[1].node.metaPath).toBe('c/.meta');
+    expect(result[2].node.metaPath).toBe('a/.meta');
+  });
+
+  it('filters out locked, disabled, and non-fresh metas', () => {
+    const metas = [
+      candidate(
+        'locked/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 9000, locked: true },
+      ),
+      candidate(
+        'disabled/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 8000, disabled: true },
+      ),
+      candidate(
+        'pending/.meta',
+        { architect: 'pending', builder: 'stale', critic: 'stale' },
+        { actualStaleness: 7000 },
+      ),
+      candidate(
+        'eligible/.meta',
+        { architect: 'fresh', builder: 'fresh', critic: 'fresh' },
+        { actualStaleness: 1000 },
+      ),
+    ];
+
+    const result = selectAllTier2Candidates(metas);
+    expect(result).toHaveLength(1);
+    expect(result[0].node.metaPath).toBe('eligible/.meta');
+  });
+
+  it('returns empty array for empty input', () => {
+    expect(selectAllTier2Candidates([])).toEqual([]);
+  });
+
+  it('returns empty array when no all-fresh metas exist', () => {
+    const metas = [
+      candidate('a/.meta', {
+        architect: 'pending',
+        builder: 'stale',
+        critic: 'stale',
+      }),
+    ];
+    expect(selectAllTier2Candidates(metas)).toEqual([]);
   });
 });

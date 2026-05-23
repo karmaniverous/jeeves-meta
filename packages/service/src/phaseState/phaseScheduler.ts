@@ -175,3 +175,16 @@ export function selectTier2Candidate(
 
   return { node: eligible[0].node, meta: eligible[0].meta };
 }
+
+/**
+ * Select all fully-fresh, non-disabled, non-locked metas sorted by staleness
+ * (descending — stalest first) for Tier 2 invalidation scanning.
+ */
+export function selectAllTier2Candidates(
+  metas: PhaseCandidateInput[],
+): Tier2Candidate[] {
+  return metas
+    .filter((m) => !m.locked && !m.disabled && isFullyFresh(m.phaseState))
+    .sort((a, b) => b.actualStaleness - a.actualStaleness)
+    .map((m) => ({ node: m.node, meta: m.meta }));
+}

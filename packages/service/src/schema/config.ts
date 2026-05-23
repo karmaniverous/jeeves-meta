@@ -59,6 +59,9 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   /** Logging configuration. */
   logging: loggingSchema.default(() => loggingSchema.parse({})),
 
+  /** Max number of all-fresh candidates to scan per tick in Tier 2 invalidation. */
+  tier2ScanLimit: z.number().int().min(1).default(50),
+
   /**
    * Auto-seed policy: declarative rules for auto-creating .meta/ directories.
    * Rules are evaluated in order; last match wins for steer/crossRefs.

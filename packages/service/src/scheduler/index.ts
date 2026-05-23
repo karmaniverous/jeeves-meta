@@ -9,11 +9,20 @@ import { Cron } from 'croner';
 import type { Logger } from 'pino';
 
 import type { MetaCache } from '../cache.js';
+import { getScopeFiles } from '../discovery/scope.js';
+import { acquireLock, releaseLock } from '../lock.js';
+import { persistPhaseState } from '../orchestrator/runPhase.js';
 import {
   buildPhaseCandidates,
+  computeInvalidation,
+  getOwedPhase,
+  getPriorityBand,
+  type PhaseCandidateInput,
+  selectAllTier2Candidates,
   selectPhaseCandidate,
 } from '../phaseState/index.js';
 import type { SynthesisQueue } from '../queue/index.js';
+import { readMetaJson } from '../readMetaJson.js';
 import type { RuleRegistrar } from '../rules/index.js';
 import type { ServiceConfig } from '../schema/config.js';
 import { autoSeedPass } from '../seed/index.js';
@@ -224,7 +233,7 @@ export class Scheduler {
 
       const winner = selectPhaseCandidate(candidates, this.config.depthWeight);
 
-      if (!winner) return null;
+      if (!winner) return await this.discoverTier2Phase(candidates);
 
       return {
         path: winner.node.metaPath,
@@ -235,5 +244,84 @@ export class Scheduler {
       this.logger.warn({ err }, 'Failed to discover next phase candidate');
       return null;
     }
+  }
+
+  /**
+   * Tier 2 invalidation: iterate all-fresh candidates (stalest first),
+   * run computeInvalidation, and return the first that produces an owed phase.
+   */
+  private async discoverTier2Phase(
+    candidates: PhaseCandidateInput[],
+  ): Promise<TickCandidate | null> {
+    const allTier2 = selectAllTier2Candidates(candidates);
+
+    const limit = this.config.tier2ScanLimit;
+    const tier2Candidates = allTier2.slice(0, limit);
+
+    if (allTier2.length > limit) {
+      this.logger.debug(
+        { total: allTier2.length, limit },
+        'Tier 2 scan limit reached, scanning subset',
+      );
+    }
+
+    let dirty = false;
+
+    for (const t2 of tier2Candidates) {
+      if (!acquireLock(t2.node.metaPath)) continue;
+
+      try {
+        const currentMeta = await readMetaJson(t2.node.metaPath);
+        const { scopeFiles } = await getScopeFiles(t2.node, this.watcher);
+
+        const result = await computeInvalidation(
+          currentMeta,
+          scopeFiles,
+          this.config,
+          t2.node,
+        );
+
+        const owedPhase = getOwedPhase(result.phaseState);
+
+        if (owedPhase) {
+          await persistPhaseState(
+            {
+              metaPath: t2.node.metaPath,
+              current: currentMeta,
+              config: this.config,
+              structureHash: result.structureHash,
+            },
+            result.phaseState,
+            {},
+          );
+          this.cache.invalidate();
+
+          return {
+            path: t2.node.metaPath,
+            phase: owedPhase,
+            band: getPriorityBand(result.phaseState)!,
+          };
+        }
+
+        // No invalidation — bump _generatedAt to delay re-checking
+        await persistPhaseState(
+          {
+            metaPath: t2.node.metaPath,
+            current: currentMeta,
+            config: this.config,
+            structureHash: result.structureHash,
+          },
+          result.phaseState,
+          { _generatedAt: new Date().toISOString() },
+        );
+        dirty = true;
+      } finally {
+        releaseLock(t2.node.metaPath);
+      }
+    }
+
+    if (dirty) this.cache.invalidate();
+
+    return null;
   }
 }
