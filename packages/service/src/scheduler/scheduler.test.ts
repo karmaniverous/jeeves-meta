@@ -39,6 +39,7 @@ function createTestConfig() {
     port: 1938,
     schedule: '* * * * *',
     watcherHealthIntervalMs: 60000,
+    tier2ScanLimit: 50,
     logging: { level: 'info' },
     autoSeed: [],
   };

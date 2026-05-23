@@ -253,7 +253,19 @@ export class Scheduler {
   private async discoverTier2Phase(
     candidates: PhaseCandidateInput[],
   ): Promise<TickCandidate | null> {
-    const tier2Candidates = selectAllTier2Candidates(candidates);
+    const allTier2 = selectAllTier2Candidates(candidates);
+
+    const limit = this.config.tier2ScanLimit;
+    const tier2Candidates = allTier2.slice(0, limit);
+
+    if (allTier2.length > limit) {
+      this.logger.debug(
+        { total: allTier2.length, limit },
+        'Tier 2 scan limit reached, scanning subset',
+      );
+    }
+
+    let dirty = false;
 
     for (const t2 of tier2Candidates) {
       if (!acquireLock(t2.node.metaPath)) continue;
@@ -302,11 +314,13 @@ export class Scheduler {
           result.phaseState,
           { _generatedAt: new Date().toISOString() },
         );
-        this.cache.invalidate();
+        dirty = true;
       } finally {
         releaseLock(t2.node.metaPath);
       }
     }
+
+    if (dirty) this.cache.invalidate();
 
     return null;
   }

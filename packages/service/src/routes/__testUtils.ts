@@ -38,6 +38,7 @@ const DEFAULT_TEST_CONFIG: RouteDeps['config'] = {
   port: 1938,
   schedule: '*/30 * * * *',
   watcherHealthIntervalMs: 60000,
+  tier2ScanLimit: 50,
   logging: { level: 'info' },
   autoSeed: [],
 };
