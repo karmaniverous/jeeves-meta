@@ -6,8 +6,18 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
+- Wire Tier 2 invalidation loop into scheduler (fixes #156)
+- Add configurable tier2ScanLimit, move cache invalidation outside loop
+## [0.15.7] - 2026-05-22
+
+### 🐛 Bug Fixes
+
 - Wire Tier 2 invalidation into scheduling path (fixes #154)
 - Use getOwedPhase for Tier 2 change detection, remove redundant hash calc
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.15.7
 ## [0.15.6] - 2026-05-16
 
 ### 🐛 Bug Fixes
