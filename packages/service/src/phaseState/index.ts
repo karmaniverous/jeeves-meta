@@ -16,6 +16,7 @@ export {
   type PhaseCandidate,
   type PhaseCandidateInput,
   rankPhaseCandidates,
+  selectAllTier2Candidates,
   selectPhaseCandidate,
   selectTier2Candidate,
   type Tier2Candidate,
