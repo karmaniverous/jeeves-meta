@@ -29,18 +29,29 @@ export interface AutoSeedResult {
 /**
  * Extract parent directory paths from watcher walk results.
  *
- * Walk returns file paths; we need the unique set of immediate parent
- * directories that could be owners.
+ * Walk returns file paths; we need the unique set of parent directories that
+ * could be owners. When {@link parentDepth} is specified, walk up that many
+ * additional levels from each file's immediate parent. The walk is clamped at
+ * the filesystem root to prevent escaping the watched scope.
  */
 function extractDirectories(
   filePaths: string[],
+  parentDepth = 0,
   logger?: MinimalLogger,
 ): string[] {
   const dirs = new Set<string>();
   for (const fp of filePaths) {
     // Normalize backslash paths (Windows) to forward slashes before posix.dirname
     const normalized = normalizePath(fp);
-    const dir = path.dirname(normalized);
+    let dir = path.dirname(normalized);
+
+    // Walk up parentDepth additional levels, clamping at filesystem root
+    for (let i = 0; i < parentDepth; i++) {
+      const parent = path.dirname(dir);
+      if (parent === dir) break; // reached root
+      dir = parent;
+    }
+
     if (dir !== '.' && dir !== '/') {
       dirs.add(dir);
     }
@@ -77,7 +88,7 @@ export async function autoSeedPass(
 
   for (const rule of rules) {
     const files = await watcher.walk([rule.match]);
-    const dirs = extractDirectories(files, logger);
+    const dirs = extractDirectories(files, rule.parentDepth, logger);
     for (const dir of dirs) {
       candidates.set(dir, {
         steer: rule.steer,

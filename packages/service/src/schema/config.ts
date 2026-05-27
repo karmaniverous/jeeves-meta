@@ -31,6 +31,8 @@ const autoSeedRuleSchema = z.object({
   steer: z.string().optional(),
   /** Optional cross-references for seeded metas. */
   crossRefs: z.array(z.string()).optional(),
+  /** Walk up this many extra parent levels from the matched file's directory. Default 0. */
+  parentDepth: z.number().int().min(0).optional(),
 });
 
 /** Inferred type for an auto-seed rule. */
