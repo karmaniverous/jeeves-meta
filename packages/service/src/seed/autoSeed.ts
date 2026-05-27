@@ -83,7 +83,13 @@ export async function autoSeedPass(
   // Build a map of ownerPath → effective options (last match wins)
   const candidates = new Map<
     string,
-    { steer?: string; crossRefs?: string[] }
+    {
+      steer?: string;
+      crossRefs?: string[];
+      architectTimeout?: number;
+      builderTimeout?: number;
+      criticTimeout?: number;
+    }
   >();
 
   for (const rule of rules) {
@@ -93,6 +99,9 @@ export async function autoSeedPass(
       candidates.set(dir, {
         steer: rule.steer,
         crossRefs: rule.crossRefs,
+        architectTimeout: rule.architectTimeout,
+        builderTimeout: rule.builderTimeout,
+        criticTimeout: rule.criticTimeout,
       });
     }
   }
@@ -102,6 +111,9 @@ export async function autoSeedPass(
     path: string;
     steer?: string;
     crossRefs?: string[];
+    architectTimeout?: number;
+    builderTimeout?: number;
+    criticTimeout?: number;
   }> = [];
   for (const [path, opts] of candidates) {
     if (!metaExists(path)) {
@@ -116,6 +128,9 @@ export async function autoSeedPass(
       await createMeta(candidate.path, {
         steer: candidate.steer,
         crossRefs: candidate.crossRefs,
+        architectTimeout: candidate.architectTimeout,
+        builderTimeout: candidate.builderTimeout,
+        criticTimeout: candidate.criticTimeout,
       });
       seededPaths.push(candidate.path);
       logger?.info({ path: candidate.path }, 'auto-seeded meta');

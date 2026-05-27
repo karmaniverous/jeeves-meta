@@ -133,6 +133,15 @@ export const metaJsonSchema = z
     /** When true, this meta is skipped during staleness scheduling. Manual trigger still works. */
     _disabled: z.boolean().optional(),
 
+    /** Per-entity timeout override for the architect phase (seconds, min 30). */
+    _architectTimeout: z.number().int().min(30).optional(),
+
+    /** Per-entity timeout override for the builder phase (seconds, min 30). */
+    _builderTimeout: z.number().int().min(30).optional(),
+
+    /** Per-entity timeout override for the critic phase (seconds, min 30). */
+    _criticTimeout: z.number().int().min(30).optional(),
+
     /**
      * Per-phase state machine record. Engine-managed.
      * Keyed by phase name (architect, builder, critic) with status values.
