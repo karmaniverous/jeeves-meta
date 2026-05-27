@@ -6,6 +6,7 @@
 
 export { computeSummary } from './computeSummary.js';
 export { discoverMetas } from './discoverMetas.js';
+export { getAncestorMeta } from './getAncestorMeta.js';
 export {
   listMetas,
   type MetaEntry,

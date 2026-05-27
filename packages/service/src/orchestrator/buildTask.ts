@@ -153,6 +153,11 @@ export function buildArchitectTask(
     condenseScopeFiles(ctx.scopeFiles),
   ];
 
+  // Inject nearest ancestor's organizational context
+  if (ctx.ancestorBuilder) {
+    sections.push('', '## PARENT ORGANIZATIONAL CONTEXT', ctx.ancestorBuilder);
+  }
+
   // Inject previous _builder so architect can see its own prior output
   if (meta._builder) {
     sections.push('', '## PREVIOUS TASK BRIEF', meta._builder);
@@ -199,6 +204,11 @@ export function buildBuilderTask(
     `Delta files (${ctx.deltaFiles.length.toString()} changed):`,
     ...ctx.deltaFiles.slice(0, config.maxLines).map((f) => `- ${f}`),
   ];
+
+  // Inject nearest ancestor's organizational context
+  if (ctx.ancestorBuilder) {
+    sections.push('', '## PARENT ORGANIZATIONAL CONTEXT', ctx.ancestorBuilder);
+  }
 
   if (ctx.previousState != null) {
     sections.push(

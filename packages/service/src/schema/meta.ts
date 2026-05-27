@@ -143,6 +143,12 @@ export const metaJsonSchema = z
     _criticTimeout: z.number().int().min(30).optional(),
 
     /**
+     * SHA-256 hash of ancestor _builder text at last synthesis.
+     * Observability only — no invalidation cascade.
+     */
+    _ancestorBuilderHash: z.string().optional(),
+
+    /**
      * Per-phase state machine record. Engine-managed.
      * Keyed by phase name (architect, builder, critic) with status values.
      * Persisted to survive ticks; derived on first load for back-compat.

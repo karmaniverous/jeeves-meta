@@ -43,4 +43,7 @@ export interface MetaContext {
 
   /** Archive snapshot file paths (for steer change detection, etc.). */
   archives: string[];
+
+  /** Nearest ancestor meta's _builder output, if available. */
+  ancestorBuilder?: string;
 }

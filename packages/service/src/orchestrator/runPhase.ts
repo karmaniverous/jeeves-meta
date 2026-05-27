@@ -7,6 +7,7 @@
  * @module orchestrator/runPhase
  */
 
+import { createHash } from 'node:crypto';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -166,17 +167,24 @@ export async function runArchitect(
     // Architect success: architect → fresh, _synthesisCount → 0
     ps = architectSuccess(ps);
 
+    const architectUpdates: Partial<MetaJson> = {
+      _builder: builderBrief,
+      _architect: config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+      _synthesisCount: 0,
+      _architectTokens: architectTokens,
+      _generatedAt: new Date().toISOString(),
+      _error: undefined,
+    };
+    if (ctx.ancestorBuilder) {
+      architectUpdates._ancestorBuilderHash = createHash('sha256')
+        .update(ctx.ancestorBuilder)
+        .digest('hex');
+    }
+
     const updatedMeta = await persistPhaseState(
       { metaPath: node.metaPath, current: currentMeta, config, structureHash },
       ps,
-      {
-        _builder: builderBrief,
-        _architect: config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
-        _synthesisCount: 0,
-        _architectTokens: architectTokens,
-        _generatedAt: new Date().toISOString(),
-        _error: undefined,
-      },
+      architectUpdates,
     );
 
     await onProgress?.({
@@ -234,17 +242,24 @@ export async function runBuilder(
     // Builder success: builder → fresh, critic → pending
     ps = builderSuccess(ps);
 
+    const builderUpdates: Partial<MetaJson> = {
+      _content: builderOutput.content,
+      _state: builderOutput.state,
+      _builderTokens: builderTokens,
+      _generatedAt: new Date().toISOString(),
+      _error: undefined,
+      ...builderOutput.fields,
+    };
+    if (ctx.ancestorBuilder) {
+      builderUpdates._ancestorBuilderHash = createHash('sha256')
+        .update(ctx.ancestorBuilder)
+        .digest('hex');
+    }
+
     const updatedMeta = await persistPhaseState(
       { metaPath: node.metaPath, current: currentMeta, config, structureHash },
       ps,
-      {
-        _content: builderOutput.content,
-        _state: builderOutput.state,
-        _builderTokens: builderTokens,
-        _generatedAt: new Date().toISOString(),
-        _error: undefined,
-        ...builderOutput.fields,
-      },
+      builderUpdates,
     );
 
     await onProgress?.({
