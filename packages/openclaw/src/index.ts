@@ -45,17 +45,27 @@ export default function register(api: PluginApi): void {
     'The jeeves-meta synthesis engine is initializing...\n\n' +
     'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.';
 
+  let consecutive503s = 0;
+
   const getContent = createAsyncContentCache({
     fetch: async () => generateMetaMenu(client),
     placeholder,
     onError: (error: unknown) => {
       const msg = error instanceof Error ? error.message : String(error);
       if (/HTTP 503\b/i.test(msg) || /scan.in.progress/i.test(msg)) {
-        console.warn(
-          '[jeeves-meta] Watcher scan still in progress — will retry on next refresh cycle.',
-        );
+        consecutive503s++;
+        if (consecutive503s === 1) {
+          console.warn(
+            '[jeeves-meta] Watcher scan still in progress — will retry on next refresh cycle.',
+          );
+        } else {
+          console.debug(
+            `[jeeves-meta] Watcher scan still in progress (attempt ${String(consecutive503s)}) — suppressing repeated warnings.`,
+          );
+        }
         return;
       }
+      consecutive503s = 0;
       console.warn('[jeeves-meta] Content fetch failed:', msg);
     },
   });
