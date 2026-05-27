@@ -7,6 +7,7 @@
  * @module routes/synthesize
  */
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -29,7 +30,7 @@ export function registerSynthesizeRoute(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  app.post('/synthesize', async (request, reply) => {
+  app.post(getEndpoint('synthesize').path, async (request, reply) => {
     const body = synthesizeBodySchema.parse(request.body);
     const { config, watcher, queue, cache } = deps;
 

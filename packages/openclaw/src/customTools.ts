@@ -13,6 +13,7 @@ import {
   type ToolDescriptor,
   type ToolResult,
 } from '@karmaniverous/jeeves';
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 
 import { PLUGIN_ID } from './constants.js';
 import type { MetaServiceClient } from './serviceClient.js';
@@ -50,8 +51,7 @@ function buildMetaListTool(
 ): ToolDescriptor {
   return {
     name: 'meta_list',
-    description:
-      'List metas with summary stats and per-meta projection. Response includes _phaseState and owedPhase per meta.',
+    description: getEndpoint('listMetas').description,
     parameters: {
       type: 'object',
       properties: {
@@ -101,8 +101,7 @@ function buildMetaDetailTool(
 ): ToolDescriptor {
   return {
     name: 'meta_detail',
-    description:
-      'Full detail for a single meta, with optional archive history. Response includes _phaseState and owedPhase.',
+    description: getEndpoint('metaDetail').description,
     parameters: {
       type: 'object',
       properties: {
@@ -139,8 +138,7 @@ function buildMetaPreviewTool(
 ): ToolDescriptor {
   return {
     name: 'meta_preview',
-    description:
-      'Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, stalenessInputs, and architectInvalidators.',
+    description: getEndpoint('preview').description,
     parameters: {
       type: 'object',
       properties: {
@@ -162,8 +160,7 @@ function buildMetaTriggerTool(
 ): ToolDescriptor {
   return {
     name: 'meta_trigger',
-    description:
-      'Trigger synthesis. Path-targeted creates an override queue entry; returns owedPhase. Fully-fresh metas return status:skipped.',
+    description: getEndpoint('synthesize').description,
     parameters: {
       type: 'object',
       properties: {
@@ -184,8 +181,7 @@ function buildMetaSeedTool(
 ): ToolDescriptor {
   return {
     name: 'meta_seed',
-    description:
-      'Create a .meta/ directory and initial meta.json for a new entity path.',
+    description: getEndpoint('seed').description,
     parameters: {
       type: 'object',
       properties: {
@@ -237,7 +233,7 @@ function buildMetaUnlockTool(
 ): ToolDescriptor {
   return {
     name: 'meta_unlock',
-    description: 'Remove a stale .lock from a meta entity that is stuck.',
+    description: getEndpoint('unlock').description,
     parameters: {
       type: 'object',
       properties: {
@@ -259,8 +255,7 @@ function buildMetaQueueTool(
 ): ToolDescriptor {
   return {
     name: 'meta_queue',
-    description:
-      'Queue management. list: 3-layer model (current with phase, overrides, automatic, pending). clear: removes overrides only. abort: returns {status,path,phase} or {status:idle}.',
+    description: `Queue management. list: ${getEndpoint('queue').description} clear: ${getEndpoint('queueClear').description} abort: ${getEndpoint('abort').description}`,
     parameters: {
       type: 'object',
       properties: {
@@ -295,7 +290,7 @@ function buildMetaUpdateTool(
 ): ToolDescriptor {
   return {
     name: 'meta_update',
-    description: 'Update user-settable reserved properties on a meta entity.',
+    description: getEndpoint('updateMeta').description,
     parameters: {
       type: 'object',
       properties: {

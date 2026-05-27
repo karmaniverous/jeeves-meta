@@ -7,6 +7,7 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -21,7 +22,7 @@ export function registerUnlockRoute(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  app.post('/unlock', (request, reply) => {
+  app.post(getEndpoint('unlock').path, (request, reply) => {
     const body = unlockBodySchema.parse(request.body);
     const metaDir = resolveMetaDir(body.path);
     const lockPath = join(metaDir, '.lock');

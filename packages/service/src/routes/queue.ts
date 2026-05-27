@@ -11,6 +11,7 @@
 import { copyFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 
 import { releaseLock, resolveMetaDir } from '../lock.js';
@@ -31,7 +32,7 @@ export function registerQueueRoutes(
 ): void {
   const { queue } = deps;
 
-  app.get('/queue', async () => {
+  app.get(getEndpoint('queue').path, async () => {
     const currentPhase = queue.currentPhase;
     const overrides = queue.overrides;
 
@@ -120,12 +121,12 @@ export function registerQueueRoutes(
     };
   });
 
-  app.post('/queue/clear', () => {
+  app.post(getEndpoint('queueClear').path, () => {
     const removed = queue.clearOverrides();
     return { cleared: removed };
   });
 
-  app.post('/synthesize/abort', async (_request, reply) => {
+  app.post(getEndpoint('abort').path, async (_request, reply) => {
     // Check 3-layer current first
     const currentPhase = queue.currentPhase;
     const current = currentPhase ?? queue.current;

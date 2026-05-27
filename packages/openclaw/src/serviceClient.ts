@@ -8,14 +8,15 @@
  */
 
 import { fetchJson, postJson } from '@karmaniverous/jeeves';
-import type {
-  DepHealth,
-  GatewayDepHealth,
-  MetaListSummary,
-  MetasItem,
-  MetasResponse,
-  ServiceState,
-  WatcherDepHealth,
+import {
+  type DepHealth,
+  type GatewayDepHealth,
+  getEndpoint,
+  type MetaListSummary,
+  type MetasItem,
+  type MetasResponse,
+  type ServiceState,
+  type WatcherDepHealth,
 } from '@karmaniverous/jeeves-meta-core';
 
 // Re-export core types for consumers that import from this module.
@@ -86,7 +87,7 @@ export class MetaServiceClient {
 
   /** GET /status — service health + queue state. */
   public async status(): Promise<StatusResponse> {
-    return this.get<StatusResponse>('/status');
+    return this.get<StatusResponse>(getEndpoint('status').path);
   }
 
   /** GET /metas — list all meta entities with summary. */
@@ -112,7 +113,9 @@ export class MetaServiceClient {
       qs.set('disabled', String(params.disabled));
     if (params?.fields?.length) qs.set('fields', params.fields.join(','));
     const query = qs.toString();
-    return this.get<MetasResponse>('/metas' + (query ? '?' + query : ''));
+    return this.get<MetasResponse>(
+      getEndpoint('listMetas').path + (query ? '?' + query : ''),
+    );
   }
 
   /** PATCH /metas/:path — update user-settable reserved properties. */
@@ -127,11 +130,14 @@ export class MetaServiceClient {
     },
   ): Promise<unknown> {
     const encoded = encodeURIComponent(metaPath);
-    return fetchJson(`${this.baseUrl}/metas/${encoded}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
-    });
+    return fetchJson(
+      `${this.baseUrl}${getEndpoint('listMetas').path}/${encoded}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      },
+    );
   }
 
   /** GET /metas/:path — detail for a single meta. */
@@ -145,18 +151,21 @@ export class MetaServiceClient {
       qs.set('includeArchive', String(options.includeArchive));
     if (options?.fields?.length) qs.set('fields', options.fields.join(','));
     const query = qs.toString();
-    return this.get(`/metas/${encoded}` + (query ? '?' + query : ''));
+    return this.get(
+      `${getEndpoint('listMetas').path}/${encoded}` +
+        (query ? '?' + query : ''),
+    );
   }
 
   /** GET /preview — dry-run next synthesis candidate. */
   public async preview(path?: string): Promise<unknown> {
     const qs = path ? '?path=' + encodeURIComponent(path) : '';
-    return this.get('/preview' + qs);
+    return this.get(getEndpoint('preview').path + qs);
   }
 
   /** POST /synthesize — enqueue synthesis. */
   public async synthesize(path?: string): Promise<unknown> {
-    return this.post('/synthesize', path ? { path } : {});
+    return this.post(getEndpoint('synthesize').path, path ? { path } : {});
   }
 
   /** POST /seed — create .meta/ for a path. */
@@ -168,32 +177,32 @@ export class MetaServiceClient {
     const body: Record<string, unknown> = { path };
     if (crossRefs !== undefined) body.crossRefs = crossRefs;
     if (steer !== undefined) body.steer = steer;
-    return this.post('/seed', body);
+    return this.post(getEndpoint('seed').path, body);
   }
 
   /** POST /unlock — remove .lock from a meta entity. */
   public async unlock(path: string): Promise<unknown> {
-    return this.post('/unlock', { path });
+    return this.post(getEndpoint('unlock').path, { path });
   }
 
   /** GET /config — query service config with optional JSONPath. */
   public async config(path?: string): Promise<unknown> {
     const qs = path ? '?path=' + encodeURIComponent(path) : '';
-    return this.get('/config' + qs);
+    return this.get(getEndpoint('config').path + qs);
   }
 
   /** GET /queue — current queue state. */
   public async queue(): Promise<unknown> {
-    return this.get('/queue');
+    return this.get(getEndpoint('queue').path);
   }
 
   /** POST /queue/clear — remove all pending queue items. */
   public async clearQueue(): Promise<unknown> {
-    return this.post('/queue/clear', {});
+    return this.post(getEndpoint('queueClear').path, {});
   }
 
   /** POST /synthesize/abort — abort current synthesis. */
   public async abort(): Promise<unknown> {
-    return this.post('/synthesize/abort', {});
+    return this.post(getEndpoint('abort').path, {});
   }
 }

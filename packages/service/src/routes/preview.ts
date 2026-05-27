@@ -4,6 +4,7 @@
  * @module routes/preview
  */
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 
 import { findNode, getDeltaFiles, getScopeFiles } from '../discovery/index.js';
@@ -27,7 +28,7 @@ export function registerPreviewRoute(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  app.get('/preview', async (request, reply) => {
+  app.get(getEndpoint('preview').path, async (request, reply) => {
     const { config, watcher, cache } = deps;
     const query = request.query as { path?: string };
 

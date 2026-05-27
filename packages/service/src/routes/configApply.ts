@@ -12,6 +12,7 @@
 import { readFileSync } from 'node:fs';
 
 import { atomicWrite } from '@karmaniverous/jeeves';
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 
 import {
@@ -25,7 +26,7 @@ export function registerConfigApplyRoute(
   app: FastifyInstance,
   configPath?: string,
 ): void {
-  app.post('/config/apply', async (request, reply) => {
+  app.post(getEndpoint('configApply').path, async (request, reply) => {
     if (!configPath) {
       return reply
         .status(500)

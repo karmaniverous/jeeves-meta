@@ -8,6 +8,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -63,7 +64,7 @@ export function registerMetasRoutes(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  app.get('/metas', async (request) => {
+  app.get(getEndpoint('listMetas').path, async (request) => {
     const query = metasQuerySchema.parse(request.query);
     const { config, watcher } = deps;
 
@@ -147,7 +148,7 @@ export function registerMetasRoutes(
   });
 
   app.get<{ Params: { path: string } }>(
-    '/metas/:path',
+    getEndpoint('metaDetail').path,
     async (request, reply) => {
       const query = metaDetailQuerySchema.parse(request.query);
       const { config, watcher } = deps;

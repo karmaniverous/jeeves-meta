@@ -10,6 +10,7 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -35,7 +36,7 @@ export function registerMetasUpdateRoute(
   void deps; // Signature matches other route registrars; deps unused for direct-read route
 
   app.patch<{ Params: { path: string } }>(
-    '/metas/:path',
+    getEndpoint('updateMeta').path,
     async (request, reply) => {
       const parseResult = updateBodySchema.safeParse(request.body);
       if (!parseResult.success) {
