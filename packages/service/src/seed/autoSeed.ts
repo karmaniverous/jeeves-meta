@@ -16,7 +16,11 @@ import type { WatcherClient } from '../interfaces/index.js';
 import type { MinimalLogger } from '../logger/index.js';
 import { normalizePath } from '../normalizePath.js';
 import type { AutoSeedRule } from '../schema/config.js';
-import { createMeta, metaExists } from './createMeta.js';
+import {
+  createMeta,
+  type CreateMetaOptions,
+  metaExists,
+} from './createMeta.js';
 
 /** Result of a single auto-seed pass. */
 export interface AutoSeedResult {
@@ -81,16 +85,7 @@ export async function autoSeedPass(
   if (rules.length === 0) return { seeded: 0, paths: [] };
 
   // Build a map of ownerPath → effective options (last match wins)
-  const candidates = new Map<
-    string,
-    {
-      steer?: string;
-      crossRefs?: string[];
-      architectTimeout?: number;
-      builderTimeout?: number;
-      criticTimeout?: number;
-    }
-  >();
+  const candidates = new Map<string, CreateMetaOptions>();
 
   for (const rule of rules) {
     const files = await watcher.walk([rule.match]);
@@ -107,14 +102,7 @@ export async function autoSeedPass(
   }
 
   // Filter out paths that already have .meta/meta.json
-  const toSeed: Array<{
-    path: string;
-    steer?: string;
-    crossRefs?: string[];
-    architectTimeout?: number;
-    builderTimeout?: number;
-    criticTimeout?: number;
-  }> = [];
+  const toSeed: Array<{ path: string } & CreateMetaOptions> = [];
   for (const [path, opts] of candidates) {
     if (!metaExists(path)) {
       toSeed.push({ path, ...opts });
@@ -125,13 +113,7 @@ export async function autoSeedPass(
   const seededPaths: string[] = [];
   for (const candidate of toSeed) {
     try {
-      await createMeta(candidate.path, {
-        steer: candidate.steer,
-        crossRefs: candidate.crossRefs,
-        architectTimeout: candidate.architectTimeout,
-        builderTimeout: candidate.builderTimeout,
-        criticTimeout: candidate.criticTimeout,
-      });
+      await createMeta(candidate.path, candidate);
       seededPaths.push(candidate.path);
       logger?.info({ path: candidate.path }, 'auto-seeded meta');
     } catch (err) {

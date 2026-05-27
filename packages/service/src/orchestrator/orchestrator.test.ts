@@ -272,9 +272,9 @@ describe('parseArchitectOutput', () => {
   });
 
   it('preserves text when ANNOUNCE_SKIP is not at the end', () => {
-    expect(
-      parseArchitectOutput('ANNOUNCE_SKIP then more text'),
-    ).toBe('ANNOUNCE_SKIP then more text');
+    expect(parseArchitectOutput('ANNOUNCE_SKIP then more text')).toBe(
+      'ANNOUNCE_SKIP then more text',
+    );
   });
 });
 

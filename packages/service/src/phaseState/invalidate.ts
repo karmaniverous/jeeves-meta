@@ -18,6 +18,17 @@ import type { MetaConfig, MetaJson, PhaseState } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
 import { invalidateArchitect, invalidateBuilder } from './phaseTransitions.js';
 
+/**
+ * Check whether a persisted prompt snapshot mismatches the currently-resolved prompt.
+ * Returns true when soft invalidation should bump _synthesisCount.
+ */
+function isPromptStale(
+  snapshot: string | undefined,
+  resolved: string,
+): boolean {
+  return snapshot !== undefined && snapshot !== resolved;
+}
+
 /** Architect-level invalidation reasons. */
 export type ArchitectInvalidator =
   | 'structureHash'
@@ -80,21 +91,18 @@ export async function computeInvalidation(
     Boolean(latestArchive),
   );
 
-  // Soft invalidation: compare _architect snapshot against currently-resolved prompt.
+  // Soft invalidation: compare prompt snapshots against currently-resolved prompts.
   // On mismatch, bump _synthesisCount to architectEvery so architect runs on the
   // next natural cycle — but do NOT hard-cascade via invalidateArchitect.
-  const resolvedArchitect = config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT;
-  const architectChanged =
-    meta._architect !== undefined && meta._architect !== resolvedArchitect;
-  if (architectChanged) {
-    meta._synthesisCount = config.architectEvery;
-  }
-
-  // Same soft invalidation for _critic prompt mismatch.
-  const resolvedCritic = config.defaultCritic ?? DEFAULT_CRITIC_PROMPT;
-  const criticChanged =
-    meta._critic !== undefined && meta._critic !== resolvedCritic;
-  if (criticChanged) {
+  const architectChanged = isPromptStale(
+    meta._architect,
+    config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+  );
+  const criticChanged = isPromptStale(
+    meta._critic,
+    config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
+  );
+  if (architectChanged || criticChanged) {
     meta._synthesisCount = config.architectEvery;
   }
 

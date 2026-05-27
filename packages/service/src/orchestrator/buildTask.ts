@@ -78,6 +78,13 @@ function appendMetaSections(
   }
 }
 
+/** Inject nearest ancestor's organizational context, if available. */
+function appendAncestorContext(sections: string[], ctx: MetaContext): void {
+  if (ctx.ancestorBuilder) {
+    sections.push('', '## PARENT ORGANIZATIONAL CONTEXT', ctx.ancestorBuilder);
+  }
+}
+
 /** Append optional context sections shared across all step prompts. */
 function appendSharedSections(
   sections: string[],
@@ -153,10 +160,7 @@ export function buildArchitectTask(
     condenseScopeFiles(ctx.scopeFiles),
   ];
 
-  // Inject nearest ancestor's organizational context
-  if (ctx.ancestorBuilder) {
-    sections.push('', '## PARENT ORGANIZATIONAL CONTEXT', ctx.ancestorBuilder);
-  }
+  appendAncestorContext(sections, ctx);
 
   // Inject previous _builder so architect can see its own prior output
   if (meta._builder) {
@@ -205,10 +209,7 @@ export function buildBuilderTask(
     ...ctx.deltaFiles.slice(0, config.maxLines).map((f) => `- ${f}`),
   ];
 
-  // Inject nearest ancestor's organizational context
-  if (ctx.ancestorBuilder) {
-    sections.push('', '## PARENT ORGANIZATIONAL CONTEXT', ctx.ancestorBuilder);
-  }
+  appendAncestorContext(sections, ctx);
 
   if (ctx.previousState != null) {
     sections.push(

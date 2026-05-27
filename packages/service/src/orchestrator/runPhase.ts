@@ -48,6 +48,15 @@ import {
   parseCriticOutput,
 } from './parseOutput.js';
 
+/** Compute SHA-256 hash of ancestor _builder text for observability tracking. */
+function hashAncestorBuilder(
+  ancestorBuilder: string | undefined,
+): string | undefined {
+  return ancestorBuilder
+    ? createHash('sha256').update(ancestorBuilder).digest('hex')
+    : undefined;
+}
+
 /** Callback for synthesis progress events. */
 export type ProgressCallback = (event: ProgressEvent) => void | Promise<void>;
 
@@ -145,6 +154,12 @@ export async function runArchitect(
   logger?: MinimalLogger,
 ): Promise<PhaseResult> {
   let ps = phaseRunning(phaseState, 'architect');
+  const base: FinalizeBase = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    structureHash,
+  };
 
   const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
@@ -175,17 +190,10 @@ export async function runArchitect(
       _generatedAt: new Date().toISOString(),
       _error: undefined,
     };
-    if (ctx.ancestorBuilder) {
-      architectUpdates._ancestorBuilderHash = createHash('sha256')
-        .update(ctx.ancestorBuilder)
-        .digest('hex');
-    }
+    const ancestorHash = hashAncestorBuilder(ctx.ancestorBuilder);
+    if (ancestorHash) architectUpdates._ancestorBuilderHash = ancestorHash;
 
-    const updatedMeta = await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      architectUpdates,
-    );
+    const updatedMeta = await persistPhaseState(base, ps, architectUpdates);
 
     await onProgress?.({
       type: 'phase_complete',
@@ -197,12 +205,7 @@ export async function runArchitect(
 
     return { executed: true, phaseState: ps, updatedMeta };
   } catch (err) {
-    return handlePhaseFailure('architect', err, executor, ps, {
-      metaPath: node.metaPath,
-      current: currentMeta,
-      config,
-      structureHash,
-    });
+    return handlePhaseFailure('architect', err, executor, ps, base);
   }
 }
 
@@ -220,6 +223,12 @@ export async function runBuilder(
   logger?: MinimalLogger,
 ): Promise<PhaseResult> {
   let ps = phaseRunning(phaseState, 'builder');
+  const base: FinalizeBase = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    structureHash,
+  };
 
   const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
@@ -250,17 +259,10 @@ export async function runBuilder(
       _error: undefined,
       ...builderOutput.fields,
     };
-    if (ctx.ancestorBuilder) {
-      builderUpdates._ancestorBuilderHash = createHash('sha256')
-        .update(ctx.ancestorBuilder)
-        .digest('hex');
-    }
+    const ancestorHash = hashAncestorBuilder(ctx.ancestorBuilder);
+    if (ancestorHash) builderUpdates._ancestorBuilderHash = ancestorHash;
 
-    const updatedMeta = await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      builderUpdates,
-    );
+    const updatedMeta = await persistPhaseState(base, ps, builderUpdates);
 
     await onProgress?.({
       type: 'phase_complete',
@@ -289,19 +291,7 @@ export async function runBuilder(
       }
     }
 
-    return handlePhaseFailure(
-      'builder',
-      err,
-      executor,
-      ps,
-      {
-        metaPath: node.metaPath,
-        current: currentMeta,
-        config,
-        structureHash,
-      },
-      partialState,
-    );
+    return handlePhaseFailure('builder', err, executor, ps, base, partialState);
   }
 }
 
@@ -319,6 +309,12 @@ export async function runCritic(
   logger?: MinimalLogger,
 ): Promise<PhaseResult> {
   let ps = phaseRunning(phaseState, 'critic');
+  const base: FinalizeBase = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    structureHash,
+  };
 
   const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
@@ -358,11 +354,7 @@ export async function runCritic(
       updates._synthesisCount = (currentMeta._synthesisCount ?? 0) + 1;
     }
 
-    const updatedMeta = await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      updates,
-    );
+    const updatedMeta = await persistPhaseState(base, ps, updates);
 
     // Archive on full-cycle only
     if (cycleComplete) {
@@ -385,11 +377,6 @@ export async function runCritic(
       cycleComplete,
     };
   } catch (err) {
-    return handlePhaseFailure('critic', err, executor, ps, {
-      metaPath: node.metaPath,
-      current: currentMeta,
-      config,
-      structureHash,
-    });
+    return handlePhaseFailure('critic', err, executor, ps, base);
   }
 }

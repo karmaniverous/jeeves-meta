@@ -65,16 +65,9 @@ export function registerMetasUpdateRoute(
 
       const metaJsonPath = join(metaDir, 'meta.json');
 
-      const KEYS = [
-        '_steer',
-        '_emphasis',
-        '_depth',
-        '_crossRefs',
-        '_disabled',
-        '_architectTimeout',
-        '_builderTimeout',
-        '_criticTimeout',
-      ] as const;
+      const KEYS = Object.keys(
+        updateBodySchema.shape,
+      ) as (keyof typeof updates)[];
       const toDelete = new Set<string>();
       const toSet: Record<string, unknown> = {};
       for (const key of KEYS) {
