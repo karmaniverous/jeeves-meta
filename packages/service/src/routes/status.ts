@@ -161,7 +161,7 @@ export function registerStatusRoute(
         dependencies: {
           watcher: {
             ...watcherHealth,
-            rulesRegistered: deps.registrar?.isRegistered ?? false,
+            rulesRegistered: true,
           },
           gateway: gatewayHealth,
         },

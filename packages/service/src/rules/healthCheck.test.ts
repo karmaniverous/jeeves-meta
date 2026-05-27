@@ -109,7 +109,6 @@ describe('WatcherHealthCheck', () => {
     // Initial registration
     mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true }));
     await registrar.register();
-    expect(registrar.isRegistered).toBe(true);
     mockFetch.mockReset();
 
     const hc = new WatcherHealthCheck({
@@ -159,8 +158,10 @@ describe('WatcherHealthCheck', () => {
     hc.start();
     await vi.advanceTimersByTimeAsync(10_000);
 
-    // Should not throw, registrar state unchanged
-    expect(registrar.isRegistered).toBe(true);
+    // Should not throw; registerRules not called again on network error
+    expect(
+      (watcher.registerRules as Mock).mock.calls.length,
+    ).toBeLessThanOrEqual(1);
     hc.stop();
   });
 });

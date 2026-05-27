@@ -220,9 +220,7 @@ export async function startService(
   void registrar.register().then(
     () => {
       routeDeps.ready = true;
-      if (registrar.isRegistered) {
-        void verifyRuleApplication(watcher, logger);
-      }
+      void verifyRuleApplication(watcher, logger);
     },
     () => {
       // Registration failed after max retries — mark ready anyway
