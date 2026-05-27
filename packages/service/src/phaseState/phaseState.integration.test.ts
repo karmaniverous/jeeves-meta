@@ -134,30 +134,12 @@ describe('migration verification (Task #14)', () => {
     const ps = derivePhaseState(meta, {
       structureChanged: false,
       steerChanged: true,
-      architectChanged: false,
       crossRefsChanged: false,
       architectEvery: 10,
     });
     expect(ps.architect).toBe('pending');
     expect(ps.builder).toBe('stale');
     expect(ps.critic).toBe('stale');
-  });
-
-  it('architect invalidation via architectChanged', () => {
-    const meta: MetaJson = {
-      _builder: 'brief',
-      _content: 'content',
-      _feedback: 'ok',
-      _generatedAt: new Date().toISOString(),
-    };
-    const ps = derivePhaseState(meta, {
-      structureChanged: false,
-      steerChanged: false,
-      architectChanged: true,
-      crossRefsChanged: false,
-      architectEvery: 10,
-    });
-    expect(ps.architect).toBe('pending');
   });
 
   it('architect invalidation via crossRefsChanged', () => {
@@ -170,7 +152,6 @@ describe('migration verification (Task #14)', () => {
     const ps = derivePhaseState(meta, {
       structureChanged: false,
       steerChanged: false,
-      architectChanged: false,
       crossRefsChanged: true,
       architectEvery: 10,
     });

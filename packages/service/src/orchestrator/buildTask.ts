@@ -142,7 +142,7 @@ export function buildArchitectTask(
   const sections = [
     `# jeeves-meta · ARCHITECT · ${ctx.path}`,
     '',
-    meta._architect ?? config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+    config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
     '',
     '## SCOPE',
     `Path: ${ctx.path}`,
@@ -267,7 +267,7 @@ export function buildCriticTask(
   const sections = [
     `# jeeves-meta · CRITIC · ${ctx.path}`,
     '',
-    meta._critic ?? config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
+    config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
     '',
     '## SYNTHESIS TO EVALUATE',
     meta._content ?? '(No content produced)',

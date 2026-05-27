@@ -123,7 +123,6 @@ describe('derivePhaseState', () => {
     const result = derivePhaseState(meta, {
       structureChanged: true,
       steerChanged: false,
-      architectChanged: false,
       crossRefsChanged: false,
       architectEvery: 10,
     });
@@ -145,7 +144,6 @@ describe('derivePhaseState', () => {
     const result = derivePhaseState(meta, {
       structureChanged: false,
       steerChanged: false,
-      architectChanged: false,
       crossRefsChanged: false,
       architectEvery: 10,
     });
@@ -163,7 +161,6 @@ describe('derivePhaseState', () => {
     const result = derivePhaseState(meta, {
       structureChanged: true,
       steerChanged: false,
-      architectChanged: false,
       crossRefsChanged: false,
       architectEvery: 10,
     });
@@ -184,7 +181,6 @@ describe('derivePhaseState', () => {
     const result = derivePhaseState(meta, {
       structureChanged: true,
       steerChanged: false,
-      architectChanged: false,
       crossRefsChanged: false,
       architectEvery: 10,
     });

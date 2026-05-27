@@ -17,8 +17,6 @@ export interface DerivationInputs {
   structureChanged: boolean;
   /** Whether _steer changed vs. latest archive. */
   steerChanged: boolean;
-  /** Whether _architect prompt changed. */
-  architectChanged: boolean;
   /** Whether _crossRefs declaration changed. */
   crossRefsChanged: boolean;
   /** architectEvery config value. */
@@ -84,7 +82,6 @@ export function derivePhaseState(
     const architectInvalidated =
       structureInvalidatesArchitect ||
       inputs.steerChanged ||
-      inputs.architectChanged ||
       inputs.crossRefsChanged ||
       (meta._synthesisCount ?? 0) >= inputs.architectEvery;
 

@@ -81,7 +81,7 @@ export function registerPreviewRoute(
     const { structureHash } = invalidation;
     const structureChanged = structureHash !== meta._structureHash;
     const { steerChanged } = invalidation;
-    const { architectChanged, crossRefsDeclChanged } = stalenessInputs;
+    const { crossRefsDeclChanged } = stalenessInputs;
 
     const architectTriggered = isArchitectTriggered(
       meta,
@@ -115,7 +115,6 @@ export function registerPreviewRoute(
     const phaseState = derivePhaseState(meta, {
       structureChanged,
       steerChanged,
-      architectChanged,
       crossRefsChanged: crossRefsDeclChanged,
       architectEvery: config.architectEvery,
     });

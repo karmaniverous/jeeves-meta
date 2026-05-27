@@ -9,6 +9,10 @@
 
 import { readLatestArchive } from '../archive/index.js';
 import type { MetaNode } from '../discovery/types.js';
+import {
+  DEFAULT_ARCHITECT_PROMPT,
+  DEFAULT_CRITIC_PROMPT,
+} from '../prompts/index.js';
 import { hasSteerChanged } from '../scheduling/staleness.js';
 import type { MetaConfig, MetaJson, PhaseState } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
@@ -18,7 +22,6 @@ import { invalidateArchitect, invalidateBuilder } from './phaseTransitions.js';
 export type ArchitectInvalidator =
   | 'structureHash'
   | 'steer'
-  | '_architect'
   | '_crossRefs'
   | 'architectEvery';
 
@@ -77,10 +80,23 @@ export async function computeInvalidation(
     Boolean(latestArchive),
   );
 
-  // _architect change: compare current vs. archive
-  const architectChanged = latestArchive
-    ? (meta._architect ?? '') !== (latestArchive._architect ?? '')
-    : Boolean(meta._architect);
+  // Soft invalidation: compare _architect snapshot against currently-resolved prompt.
+  // On mismatch, bump _synthesisCount to architectEvery so architect runs on the
+  // next natural cycle — but do NOT hard-cascade via invalidateArchitect.
+  const resolvedArchitect = config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT;
+  const architectChanged =
+    meta._architect !== undefined && meta._architect !== resolvedArchitect;
+  if (architectChanged) {
+    meta._synthesisCount = config.architectEvery;
+  }
+
+  // Same soft invalidation for _critic prompt mismatch.
+  const resolvedCritic = config.defaultCritic ?? DEFAULT_CRITIC_PROMPT;
+  const criticChanged =
+    meta._critic !== undefined && meta._critic !== resolvedCritic;
+  if (criticChanged) {
+    meta._synthesisCount = config.architectEvery;
+  }
 
   // _crossRefs declaration change
   const currentRefs = (meta._crossRefs ?? []).slice().sort().join(',');
@@ -102,7 +118,6 @@ export async function computeInvalidation(
     }
   }
   if (steerChanged) architectInvalidators.push('steer');
-  if (architectChanged) architectInvalidators.push('_architect');
   if (crossRefsDeclChanged) architectInvalidators.push('_crossRefs');
   if ((meta._synthesisCount ?? 0) >= config.architectEvery) {
     architectInvalidators.push('architectEvery');

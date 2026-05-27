@@ -25,6 +25,10 @@ import {
   phaseRunning,
 } from '../phaseState/index.js';
 import type { ProgressEvent } from '../progress/index.js';
+import {
+  DEFAULT_ARCHITECT_PROMPT,
+  DEFAULT_CRITIC_PROMPT,
+} from '../prompts/index.js';
 import type {
   MetaConfig,
   MetaError,
@@ -167,7 +171,7 @@ export async function runArchitect(
       ps,
       {
         _builder: builderBrief,
-        _architect: currentMeta._architect ?? config.defaultArchitect ?? '',
+        _architect: config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
         _synthesisCount: 0,
         _architectTokens: architectTokens,
         _generatedAt: new Date().toISOString(),
@@ -328,6 +332,7 @@ export async function runCritic(
 
     const updates: Partial<MetaJson> = {
       _feedback: feedback,
+      _critic: config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
       _criticTokens: criticTokens,
       _error: undefined,
     };

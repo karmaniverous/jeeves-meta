@@ -63,14 +63,14 @@ describe('buildArchitectTask', () => {
     expect(task).toContain('Child synthesis content');
   });
 
-  it('uses meta._architect override when present', () => {
+  it('ignores meta._architect snapshot and uses config default', () => {
     const meta: MetaJson = {
       ...sampleMeta,
-      _architect: 'Custom architect prompt',
+      _architect: 'Stale snapshot prompt',
     };
     const task = buildArchitectTask(sampleCtx, meta, sampleConfig);
-    expect(task).toContain('Custom architect prompt');
-    expect(task).not.toContain('You are an architect');
+    expect(task).not.toContain('Stale snapshot prompt');
+    expect(task).toContain('You are an architect');
   });
 });
 
