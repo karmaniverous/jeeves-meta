@@ -32,11 +32,16 @@ export function createLogger(config?: LoggerConfig): pino.Logger {
   const level = config?.level ?? 'info';
 
   if (config?.file) {
-    const transport = pino.transport({
-      target: 'pino/file',
-      options: { destination: config.file, mkdir: true },
+    const fileStream = pino.destination({
+      dest: config.file,
+      sync: false,
+      mkdir: true,
     });
-    return pino({ level }, transport);
+    const multistream = pino.multistream([
+      { stream: process.stdout },
+      { stream: fileStream },
+    ]);
+    return pino({ level }, multistream);
   }
 
   return pino({ level });
