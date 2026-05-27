@@ -203,7 +203,7 @@ export class GatewayExecutor implements MetaExecutor {
       'Write your complete output to a file using the Write tool at:\n' +
       outputPath +
       '\n\n' +
-      'After writing the file, reply with ONLY: NO_REPLY';
+      'After writing the file, your final message must be exactly: ANNOUNCE_SKIP';
 
     // Step 1: Spawn the sub-agent session (unique label per cycle to avoid
     // "label already in use" errors — gateway labels persist after session completion)
@@ -292,7 +292,9 @@ export class GatewayExecutor implements MetaExecutor {
             }
           }
 
-          // Fallback: extract from message content if file wasn't written
+          // Fallback: extract from message content if file wasn't written.
+          // Skip ANNOUNCE_SKIP sentinel messages — the real output is in
+          // a preceding assistant message (the file write).
           for (let i = msgArray.length - 1; i >= 0; i--) {
             const msg = msgArray[i];
             if (msg.role === 'assistant' && msg.content) {
@@ -305,7 +307,8 @@ export class GatewayExecutor implements MetaExecutor {
                         .map((b) => b.text!)
                         .join('\n')
                     : '';
-              if (text) return { output: text, tokens };
+              if (text && text.trim() !== 'ANNOUNCE_SKIP')
+                return { output: text, tokens };
             }
           }
           return { output: '', tokens };
