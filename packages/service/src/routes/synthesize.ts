@@ -58,11 +58,12 @@ export function registerSynthesizeRoute(
           node,
         );
 
-        // Persist updated phase state if invalidation changed it
-        if (
-          JSON.stringify(invalidation.phaseState) !==
-          JSON.stringify(meta._phaseState)
-        ) {
+        owedPhase = getOwedPhase(invalidation.phaseState);
+
+        // Persist recomputed phase state + structure hash when stale.
+        // Matches the scheduler's Tier 2 pattern: always persist so the
+        // stored _phaseState reflects reality for subsequent reads.
+        if (owedPhase) {
           await persistPhaseState(
             {
               metaPath: targetPath,
@@ -75,8 +76,6 @@ export function registerSynthesizeRoute(
           );
           cache.invalidate();
         }
-
-        owedPhase = getOwedPhase(invalidation.phaseState);
       } catch {
         // Meta unreadable or watcher unavailable — proceed,
         // phase will be evaluated at dequeue time
