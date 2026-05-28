@@ -233,6 +233,54 @@ describe('POST /synthesize', () => {
     expect(queue.overrides).toHaveLength(1);
   });
 
+  it('recomputes invalidation instead of trusting cached _phaseState (#160)', async () => {
+    // Create a meta that looks fully fresh in _phaseState but has a stale
+    // structure hash (simulating new files added to scope).
+    const owner = join(synthRoot, 'stale-hash');
+    createTestMeta(owner, {
+      _id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      _content: '# Old synthesis',
+      _builder: 'Old brief',
+      _feedback: 'Old feedback',
+      _generatedAt: new Date(Date.now() - 3600_000).toISOString(),
+      _structureHash: 'outdated-hash-value',
+      _phaseState: {
+        architect: 'fresh',
+        builder: 'fresh',
+        critic: 'fresh',
+      },
+    });
+
+    // The watcher returns a file list that will produce a DIFFERENT structure
+    // hash than the one stored in meta.json.
+    const metaDir = join(owner, '.meta');
+    const watcher = makeTestWatcher([
+      join(metaDir, 'meta.json').replace(/\\/g, '/'),
+      join(owner, 'new-file.md').replace(/\\/g, '/'),
+    ]);
+    const logger = makeTestLogger();
+    const queue = new SynthesisQueue(logger);
+
+    const deps = makeTestDeps({ queue, watcher });
+    app = Fastify();
+    registerSynthesizeRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/synthesize',
+      payload: { path: owner },
+    });
+
+    // Should be queued (not skipped) because computeInvalidation detects
+    // the structure hash mismatch and invalidates the architect.
+    expect(res.statusCode).toBe(202);
+    const body = res.json<{ status: string; owedPhase: string | null }>();
+    expect(body.status).toBe('queued');
+    expect(body.owedPhase).toBe('architect');
+    expect(queue.overrides).toHaveLength(1);
+  });
+
   it('returns 503 when watcher unreachable and no path provided', async () => {
     const logger = makeTestLogger();
     const queue = new SynthesisQueue(logger);
