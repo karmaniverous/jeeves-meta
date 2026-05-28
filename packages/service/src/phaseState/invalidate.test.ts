@@ -17,7 +17,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MetaNode } from '../discovery/types.js';
 import type { MetaConfig, MetaJson, PhaseState } from '../schema/index.js';
 import { computeStructureHash } from '../structureHash.js';
-
 import { computeInvalidation } from './invalidate.js';
 
 // ── Mock readLatestArchive ──────────────────────────────────────────
@@ -118,12 +117,7 @@ describe('computeInvalidation', () => {
       _generatedAt: new Date().toISOString(),
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.phaseState).toEqual(freshPhaseState);
     expect(result.architectInvalidators).toEqual([]);
@@ -166,12 +160,7 @@ describe('computeInvalidation', () => {
       _synthesisCount: 0,
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_B,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_B, makeConfig(), node);
 
     // structureHash should NOT be in architectInvalidators for progressive
     expect(result.architectInvalidators).not.toContain('structureHash');
@@ -199,12 +188,7 @@ describe('computeInvalidation', () => {
       _synthesisCount: 0,
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.architectInvalidators).toContain('steer');
     expect(result.steerChanged).toBe(true);
@@ -227,12 +211,7 @@ describe('computeInvalidation', () => {
       _synthesisCount: 0,
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.architectInvalidators).toContain('_crossRefs');
     expect(result.stalenessInputs.crossRefsDeclChanged).toBe(true);
@@ -322,12 +301,7 @@ describe('computeInvalidation', () => {
       // no _builder
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.phaseState.architect).toBe('pending');
     expect(result.phaseState.builder).toBe('stale');
@@ -452,12 +426,7 @@ describe('computeInvalidation', () => {
       _synthesisCount: 0,
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     // Should start with default fresh and remain unchanged
     expect(result.phaseState).toBeDefined();
@@ -475,12 +444,7 @@ describe('computeInvalidation', () => {
       // no _builder → first run takes priority
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.stalenessInputs.crossRefsDeclChanged).toBe(true);
   });
@@ -495,12 +459,7 @@ describe('computeInvalidation', () => {
       _synthesisCount: 3,
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     // No bump — snapshots match
     expect(meta._synthesisCount).toBe(3);
@@ -518,12 +477,7 @@ describe('computeInvalidation', () => {
       _synthesisCount: 3,
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     // isPromptStale returns false when snapshot is undefined
     expect(meta._synthesisCount).toBe(3);
@@ -567,12 +521,7 @@ describe('computeInvalidation', () => {
       _synthesisCount: 0,
     };
 
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig(),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.structureHash).toBe(HASH_A);
   });

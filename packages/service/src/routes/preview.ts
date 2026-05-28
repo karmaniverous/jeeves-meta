@@ -83,7 +83,7 @@ export function registerPreviewRoute(
     // Use invalidation result for architectEvery check since computeInvalidation
     // accounts for prompt staleness without mutating meta._synthesisCount.
     const effectiveSynthesisCount =
-      invalidation.synthesisCountOverride ?? (meta._synthesisCount ?? 0);
+      invalidation.synthesisCountOverride ?? meta._synthesisCount ?? 0;
     const architectTriggered =
       !meta._builder ||
       structureChanged ||

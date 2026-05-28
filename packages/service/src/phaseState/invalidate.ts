@@ -108,7 +108,7 @@ export async function computeInvalidation(
   const synthesisCountOverride =
     architectChanged || criticChanged ? config.architectEvery : null;
   const effectiveSynthesisCount =
-    synthesisCountOverride ?? (meta._synthesisCount ?? 0);
+    synthesisCountOverride ?? meta._synthesisCount ?? 0;
 
   // _crossRefs declaration change
   const currentRefs = (meta._crossRefs ?? []).slice().sort().join(',');
