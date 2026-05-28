@@ -89,10 +89,6 @@ export class WatcherHealthCheck {
 
       const data = (await res.json()) as WatcherStatusResponse;
 
-      // Unconditionally re-register on every health check cycle.
-      // register() is idempotent and guards against concurrent calls.
-      await this.registrar.register();
-
       await this.registrar.checkAndReregister(data.uptime);
     } catch (err) {
       this.logger.debug(

@@ -48,7 +48,11 @@ export default function register(api: PluginApi): void {
   let consecutive503s = 0;
 
   const getContent = createAsyncContentCache({
-    fetch: async () => generateMetaMenu(client),
+    fetch: async () => {
+      const content = await generateMetaMenu(client);
+      consecutive503s = 0;
+      return content;
+    },
     placeholder,
     onError: (error: unknown) => {
       const msg = error instanceof Error ? error.message : String(error);

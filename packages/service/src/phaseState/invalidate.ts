@@ -53,6 +53,8 @@ export interface InvalidationResult {
   stalenessInputs: StalenessInputs;
   structureHash: string;
   steerChanged: boolean;
+  /** When non-null, callers that persist should set meta._synthesisCount to this value. */
+  synthesisCountOverride: number | null;
 }
 
 /**
@@ -92,8 +94,9 @@ export async function computeInvalidation(
   );
 
   // Soft invalidation: compare prompt snapshots against currently-resolved prompts.
-  // On mismatch, bump _synthesisCount to architectEvery so architect runs on the
-  // next natural cycle — but do NOT hard-cascade via invalidateArchitect.
+  // On mismatch, signal that _synthesisCount should be bumped to architectEvery so
+  // architect runs on the next natural cycle — but do NOT hard-cascade via
+  // invalidateArchitect and do NOT mutate the input meta.
   const architectChanged = isPromptStale(
     meta._architect,
     config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
@@ -102,9 +105,10 @@ export async function computeInvalidation(
     meta._critic,
     config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
   );
-  if (architectChanged || criticChanged) {
-    meta._synthesisCount = config.architectEvery;
-  }
+  const synthesisCountOverride =
+    architectChanged || criticChanged ? config.architectEvery : null;
+  const effectiveSynthesisCount =
+    synthesisCountOverride ?? (meta._synthesisCount ?? 0);
 
   // _crossRefs declaration change
   const currentRefs = (meta._crossRefs ?? []).slice().sort().join(',');
@@ -127,7 +131,7 @@ export async function computeInvalidation(
   }
   if (steerChanged) architectInvalidators.push('steer');
   if (crossRefsDeclChanged) architectInvalidators.push('_crossRefs');
-  if ((meta._synthesisCount ?? 0) >= config.architectEvery) {
+  if (effectiveSynthesisCount >= config.architectEvery) {
     architectInvalidators.push('architectEvery');
   }
 
@@ -180,5 +184,6 @@ export async function computeInvalidation(
     },
     structureHash,
     steerChanged,
+    synthesisCountOverride,
   };
 }

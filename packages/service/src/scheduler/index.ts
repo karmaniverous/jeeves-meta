@@ -292,7 +292,9 @@ export class Scheduler {
               structureHash: result.structureHash,
             },
             result.phaseState,
-            {},
+            result.synthesisCountOverride !== null
+              ? { _synthesisCount: result.synthesisCountOverride }
+              : {},
           );
           this.cache.invalidate();
 
@@ -312,7 +314,12 @@ export class Scheduler {
             structureHash: result.structureHash,
           },
           result.phaseState,
-          { _generatedAt: new Date().toISOString() },
+          {
+            _generatedAt: new Date().toISOString(),
+            ...(result.synthesisCountOverride !== null
+              ? { _synthesisCount: result.synthesisCountOverride }
+              : {}),
+          },
         );
         dirty = true;
       } finally {

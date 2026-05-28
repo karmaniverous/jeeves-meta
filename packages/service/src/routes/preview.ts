@@ -18,10 +18,7 @@ import {
   selectPhaseCandidate,
 } from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
-import {
-  computeStalenessScore,
-  isArchitectTriggered,
-} from '../scheduling/index.js';
+import { computeStalenessScore } from '../scheduling/index.js';
 import type { RouteDeps } from './index.js';
 
 export function registerPreviewRoute(
@@ -83,12 +80,15 @@ export function registerPreviewRoute(
     const { steerChanged } = invalidation;
     const { crossRefsDeclChanged } = stalenessInputs;
 
-    const architectTriggered = isArchitectTriggered(
-      meta,
-      structureChanged,
-      steerChanged,
-      config.architectEvery,
-    );
+    // Use invalidation result for architectEvery check since computeInvalidation
+    // accounts for prompt staleness without mutating meta._synthesisCount.
+    const effectiveSynthesisCount =
+      invalidation.synthesisCountOverride ?? (meta._synthesisCount ?? 0);
+    const architectTriggered =
+      !meta._builder ||
+      structureChanged ||
+      steerChanged ||
+      effectiveSynthesisCount >= config.architectEvery;
 
     // Delta files
     const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
@@ -133,7 +133,7 @@ export function registerPreviewRoute(
           ...(!meta._builder ? ['no cached builder (first run)'] : []),
           ...(structureChanged ? ['structure changed'] : []),
           ...(steerChanged ? ['steer changed'] : []),
-          ...((meta._synthesisCount ?? 0) >= config.architectEvery
+          ...(effectiveSynthesisCount >= config.architectEvery
             ? ['periodic refresh']
             : []),
         ].join(', ') || 'not triggered',

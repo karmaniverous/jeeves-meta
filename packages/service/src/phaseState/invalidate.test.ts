@@ -278,9 +278,10 @@ describe('computeInvalidation', () => {
       node,
     );
 
-    // Soft invalidation bumps _synthesisCount to architectEvery,
+    // Soft invalidation signals synthesisCountOverride without mutating meta,
     // which triggers the architectEvery invalidator
-    expect(meta._synthesisCount).toBe(10);
+    expect(meta._synthesisCount).toBe(3); // original value unchanged
+    expect(result.synthesisCountOverride).toBe(10);
     expect(result.architectInvalidators).toContain('architectEvery');
     expect(result.stalenessInputs.architectChanged).toBe(true);
   });
@@ -303,7 +304,8 @@ describe('computeInvalidation', () => {
       node,
     );
 
-    expect(meta._synthesisCount).toBe(10);
+    expect(meta._synthesisCount).toBe(2); // original value unchanged
+    expect(result.synthesisCountOverride).toBe(10);
     expect(result.architectInvalidators).toContain('architectEvery');
     expect(result.stalenessInputs.architectChanged).toBe(false);
   });
@@ -502,6 +504,7 @@ describe('computeInvalidation', () => {
 
     // No bump — snapshots match
     expect(meta._synthesisCount).toBe(3);
+    expect(result.synthesisCountOverride).toBeNull();
     expect(result.stalenessInputs.architectChanged).toBe(false);
     expect(result.architectInvalidators).not.toContain('architectEvery');
   });
@@ -524,6 +527,7 @@ describe('computeInvalidation', () => {
 
     // isPromptStale returns false when snapshot is undefined
     expect(meta._synthesisCount).toBe(3);
+    expect(result.synthesisCountOverride).toBeNull();
     expect(result.stalenessInputs.architectChanged).toBe(false);
   });
 
