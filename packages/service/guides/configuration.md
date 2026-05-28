@@ -15,13 +15,13 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `gatewayApiKey` | string | — | Gateway authentication key |
 | `defaultArchitect` | string | (built-in) | Architect system prompt override. Supports `@file:` references. Omit to use built-in default. |
 | `defaultCritic` | string | (built-in) | Critic system prompt override. Supports `@file:` references. Omit to use built-in default. |
-| `architectEvery` | integer | `10` | Run architect every N cycles per meta |
-| `depthWeight` | number | `0.5` | Exponent for depth weighting in staleness formula |
-| `maxArchive` | integer | `20` | Maximum archive snapshots per meta |
-| `maxLines` | integer | `500` | Max context lines in subprocess prompts |
-| `architectTimeout` | integer | `180` | Architect subprocess timeout (seconds) |
-| `builderTimeout` | integer | `360` | Builder subprocess timeout (seconds) |
-| `criticTimeout` | integer | `240` | Critic subprocess timeout (seconds) |
+| `architectEvery` | integer | `10` | Run architect every N cycles per meta (min 1) |
+| `depthWeight` | number | `0.5` | Exponent for depth weighting in staleness formula (min 0) |
+| `maxArchive` | integer | `20` | Maximum archive snapshots per meta (min 1) |
+| `maxLines` | integer | `500` | Max context lines in subprocess prompts (min 50) |
+| `architectTimeout` | integer | `180` | Architect subprocess timeout in seconds (min 30) |
+| `builderTimeout` | integer | `360` | Builder subprocess timeout in seconds (min 60) |
+| `criticTimeout` | integer | `240` | Critic subprocess timeout in seconds (min 30) |
 | `thinking` | string | `"low"` | Thinking level for spawned sessions |
 | `skipUnchanged` | boolean | `true` | Skip candidates with no file changes |
 | `metaProperty` | object | `{ _meta: "current" }` | Watcher metadata for live meta.json files |
@@ -31,15 +31,31 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `port` | integer | `1938` | HTTP listen port |
+| `port` | integer | `1938` | HTTP listen port (min 1, max 65535) |
 
 | `schedule` | string | `*/30 * * * *` | Cron expression for synthesis scheduling |
-| `reportChannel` | string | — | Gateway channel target for progress messages |
-| `watcherHealthIntervalMs` | number | `60000` | Periodic watcher health check interval in ms. 0 = disabled. |
+| `reportChannel` | string | — | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
+| `reportTarget` | string | — | Channel/user ID to send progress messages to |
 | `serverBaseUrl` | string | — | Base URL for entity links in progress reports (e.g. `http://myserver:1938`) |
-| `autoSeed` | array | `[]` | Auto-seed policy rules. Each rule: `{ match: string, steer?: string, crossRefs?: string[] }`. Glob patterns matched against `watcher.walk()` results. Rules evaluated in order; last match wins for steer/crossRefs. |
+| `watcherHealthIntervalMs` | integer | `60000` | Periodic watcher health check interval in ms (min 0). 0 = disabled. |
+| `tier2ScanLimit` | integer | `50` | Max all-fresh candidates to scan per tick in Tier 2 invalidation (min 1) |
+| `autoSeed` | array | `[]` | Auto-seed policy rules (see below). Rules evaluated in order; last match wins for steer/crossRefs. |
 | `logging.level` | string | `"info"` | Log level (trace/debug/info/warn/error) |
 | `logging.file` | string | — | Log file path |
+
+### Auto-Seed Rules
+
+Each rule in the `autoSeed` array has the shape:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `match` | string | — | Glob pattern matched against `watcher.walk()` results (required) |
+| `steer` | string | — | Steering prompt written as `_steer` in seeded `meta.json` |
+| `crossRefs` | string[] | — | Cross-ref owner paths written as `_crossRefs` |
+| `parentDepth` | integer | `0` | Walk up this many extra parent levels from the matched file's directory |
+| `architectTimeout` | integer | — | Per-category timeout override for architect phase (seconds, min 30) |
+| `builderTimeout` | integer | — | Per-category timeout override for builder phase (seconds, min 30) |
+| `criticTimeout` | integer | — | Per-category timeout override for critic phase (seconds, min 30) |
 
 ## Hot-Reload
 

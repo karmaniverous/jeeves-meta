@@ -72,7 +72,7 @@ Dry-run: show what inputs would be gathered for the next synthesis cycle.
 **Parameters:**
 - `path` (string, optional) — specific path, or omit for stalest candidate
 
-**Response:** `{ path, staleness, architectWillRun, architectReason, scope, estimatedTokens }`
+**Response:** `{ path, staleness, architectWillRun, architectReason, scope, estimatedTokens, owedPhase, priorityBand, phaseState }`
 
 ## meta_trigger
 
@@ -81,7 +81,8 @@ Enqueue synthesis for a specific meta or the stalest candidate.
 **Parameters:**
 - `path` (string, optional) — specific path, or omit for stalest candidate
 
-**Response:** `{ status: "accepted", path, queuePosition, alreadyQueued }`
+**Response (path-targeted):** `{ status: "queued"|"skipped", path, owedPhase, queuePosition, alreadyQueued }`
+**Response (corpus-wide):** `{ status: "accepted"|"skipped", path?, message?, queuePosition?, alreadyQueued? }`
 
 ## meta_seed
 
@@ -109,11 +110,11 @@ Queue management: list pending items, clear the queue, or abort current synthesi
 
 **Parameters:**
 - `action` (string, required) — one of `list`, `clear`, `abort`
-  - `list` — show current queue state (current synthesis, pending items)
-  - `clear` — remove all pending queue items
+  - `list` — show current queue state (current with phase, overrides, automatic candidates, pending items)
+  - `clear` — remove all pending queue entries
   - `abort` — stop the currently running synthesis and release its lock
 
-**Response (list):** `{ current, pending, state }`
+**Response (list):** `{ current, overrides, automatic, pending, state }`
 **Response (clear):** `{ cleared: <count> }`
 **Response (abort):** `{ status: "aborted", path }` or 404 if nothing running
 
@@ -123,7 +124,7 @@ Update user-settable reserved properties on a meta entity. Delegates to `PATCH /
 
 **Parameters:**
 - `path` (string, required) — `.meta/` or owner directory path
-- `updates` (object, required) — properties to set. Supported: `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`. Set a value to `null` to remove the property.
+- `updates` (object, required) — properties to set. Supported: `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`, `_architectTimeout`, `_builderTimeout`, `_criticTimeout`. Set a value to `null` to remove the property.
 
 **Response:** `{ path, meta }` — the updated meta with large generated fields (`_architect`, `_builder`, `_critic`, `_content`, `_feedback`) excluded.
 

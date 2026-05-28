@@ -10,7 +10,7 @@ title: Scheduling
 effectiveStaleness = actualStaleness × (normalizedDepth + 1) ^ (depthWeight × emphasis)
 ```
 
-- **actualStaleness**: seconds since `_generatedAt` (Infinity if never synthesized)
+- **actualStaleness**: seconds since `_generatedAt` (capped at `MAX_STALENESS_SECONDS` = 31 536 000 seconds / 365 days if never synthesized or extremely stale). Bounding prevents `Infinity × depthFactor = Infinity` for all depths, which would make staleness-based prioritization meaningless.
 - **normalizedDepth**: tree depth shifted so minimum = 0
 - **depthWeight**: config exponent (default 0.5). Set to 0 for pure staleness ordering
 - **emphasis**: per-meta `_emphasis` multiplier (default 1). Higher = updates more often
@@ -37,9 +37,11 @@ Each tick:
 2. Discover all metas via watcher `/walk` endpoint
 3. **Derive phase state** — reconstruct `_phaseState` for legacy metas without it
 4. **Auto-retry** — promote `failed` → `pending` for all failed phases
-5. **Select phase candidate** — pick the highest-priority owed phase (critic > builder > architect, staleness tiebreak)
-6. Enqueue the selected phase (if no candidates, increase backoff and return)
-7. Check watcher uptime for restart detection → re-register virtual rules if needed
+5. **Tier 1 cheap invalidation** (no I/O) — for metas with persisted `_phaseState`, check `_synthesisCount >= architectEvery` and bump architect to `pending` if needed
+6. **Select phase candidate** — pick the highest-priority owed phase (critic > builder > architect, staleness tiebreak)
+7. **Tier 2 deep invalidation** (with I/O) — for all-fresh metas (up to `tier2ScanLimit`, default 50), walk scope for structure hash changes and check steer/crossRefs changes against archive to detect invalidation
+8. Enqueue the selected phase (if no candidates, increase backoff and return)
+9. Check watcher uptime for restart detection → re-register virtual rules if needed
 
 ## Disabled Metas
 

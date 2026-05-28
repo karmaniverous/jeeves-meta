@@ -4,7 +4,7 @@ title: Virtual Rules
 
 # Virtual Rules
 
-The jeeves-meta **service** registers three virtual inference rules with jeeves-watcher at startup. The plugin does not register rules.
+The jeeves-meta **service** registers two virtual inference rules with jeeves-watcher at startup. The plugin does not register rules.
 
 ## meta-current
 
@@ -23,12 +23,6 @@ Renders as Markdown with the `_content` synthesis body.
 Matches: `**/.meta/archive/*.json`
 
 Indexes archived snapshots with `archived` and `archived_at` flags. Renders the archived `_content`.
-
-## meta-config
-
-Matches: `**/jeeves-meta{.config.json,/config.json}`
-
-Indexes the service configuration file with key config fields in frontmatter.
 
 ## Re-registration
 

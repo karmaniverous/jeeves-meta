@@ -18,6 +18,7 @@ Metas can declare explicit cross-references (`_crossRefs`) to other metas, formi
 
 | Package | Description |
 |---------|-------------|
+| [`@karmaniverous/jeeves-meta-core`](packages/core/README.md) | Shared types, schemas, endpoint descriptors, and utilities |
 | [`@karmaniverous/jeeves-meta`](packages/service/README.md) | HTTP service — Fastify API, built-in scheduler, synthesis queue, CLI |
 | [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw/README.md) | OpenClaw plugin — thin HTTP client, interactive tools, TOOLS.md injection |
 
@@ -78,7 +79,7 @@ Install the plugin package. Twelve tools become available to the agent:
 - `meta_seed` — create `.meta/` directory for a new path (with optional cross-refs and steer)
 - `meta_unlock` — remove stale `.lock` from a meta entity
 - `meta_queue` — queue management: list pending, clear queue, abort current synthesis
-- `meta_update` — update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`)
+- `meta_update` — update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`, `_architectTimeout`, `_builderTimeout`, `_criticTimeout`)
 
 ## Configuration
 
