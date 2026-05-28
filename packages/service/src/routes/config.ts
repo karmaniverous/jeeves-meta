@@ -8,6 +8,7 @@
  */
 
 import { createConfigQueryHandler } from '@karmaniverous/jeeves';
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 
 import type { ServiceConfig } from '../schema/config.js';
@@ -29,7 +30,7 @@ export function registerConfigRoute(
     sanitizeConfig(deps.config),
   );
 
-  app.get('/config', async (request, reply) => {
+  app.get(getEndpoint('config').path, async (request, reply) => {
     const { path } = request.query as { path?: string };
     const result = await configHandler({ path });
     return reply.status(result.status).send(result.body);

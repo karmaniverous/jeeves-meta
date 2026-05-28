@@ -4,6 +4,7 @@
  * @module routes/seed
  */
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -17,7 +18,7 @@ const seedBodySchema = z.object({
 });
 
 export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
-  app.post('/seed', async (request, reply) => {
+  app.post(getEndpoint('seed').path, async (request, reply) => {
     const body = seedBodySchema.parse(request.body);
 
     if (metaExists(body.path)) {

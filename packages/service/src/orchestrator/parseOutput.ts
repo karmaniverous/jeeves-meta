@@ -8,6 +8,17 @@
  * @module orchestrator/parseOutput
  */
 
+/** Sentinel appended by synthesis workers to skip the announce turn. */
+const ANNOUNCE_SKIP = 'ANNOUNCE_SKIP';
+
+/** Strip a trailing ANNOUNCE_SKIP sentinel from raw output. */
+function stripSentinel(raw: string): string {
+  const trimmed = raw.trim();
+  return trimmed.endsWith(ANNOUNCE_SKIP)
+    ? trimmed.slice(0, -ANNOUNCE_SKIP.length).trim()
+    : trimmed;
+}
+
 /** Parsed builder output. */
 export interface BuilderOutput {
   /** Narrative synthesis content. */
@@ -25,7 +36,7 @@ export interface BuilderOutput {
  * @returns The task brief string.
  */
 export function parseArchitectOutput(output: string): string {
-  return output.trim();
+  return stripSentinel(output);
 }
 
 /**
@@ -37,7 +48,7 @@ export function parseArchitectOutput(output: string): string {
  * @returns Parsed builder output with content and structured fields.
  */
 export function parseBuilderOutput(output: string): BuilderOutput {
-  const trimmed = output.trim();
+  const trimmed = stripSentinel(output);
 
   // Strategy 1: Try to parse the entire output as JSON directly
   const direct = tryParseJson(trimmed);
@@ -112,5 +123,5 @@ function tryParseJson(str: string): BuilderOutput | null {
  * @returns The feedback string.
  */
 export function parseCriticOutput(output: string): string {
-  return output.trim();
+  return stripSentinel(output);
 }

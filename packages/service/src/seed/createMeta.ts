@@ -19,6 +19,12 @@ export interface CreateMetaOptions {
   crossRefs?: string[];
   /** Steering prompt for the meta. */
   steer?: string;
+  /** Per-entity timeout override for the architect phase (seconds). */
+  architectTimeout?: number;
+  /** Per-entity timeout override for the builder phase (seconds). */
+  builderTimeout?: number;
+  /** Per-entity timeout override for the critic phase (seconds). */
+  criticTimeout?: number;
 }
 
 /** Result of creating a new meta. */
@@ -49,6 +55,12 @@ export async function createMeta(
   const metaJson: Record<string, unknown> = { _id };
   if (options?.crossRefs !== undefined) metaJson._crossRefs = options.crossRefs;
   if (options?.steer !== undefined) metaJson._steer = options.steer;
+  if (options?.architectTimeout !== undefined)
+    metaJson._architectTimeout = options.architectTimeout;
+  if (options?.builderTimeout !== undefined)
+    metaJson._builderTimeout = options.builderTimeout;
+  if (options?.criticTimeout !== undefined)
+    metaJson._criticTimeout = options.criticTimeout;
 
   const metaJsonPath = join(metaDir, 'meta.json');
   await writeFile(metaJsonPath, JSON.stringify(metaJson, null, 2) + '\n');

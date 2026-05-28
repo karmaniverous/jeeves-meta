@@ -16,7 +16,11 @@ import type { WatcherClient } from '../interfaces/index.js';
 import type { MinimalLogger } from '../logger/index.js';
 import { normalizePath } from '../normalizePath.js';
 import type { AutoSeedRule } from '../schema/config.js';
-import { createMeta, metaExists } from './createMeta.js';
+import {
+  createMeta,
+  type CreateMetaOptions,
+  metaExists,
+} from './createMeta.js';
 
 /** Result of a single auto-seed pass. */
 export interface AutoSeedResult {
@@ -29,18 +33,29 @@ export interface AutoSeedResult {
 /**
  * Extract parent directory paths from watcher walk results.
  *
- * Walk returns file paths; we need the unique set of immediate parent
- * directories that could be owners.
+ * Walk returns file paths; we need the unique set of parent directories that
+ * could be owners. When {@link parentDepth} is specified, walk up that many
+ * additional levels from each file's immediate parent. The walk is clamped at
+ * the filesystem root to prevent escaping the watched scope.
  */
 function extractDirectories(
   filePaths: string[],
+  parentDepth = 0,
   logger?: MinimalLogger,
 ): string[] {
   const dirs = new Set<string>();
   for (const fp of filePaths) {
     // Normalize backslash paths (Windows) to forward slashes before posix.dirname
     const normalized = normalizePath(fp);
-    const dir = path.dirname(normalized);
+    let dir = path.dirname(normalized);
+
+    // Walk up parentDepth additional levels, clamping at filesystem root
+    for (let i = 0; i < parentDepth; i++) {
+      const parent = path.dirname(dir);
+      if (parent === dir) break; // reached root
+      dir = parent;
+    }
+
     if (dir !== '.' && dir !== '/') {
       dirs.add(dir);
     }
@@ -70,28 +85,24 @@ export async function autoSeedPass(
   if (rules.length === 0) return { seeded: 0, paths: [] };
 
   // Build a map of ownerPath → effective options (last match wins)
-  const candidates = new Map<
-    string,
-    { steer?: string; crossRefs?: string[] }
-  >();
+  const candidates = new Map<string, CreateMetaOptions>();
 
   for (const rule of rules) {
     const files = await watcher.walk([rule.match]);
-    const dirs = extractDirectories(files, logger);
+    const dirs = extractDirectories(files, rule.parentDepth, logger);
     for (const dir of dirs) {
       candidates.set(dir, {
         steer: rule.steer,
         crossRefs: rule.crossRefs,
+        architectTimeout: rule.architectTimeout,
+        builderTimeout: rule.builderTimeout,
+        criticTimeout: rule.criticTimeout,
       });
     }
   }
 
   // Filter out paths that already have .meta/meta.json
-  const toSeed: Array<{
-    path: string;
-    steer?: string;
-    crossRefs?: string[];
-  }> = [];
+  const toSeed: Array<{ path: string } & CreateMetaOptions> = [];
   for (const [path, opts] of candidates) {
     if (!metaExists(path)) {
       toSeed.push({ path, ...opts });
@@ -102,10 +113,7 @@ export async function autoSeedPass(
   const seededPaths: string[] = [];
   for (const candidate of toSeed) {
     try {
-      await createMeta(candidate.path, {
-        steer: candidate.steer,
-        crossRefs: candidate.crossRefs,
-      });
+      await createMeta(candidate.path, candidate);
       seededPaths.push(candidate.path);
       logger?.info({ path: candidate.path }, 'auto-seeded meta');
     } catch (err) {

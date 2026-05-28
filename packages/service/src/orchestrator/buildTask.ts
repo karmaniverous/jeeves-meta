@@ -78,6 +78,13 @@ function appendMetaSections(
   }
 }
 
+/** Inject nearest ancestor's organizational context, if available. */
+function appendAncestorContext(sections: string[], ctx: MetaContext): void {
+  if (ctx.ancestorBuilder) {
+    sections.push('', '## PARENT ORGANIZATIONAL CONTEXT', ctx.ancestorBuilder);
+  }
+}
+
 /** Append optional context sections shared across all step prompts. */
 function appendSharedSections(
   sections: string[],
@@ -142,7 +149,7 @@ export function buildArchitectTask(
   const sections = [
     `# jeeves-meta · ARCHITECT · ${ctx.path}`,
     '',
-    meta._architect ?? config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+    config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
     '',
     '## SCOPE',
     `Path: ${ctx.path}`,
@@ -152,6 +159,8 @@ export function buildArchitectTask(
     '### File listing (scope)',
     condenseScopeFiles(ctx.scopeFiles),
   ];
+
+  appendAncestorContext(sections, ctx);
 
   // Inject previous _builder so architect can see its own prior output
   if (meta._builder) {
@@ -199,6 +208,8 @@ export function buildBuilderTask(
     `Delta files (${ctx.deltaFiles.length.toString()} changed):`,
     ...ctx.deltaFiles.slice(0, config.maxLines).map((f) => `- ${f}`),
   ];
+
+  appendAncestorContext(sections, ctx);
 
   if (ctx.previousState != null) {
     sections.push(
@@ -267,7 +278,7 @@ export function buildCriticTask(
   const sections = [
     `# jeeves-meta · CRITIC · ${ctx.path}`,
     '',
-    meta._critic ?? config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
+    config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
     '',
     '## SYNTHESIS TO EVALUATE',
     meta._content ?? '(No content produced)',

@@ -1,7 +1,7 @@
 /**
  * PATCH /metas/:path — update user-settable reserved properties on a meta.
  *
- * Supported fields: _steer, _emphasis, _depth, _crossRefs, _disabled.
+ * Supported fields: _steer, _emphasis, _depth, _crossRefs, _disabled, _architectTimeout, _builderTimeout, _criticTimeout.
  * Set a field to null to remove it. Unknown keys are rejected.
  *
  * @module routes/metasUpdate
@@ -10,6 +10,7 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -25,6 +26,9 @@ const updateBodySchema = z
     _depth: z.union([z.number(), z.null()]).optional(),
     _crossRefs: z.union([z.array(z.string()), z.null()]).optional(),
     _disabled: z.union([z.boolean(), z.null()]).optional(),
+    _architectTimeout: z.union([z.number().int().min(30), z.null()]).optional(),
+    _builderTimeout: z.union([z.number().int().min(30), z.null()]).optional(),
+    _criticTimeout: z.union([z.number().int().min(30), z.null()]).optional(),
   })
   .strict();
 
@@ -35,7 +39,7 @@ export function registerMetasUpdateRoute(
   void deps; // Signature matches other route registrars; deps unused for direct-read route
 
   app.patch<{ Params: { path: string } }>(
-    '/metas/:path',
+    getEndpoint('updateMeta').path,
     async (request, reply) => {
       const parseResult = updateBodySchema.safeParse(request.body);
       if (!parseResult.success) {
@@ -61,13 +65,9 @@ export function registerMetasUpdateRoute(
 
       const metaJsonPath = join(metaDir, 'meta.json');
 
-      const KEYS = [
-        '_steer',
-        '_emphasis',
-        '_depth',
-        '_crossRefs',
-        '_disabled',
-      ] as const;
+      const KEYS = Object.keys(
+        updateBodySchema.shape,
+      ) as (keyof typeof updates)[];
       const toDelete = new Set<string>();
       const toSet: Record<string, unknown> = {};
       for (const key of KEYS) {

@@ -127,6 +127,48 @@ describe('autoSeedPass', () => {
     expect(meta._crossRefs).toEqual(['j:/ref2']);
   });
 
+  it('walks up parentDepth levels from matched file directory', async () => {
+    // Structure: testRoot/a/b/c/file.md → with parentDepth=1 should seed testRoot/a/b (not c)
+    const dirABC = join(testRoot, 'a', 'b', 'c');
+    const dirAB = join(testRoot, 'a', 'b');
+    mkdirSync(dirABC, { recursive: true });
+
+    const rootFwd = testRoot.replace(/\\/g, '/');
+    const watcher = createMockWatcher({
+      [`${testRoot}/**/*.md`]: [`${rootFwd}/a/b/c/file.md`],
+    });
+
+    const rules: AutoSeedRule[] = [
+      { match: `${testRoot}/**/*.md`, parentDepth: 1 },
+    ];
+    const result = await autoSeedPass(rules, watcher);
+
+    expect(result.seeded).toBe(1);
+    expect(result.paths).toEqual([`${rootFwd}/a/b`]);
+    expect(existsSync(join(dirAB, '.meta', 'meta.json'))).toBe(true);
+    // Should NOT have seeded the immediate parent (c)
+    expect(existsSync(join(dirABC, '.meta', 'meta.json'))).toBe(false);
+  });
+
+  it('clamps parentDepth at filesystem root', async () => {
+    // Even with a huge parentDepth, should not error
+    const dirA = join(testRoot, 'a');
+    mkdirSync(dirA, { recursive: true });
+
+    const rootFwd = testRoot.replace(/\\/g, '/');
+    const watcher = createMockWatcher({
+      [`${testRoot}/**/*.md`]: [`${rootFwd}/a/file.md`],
+    });
+
+    const rules: AutoSeedRule[] = [
+      { match: `${testRoot}/**/*.md`, parentDepth: 999 },
+    ];
+    const result = await autoSeedPass(rules, watcher);
+
+    // Should produce 0 seeds because walking up 999 levels reaches '/' which is filtered out
+    expect(result.seeded).toBe(0);
+  });
+
   it('returns empty result when autoSeed is empty', async () => {
     const walkSpy = vi.fn().mockResolvedValue([]);
     const watcher: WatcherClient = {

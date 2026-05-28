@@ -7,13 +7,18 @@
  * @module routes/synthesize
  */
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { buildMinimalNode } from '../discovery/buildMinimalNode.js';
+import { getScopeFiles } from '../discovery/index.js';
 import { resolveMetaDir } from '../lock.js';
+import { normalizePath } from '../normalizePath.js';
+import { persistPhaseState } from '../orchestrator/runPhase.js';
 import {
   buildPhaseCandidates,
-  derivePhaseState,
+  computeInvalidation,
   getOwedPhase,
   selectPhaseCandidate,
 } from '../phaseState/index.js';
@@ -29,7 +34,7 @@ export function registerSynthesizeRoute(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  app.post('/synthesize', async (request, reply) => {
+  app.post(getEndpoint('synthesize').path, async (request, reply) => {
     const body = synthesizeBodySchema.parse(request.body);
     const { config, watcher, queue, cache } = deps;
 
@@ -37,18 +42,48 @@ export function registerSynthesizeRoute(
       // Path-targeted trigger: create override entry
       const targetPath = resolveMetaDir(body.path);
 
-      // Read meta to determine owed phase
+      // Read meta and recompute invalidation against current inputs
+      // (structure hash, steer, cross-refs, prompt snapshots) rather than
+      // trusting the cached _phaseState. Fixes #160.
       let owedPhase: string | null = null;
       let meta;
       try {
         meta = await readMetaJson(targetPath);
-        const phaseState = derivePhaseState(meta);
-        owedPhase = getOwedPhase(phaseState);
+        const node = await buildMinimalNode(normalizePath(targetPath), watcher);
+        const { scopeFiles } = await getScopeFiles(node, watcher);
+        const invalidation = await computeInvalidation(
+          meta,
+          scopeFiles,
+          config,
+          node,
+        );
+
+        owedPhase = getOwedPhase(invalidation.phaseState);
+
+        // Persist recomputed phase state + structure hash when stale.
+        // Matches the scheduler's Tier 2 pattern: always persist so the
+        // stored _phaseState reflects reality for subsequent reads.
+        if (owedPhase) {
+          await persistPhaseState(
+            {
+              metaPath: targetPath,
+              current: meta,
+              config,
+              structureHash: invalidation.structureHash,
+            },
+            invalidation.phaseState,
+            invalidation.synthesisCountOverride !== null
+              ? { _synthesisCount: invalidation.synthesisCountOverride }
+              : {},
+          );
+          cache.invalidate();
+        }
       } catch {
-        // Meta unreadable — proceed, phase will be evaluated at dequeue time
+        // Meta unreadable or watcher unavailable — proceed,
+        // phase will be evaluated at dequeue time
       }
 
-      // Fully fresh meta → skip (reuse meta already read above)
+      // Fully fresh meta → skip
       if (owedPhase === null && meta && (meta._phaseState || meta._content)) {
         return await reply.code(200).send({
           status: 'skipped',

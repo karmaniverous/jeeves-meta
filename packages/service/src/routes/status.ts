@@ -8,11 +8,12 @@
  */
 
 import { createStatusHandler } from '@karmaniverous/jeeves';
-import type {
-  DepHealth,
-  PhaseName,
-  PhaseStatus,
-  ServiceState,
+import {
+  type DepHealth,
+  getEndpoint,
+  type PhaseName,
+  type PhaseStatus,
+  type ServiceState,
 } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 
@@ -160,7 +161,7 @@ export function registerStatusRoute(
         dependencies: {
           watcher: {
             ...watcherHealth,
-            rulesRegistered: deps.registrar?.isRegistered ?? false,
+            rulesRegistered: true,
           },
           gateway: gatewayHealth,
         },
@@ -170,7 +171,7 @@ export function registerStatusRoute(
     },
   });
 
-  app.get('/status', async (_request, reply) => {
+  app.get(getEndpoint('status').path, async (_request, reply) => {
     const result = await statusHandler();
     return reply.status(result.status).send(result.body);
   });

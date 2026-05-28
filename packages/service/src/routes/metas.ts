@@ -8,6 +8,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
+import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
@@ -23,29 +24,20 @@ import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
 import { computeStalenessScore } from '../scheduling/index.js';
 import { DEFAULT_EXCLUDE_FIELDS, type RouteDeps } from './index.js';
 
+/** Reusable Zod schema for boolean query string parameters ('true'/'false'). */
+const boolQueryParam = z.enum(['true', 'false']).transform((v) => v === 'true');
+
 const metasQuerySchema = z.object({
   pathPrefix: z.string().optional(),
-  hasError: z
-    .enum(['true', 'false'])
-    .transform((v) => v === 'true')
-    .optional(),
+  hasError: boolQueryParam.optional(),
   staleHours: z
     .string()
     .transform(Number)
     .pipe(z.number().positive())
     .optional(),
-  neverSynthesized: z
-    .enum(['true', 'false'])
-    .transform((v) => v === 'true')
-    .optional(),
-  locked: z
-    .enum(['true', 'false'])
-    .transform((v) => v === 'true')
-    .optional(),
-  disabled: z
-    .enum(['true', 'false'])
-    .transform((v) => v === 'true')
-    .optional(),
+  neverSynthesized: boolQueryParam.optional(),
+  locked: boolQueryParam.optional(),
+  disabled: boolQueryParam.optional(),
   fields: z.string().optional(),
 });
 
@@ -53,7 +45,7 @@ const metaDetailQuerySchema = z.object({
   fields: z.string().optional(),
   includeArchive: z
     .union([
-      z.enum(['true', 'false']).transform((v) => v === 'true'),
+      boolQueryParam,
       z.string().transform(Number).pipe(z.number().int().nonnegative()),
     ])
     .optional(),
@@ -63,7 +55,7 @@ export function registerMetasRoutes(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  app.get('/metas', async (request) => {
+  app.get(getEndpoint('listMetas').path, async (request) => {
     const query = metasQuerySchema.parse(request.query);
     const { config, watcher } = deps;
 
@@ -147,7 +139,7 @@ export function registerMetasRoutes(
   });
 
   app.get<{ Params: { path: string } }>(
-    '/metas/:path',
+    getEndpoint('metaDetail').path,
     async (request, reply) => {
       const query = metaDetailQuerySchema.parse(request.query);
       const { config, watcher } = deps;

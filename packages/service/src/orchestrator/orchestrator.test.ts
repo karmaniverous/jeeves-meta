@@ -63,14 +63,14 @@ describe('buildArchitectTask', () => {
     expect(task).toContain('Child synthesis content');
   });
 
-  it('uses meta._architect override when present', () => {
+  it('ignores meta._architect snapshot and uses config default', () => {
     const meta: MetaJson = {
       ...sampleMeta,
-      _architect: 'Custom architect prompt',
+      _architect: 'Stale snapshot prompt',
     };
     const task = buildArchitectTask(sampleCtx, meta, sampleConfig);
-    expect(task).toContain('Custom architect prompt');
-    expect(task).not.toContain('You are an architect');
+    expect(task).not.toContain('Stale snapshot prompt');
+    expect(task).toContain('You are an architect');
   });
 });
 
@@ -258,6 +258,24 @@ describe('parseArchitectOutput', () => {
   it('trims and returns text', () => {
     expect(parseArchitectOutput('  task brief  \n')).toBe('task brief');
   });
+
+  it('strips trailing ANNOUNCE_SKIP sentinel', () => {
+    expect(parseArchitectOutput('task brief\nANNOUNCE_SKIP')).toBe(
+      'task brief',
+    );
+  });
+
+  it('strips ANNOUNCE_SKIP with surrounding whitespace', () => {
+    expect(parseArchitectOutput('  task brief  \n  ANNOUNCE_SKIP  ')).toBe(
+      'task brief',
+    );
+  });
+
+  it('preserves text when ANNOUNCE_SKIP is not at the end', () => {
+    expect(parseArchitectOutput('ANNOUNCE_SKIP then more text')).toBe(
+      'ANNOUNCE_SKIP then more text',
+    );
+  });
 });
 
 describe('parseBuilderOutput', () => {
@@ -283,6 +301,19 @@ describe('parseBuilderOutput', () => {
     expect(out.fields).toEqual({});
   });
 
+  it('strips trailing ANNOUNCE_SKIP from JSON output', () => {
+    const out = parseBuilderOutput(
+      JSON.stringify({ _content: '# Synthesis' }) + '\nANNOUNCE_SKIP',
+    );
+    expect(out.content).toBe('# Synthesis');
+  });
+
+  it('strips trailing ANNOUNCE_SKIP from plain text output', () => {
+    const out = parseBuilderOutput('Just narrative\nANNOUNCE_SKIP');
+    expect(out.content).toBe('Just narrative');
+    expect(out.fields).toEqual({});
+  });
+
   it('extracts _state from JSON output', () => {
     const out = parseBuilderOutput(
       JSON.stringify({
@@ -305,5 +336,9 @@ describe('parseBuilderOutput', () => {
 describe('parseCriticOutput', () => {
   it('trims and returns text', () => {
     expect(parseCriticOutput('  good work  \n')).toBe('good work');
+  });
+
+  it('strips trailing ANNOUNCE_SKIP sentinel', () => {
+    expect(parseCriticOutput('good work\nANNOUNCE_SKIP')).toBe('good work');
   });
 });

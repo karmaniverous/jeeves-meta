@@ -12,6 +12,7 @@ import { join } from 'node:path';
 
 import { listArchiveFiles } from '../archive/index.js';
 import {
+  getAncestorMeta,
   getDeltaFiles,
   getScopeFiles,
   type MetaNode,
@@ -130,6 +131,21 @@ export async function buildContextPackage(
   // Archive paths
   const archives = listArchiveFiles(node.metaPath);
 
+  // Nearest ancestor _builder output
+  let ancestorBuilder: string | undefined;
+  const ancestor = getAncestorMeta(node);
+  if (ancestor) {
+    try {
+      const raw = await readFile(join(ancestor.metaPath, 'meta.json'), 'utf8');
+      const ancestorMeta = JSON.parse(raw) as MetaJson;
+      if (ancestorMeta._builder) {
+        ancestorBuilder = ancestorMeta._builder;
+      }
+    } catch {
+      // Ancestor meta.json unreadable — skip
+    }
+  }
+
   return {
     path: node.metaPath,
     scopeFiles,
@@ -141,5 +157,6 @@ export async function buildContextPackage(
     steer: meta._steer ?? null,
     previousState: meta._state ?? null,
     archives,
+    ancestorBuilder,
   };
 }

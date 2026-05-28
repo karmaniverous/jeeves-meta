@@ -155,7 +155,7 @@ export class RuleRegistrar {
   private readonly logger: Logger;
   private readonly watcherClient: WatcherClient;
   private lastWatcherUptime: number | null = null;
-  private registered = false;
+  private registering = false;
 
   public constructor(
     config: MetaConfig,
@@ -167,37 +167,38 @@ export class RuleRegistrar {
     this.watcherClient = watcher;
   }
 
-  /** Whether rules have been successfully registered. */
-  public get isRegistered(): boolean {
-    return this.registered;
-  }
-
   /**
    * Register rules with watcher. Retries with exponential backoff.
    * Non-blocking — logs errors but never throws.
    */
   public async register(): Promise<void> {
-    const rules = buildMetaRules(this.config);
+    if (this.registering) return;
+    this.registering = true;
 
-    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-      try {
-        await this.watcherClient.registerRules(SOURCE, rules);
-        this.registered = true;
-        this.logger.info('Virtual rules registered with watcher');
-        return;
-      } catch (err) {
-        const delayMs = RETRY_BASE_MS * Math.pow(2, attempt);
-        this.logger.warn(
-          { attempt: attempt + 1, delayMs, err },
-          'Rule registration failed, retrying',
-        );
-        await new Promise((r) => setTimeout(r, delayMs));
+    try {
+      const rules = buildMetaRules(this.config);
+
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+          await this.watcherClient.registerRules(SOURCE, rules);
+          this.logger.info('Virtual rules registered with watcher');
+          return;
+        } catch (err) {
+          const delayMs = RETRY_BASE_MS * Math.pow(2, attempt);
+          this.logger.warn(
+            { attempt: attempt + 1, delayMs, err },
+            'Rule registration failed, retrying',
+          );
+          await new Promise((r) => setTimeout(r, delayMs));
+        }
       }
-    }
 
-    this.logger.error(
-      'Rule registration failed after max retries — service degraded',
-    );
+      this.logger.error(
+        'Rule registration failed after max retries — service degraded',
+      );
+    } finally {
+      this.registering = false;
+    }
   }
 
   /**
@@ -214,7 +215,6 @@ export class RuleRegistrar {
         { previous: this.lastWatcherUptime, current: currentUptime },
         'Watcher restart detected — re-registering rules',
       );
-      this.registered = false;
       await this.register();
     }
     this.lastWatcherUptime = currentUptime;

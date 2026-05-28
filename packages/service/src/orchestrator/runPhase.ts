@@ -7,6 +7,7 @@
  * @module orchestrator/runPhase
  */
 
+import { createHash } from 'node:crypto';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -25,6 +26,10 @@ import {
   phaseRunning,
 } from '../phaseState/index.js';
 import type { ProgressEvent } from '../progress/index.js';
+import {
+  DEFAULT_ARCHITECT_PROMPT,
+  DEFAULT_CRITIC_PROMPT,
+} from '../prompts/index.js';
 import type {
   MetaConfig,
   MetaError,
@@ -42,6 +47,15 @@ import {
   parseBuilderOutput,
   parseCriticOutput,
 } from './parseOutput.js';
+
+/** Compute SHA-256 hash of ancestor _builder text for observability tracking. */
+function hashAncestorBuilder(
+  ancestorBuilder: string | undefined,
+): string | undefined {
+  return ancestorBuilder
+    ? createHash('sha256').update(ancestorBuilder).digest('hex')
+    : undefined;
+}
 
 /** Callback for synthesis progress events. */
 export type ProgressCallback = (event: ProgressEvent) => void | Promise<void>;
@@ -140,6 +154,12 @@ export async function runArchitect(
   logger?: MinimalLogger,
 ): Promise<PhaseResult> {
   let ps = phaseRunning(phaseState, 'architect');
+  const base: FinalizeBase = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    structureHash,
+  };
 
   const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
@@ -153,7 +173,7 @@ export async function runArchitect(
     const architectTask = buildArchitectTask(ctx, currentMeta, config);
     const result = await executor.spawn(architectTask, {
       thinking: config.thinking,
-      timeout: config.architectTimeout,
+      timeout: currentMeta._architectTimeout ?? config.architectTimeout,
       label: 'meta-architect',
     });
     const builderBrief = parseArchitectOutput(result.output);
@@ -162,18 +182,18 @@ export async function runArchitect(
     // Architect success: architect → fresh, _synthesisCount → 0
     ps = architectSuccess(ps);
 
-    const updatedMeta = await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      {
-        _builder: builderBrief,
-        _architect: currentMeta._architect ?? config.defaultArchitect ?? '',
-        _synthesisCount: 0,
-        _architectTokens: architectTokens,
-        _generatedAt: new Date().toISOString(),
-        _error: undefined,
-      },
-    );
+    const architectUpdates: Partial<MetaJson> = {
+      _builder: builderBrief,
+      _architect: config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+      _synthesisCount: 0,
+      _architectTokens: architectTokens,
+      _generatedAt: new Date().toISOString(),
+      _error: undefined,
+    };
+    const ancestorHash = hashAncestorBuilder(ctx.ancestorBuilder);
+    if (ancestorHash) architectUpdates._ancestorBuilderHash = ancestorHash;
+
+    const updatedMeta = await persistPhaseState(base, ps, architectUpdates);
 
     await onProgress?.({
       type: 'phase_complete',
@@ -185,12 +205,7 @@ export async function runArchitect(
 
     return { executed: true, phaseState: ps, updatedMeta };
   } catch (err) {
-    return handlePhaseFailure('architect', err, executor, ps, {
-      metaPath: node.metaPath,
-      current: currentMeta,
-      config,
-      structureHash,
-    });
+    return handlePhaseFailure('architect', err, executor, ps, base);
   }
 }
 
@@ -208,6 +223,12 @@ export async function runBuilder(
   logger?: MinimalLogger,
 ): Promise<PhaseResult> {
   let ps = phaseRunning(phaseState, 'builder');
+  const base: FinalizeBase = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    structureHash,
+  };
 
   const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
@@ -221,7 +242,7 @@ export async function runBuilder(
     const builderTask = buildBuilderTask(ctx, currentMeta, config);
     const result = await executor.spawn(builderTask, {
       thinking: config.thinking,
-      timeout: config.builderTimeout,
+      timeout: currentMeta._builderTimeout ?? config.builderTimeout,
       label: 'meta-builder',
     });
     const builderOutput = parseBuilderOutput(result.output);
@@ -230,18 +251,18 @@ export async function runBuilder(
     // Builder success: builder → fresh, critic → pending
     ps = builderSuccess(ps);
 
-    const updatedMeta = await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      {
-        _content: builderOutput.content,
-        _state: builderOutput.state,
-        _builderTokens: builderTokens,
-        _generatedAt: new Date().toISOString(),
-        _error: undefined,
-        ...builderOutput.fields,
-      },
-    );
+    const builderUpdates: Partial<MetaJson> = {
+      _content: builderOutput.content,
+      _state: builderOutput.state,
+      _builderTokens: builderTokens,
+      _generatedAt: new Date().toISOString(),
+      _error: undefined,
+      ...builderOutput.fields,
+    };
+    const ancestorHash = hashAncestorBuilder(ctx.ancestorBuilder);
+    if (ancestorHash) builderUpdates._ancestorBuilderHash = ancestorHash;
+
+    const updatedMeta = await persistPhaseState(base, ps, builderUpdates);
 
     await onProgress?.({
       type: 'phase_complete',
@@ -270,19 +291,7 @@ export async function runBuilder(
       }
     }
 
-    return handlePhaseFailure(
-      'builder',
-      err,
-      executor,
-      ps,
-      {
-        metaPath: node.metaPath,
-        current: currentMeta,
-        config,
-        structureHash,
-      },
-      partialState,
-    );
+    return handlePhaseFailure('builder', err, executor, ps, base, partialState);
   }
 }
 
@@ -300,6 +309,12 @@ export async function runCritic(
   logger?: MinimalLogger,
 ): Promise<PhaseResult> {
   let ps = phaseRunning(phaseState, 'critic');
+  const base: FinalizeBase = {
+    metaPath: node.metaPath,
+    current: currentMeta,
+    config,
+    structureHash,
+  };
 
   const ctx = await buildContextPackage(node, currentMeta, watcher, logger);
 
@@ -316,7 +331,7 @@ export async function runCritic(
     const criticTask = buildCriticTask(ctx, metaForCritic, config);
     const result = await executor.spawn(criticTask, {
       thinking: config.thinking,
-      timeout: config.criticTimeout,
+      timeout: currentMeta._criticTimeout ?? config.criticTimeout,
       label: 'meta-critic',
     });
     const feedback = parseCriticOutput(result.output);
@@ -328,6 +343,7 @@ export async function runCritic(
 
     const updates: Partial<MetaJson> = {
       _feedback: feedback,
+      _critic: config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
       _criticTokens: criticTokens,
       _error: undefined,
     };
@@ -338,11 +354,7 @@ export async function runCritic(
       updates._synthesisCount = (currentMeta._synthesisCount ?? 0) + 1;
     }
 
-    const updatedMeta = await persistPhaseState(
-      { metaPath: node.metaPath, current: currentMeta, config, structureHash },
-      ps,
-      updates,
-    );
+    const updatedMeta = await persistPhaseState(base, ps, updates);
 
     // Archive on full-cycle only
     if (cycleComplete) {
@@ -365,11 +377,6 @@ export async function runCritic(
       cycleComplete,
     };
   } catch (err) {
-    return handlePhaseFailure('critic', err, executor, ps, {
-      metaPath: node.metaPath,
-      current: currentMeta,
-      config,
-      structureHash,
-    });
+    return handlePhaseFailure('critic', err, executor, ps, base);
   }
 }

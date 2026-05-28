@@ -31,6 +31,14 @@ const autoSeedRuleSchema = z.object({
   steer: z.string().optional(),
   /** Optional cross-references for seeded metas. */
   crossRefs: z.array(z.string()).optional(),
+  /** Walk up this many extra parent levels from the matched file's directory. Default 0. */
+  parentDepth: z.number().int().min(0).optional(),
+  /** Per-category timeout override for the architect phase (seconds, min 30). */
+  architectTimeout: z.number().int().min(30).optional(),
+  /** Per-category timeout override for the builder phase (seconds, min 30). */
+  builderTimeout: z.number().int().min(30).optional(),
+  /** Per-category timeout override for the critic phase (seconds, min 30). */
+  criticTimeout: z.number().int().min(30).optional(),
 });
 
 /** Inferred type for an auto-seed rule. */
