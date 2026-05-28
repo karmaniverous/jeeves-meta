@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚜 Refactor
+
+- *(core)* Shared endpoint catalog (#150)
+## [0.1.1] - 2026-05-13
+
 ### 🚀 Features
 
 - Phase 10 bundle — core package, git-cliff, contracts.tools, cleanup
@@ -15,3 +20,4 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Bump deps, standardize rollup build, align with jeeves-server
+- Release @karmaniverous/jeeves-meta-core v0.1.1
