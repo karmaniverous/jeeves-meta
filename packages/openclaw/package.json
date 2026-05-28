@@ -1,14 +1,29 @@
 {
-  "name": "@karmaniverous/jeeves-meta-openclaw",
-  "version": "0.12.5",
   "author": "Jason Williscroft",
-  "description": "OpenClaw plugin for jeeves-meta — synthesis tools and virtual rule registration",
-  "license": "BSD-3-Clause",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "bin": {
     "jeeves-meta-openclaw": "./dist/cli.js"
+  },
+  "bugs": {
+    "url": "https://github.com/karmaniverous/jeeves-meta/issues"
+  },
+  "dependencies": {
+    "@karmaniverous/jeeves": "^0.5.10",
+    "@karmaniverous/jeeves-meta-core": "^0.1.2"
+  },
+  "description": "OpenClaw plugin for jeeves-meta — synthesis tools and virtual rule registration",
+  "devDependencies": {
+    "@dotenvx/dotenvx": "^1.65.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "cross-env": "^10.1.0",
+    "release-it": "^20.0.1",
+    "rollup": "^4.60.3",
+    "tslib": "^2.8.1",
+    "vitest": "^4.1.6"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "exports": {
     ".": {
@@ -23,17 +38,6 @@
     "content",
     "openclaw.plugin.json"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/karmaniverous/jeeves-meta.git",
-    "directory": "packages/openclaw"
-  },
-  "bugs": {
-    "url": "https://github.com/karmaniverous/jeeves-meta/issues"
-  },
   "homepage": "https://github.com/karmaniverous/jeeves-meta#readme",
   "keywords": [
     "openclaw",
@@ -41,46 +45,23 @@
     "jeeves-meta",
     "synthesis"
   ],
-  "engines": {
-    "node": ">=22"
-  },
+  "license": "BSD-3-Clause",
+  "main": "dist/index.js",
+  "name": "@karmaniverous/jeeves-meta-openclaw",
   "openclaw": {
     "extensions": [
       "./dist/index.js"
     ]
   },
-  "devDependencies": {
-    "@dotenvx/dotenvx": "^1.65.0",
-    "@rollup/plugin-commonjs": "^29.0.2",
-    "@rollup/plugin-node-resolve": "^16.0.3",
-    "@rollup/plugin-typescript": "^12.3.0",
-    "cross-env": "^10.1.0",
-    "release-it": "^20.0.1",
-    "rollup": "^4.60.3",
-    "tslib": "^2.8.1",
-    "vitest": "^4.1.6"
-  },
-  "scripts": {
-    "build": "npm run build:plugin && npm run build:skills && npm run build:content",
-    "changelog": "git-cliff -o CHANGELOG.md",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "release": "dotenvx run -f .env.local -- release-it",
-    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.prerelease --preRelease",
-    "knip": "knip",
-    "test": "vitest run",
-    "typecheck": "tsc",
-    "diagrams": "cd diagrams && plantuml -tpng -o ../assets -r .",
-    "build:plugin": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
-    "build:skills": "node scripts/build-skills.mjs",
-    "build:content": "node scripts/copy-content.mjs"
+  "publishConfig": {
+    "access": "public"
   },
   "release-it": {
     "git": {
       "changelog": "npx git-cliff --unreleased --strip header",
       "commitMessage": "chore: release @karmaniverous/jeeves-meta-openclaw v${version}",
-      "tagName": "openclaw/${version}",
-      "requireBranch": "main"
+      "requireBranch": "main",
+      "tagName": "openclaw/${version}"
     },
     "github": {
       "release": true
@@ -88,10 +69,6 @@
     "hooks": {
       "after:bump": [
         "node -e \"const f='openclaw.plugin.json';const j=JSON.parse(require('fs').readFileSync(f,'utf8'));j.version='${version}';require('fs').writeFileSync(f,JSON.stringify(j,null,2)+'')\""
-      ],
-      "before:npm:release": [
-        "npx git-cliff -o CHANGELOG.md",
-        "git add -A"
       ],
       "after:init": [
         "npm run lint",
@@ -103,14 +80,37 @@
         "git switch -c release/openclaw/${version}",
         "git push -u origin release/openclaw/${version}",
         "git switch ${branchName}"
+      ],
+      "before:npm:release": [
+        "npx git-cliff -o CHANGELOG.md",
+        "git add -A"
       ]
     },
     "npm": {
       "publish": true
     }
   },
-  "dependencies": {
-    "@karmaniverous/jeeves": "^0.5.10",
-    "@karmaniverous/jeeves-meta-core": "^0.1.1"
-  }
+  "repository": {
+    "directory": "packages/openclaw",
+    "type": "git",
+    "url": "git+https://github.com/karmaniverous/jeeves-meta.git"
+  },
+  "scripts": {
+    "build": "npm run build:plugin && npm run build:skills && npm run build:content",
+    "build:content": "node scripts/copy-content.mjs",
+    "build:plugin": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "build:skills": "node scripts/build-skills.mjs",
+    "changelog": "git-cliff -o CHANGELOG.md",
+    "diagrams": "cd diagrams && plantuml -tpng -o ../assets -r .",
+    "knip": "knip",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "release": "dotenvx run -f .env.local -- release-it",
+    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.prerelease --preRelease",
+    "test": "vitest run",
+    "typecheck": "tsc"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "0.12.5"
 }

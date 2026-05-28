@@ -1,33 +1,4 @@
 {
-  "name": "@karmaniverous/jeeves-meta-core",
-  "version": "0.1.2",
-  "type": "module",
-  "files": [
-    "dist"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "scripts": {
-    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
-    "knip": "knip",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "test": "vitest run --passWithNoTests",
-    "typecheck": "tsc",
-    "changelog": "git-cliff -o CHANGELOG.md",
-    "release": "dotenvx run -f .env.local -- release-it",
-    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.prerelease --preRelease"
-  },
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
-    }
-  },
-  "types": "dist/index.d.ts",
   "dependencies": {
     "zod": "^4.4"
   },
@@ -45,12 +16,27 @@
   "engines": {
     "node": ">=22"
   },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "name": "@karmaniverous/jeeves-meta-core",
+  "publishConfig": {
+    "access": "public"
+  },
   "release-it": {
     "git": {
       "changelog": "npx git-cliff --unreleased --strip header",
       "commitMessage": "chore: release @karmaniverous/jeeves-meta-core v${version}",
-      "tagName": "core/${version}",
-      "requireBranch": "main"
+      "requireBranch": "main",
+      "tagName": "core/${version}"
     },
     "github": {
       "release": true
@@ -62,18 +48,32 @@
         "npm run test",
         "npm run build"
       ],
-      "before:npm:release": [
-        "npx git-cliff -o CHANGELOG.md",
-        "git add -A"
-      ],
       "after:release": [
         "git switch -c release/core/${version}",
         "git push -u origin release/core/${version}",
         "git switch ${branchName}"
+      ],
+      "before:npm:release": [
+        "npx git-cliff -o CHANGELOG.md",
+        "git add -A"
       ]
     },
     "npm": {
       "publish": true
     }
-  }
+  },
+  "scripts": {
+    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "changelog": "git-cliff -o CHANGELOG.md",
+    "knip": "knip",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "release": "dotenvx run -f .env.local -- release-it",
+    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.prerelease --preRelease",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "0.1.2"
 }

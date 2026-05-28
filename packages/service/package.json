@@ -1,48 +1,14 @@
 {
-  "name": "@karmaniverous/jeeves-meta",
-  "version": "0.15.8",
   "author": "Jason Williscroft",
-  "description": "Fastify HTTP service for the Jeeves Meta synthesis engine",
-  "license": "BSD-3-Clause",
-  "type": "module",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
-  "files": [
-    "dist"
-  ],
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/karmaniverous/jeeves-meta.git",
-    "directory": "packages/service"
+  "bin": {
+    "jeeves-meta": "./dist/cli/jeeves-meta/index.js"
   },
   "bugs": {
     "url": "https://github.com/karmaniverous/jeeves-meta/issues"
   },
-  "homepage": "https://github.com/karmaniverous/jeeves-meta#readme",
-  "keywords": [
-    "synthesis",
-    "knowledge",
-    "meta",
-    "jeeves",
-    "service",
-    "fastify",
-    "typescript"
-  ],
-  "engines": {
-    "node": ">=22"
-  },
   "dependencies": {
     "@karmaniverous/jeeves": "^0.5.10",
-    "@karmaniverous/jeeves-meta-core": "^0.1.1",
+    "@karmaniverous/jeeves-meta-core": "^0.1.2",
     "commander": "^14",
     "croner": "^10",
     "fastify": "^5.8",
@@ -51,6 +17,7 @@
     "pino": "^10",
     "zod": "^4.4"
   },
+  "description": "Fastify HTTP service for the Jeeves Meta synthesis engine",
   "devDependencies": {
     "@dotenvx/dotenvx": "^1.65.0",
     "@rollup/plugin-commonjs": "^29.0.2",
@@ -66,26 +33,40 @@
     "tslib": "^2.8.1",
     "vitest": "^4.1.6"
   },
-  "scripts": {
-    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
-    "knip": "knip",
-    "lint": "eslint .",
-    "lint:fix": "eslint --fix .",
-    "test": "vitest run",
-    "typecheck": "tsc",
-    "changelog": "git-cliff -o CHANGELOG.md",
-    "release": "dotenvx run -f .env.local -- release-it",
-    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.prerelease --preRelease"
+  "engines": {
+    "node": ">=22"
   },
-  "bin": {
-    "jeeves-meta": "./dist/cli/jeeves-meta/index.js"
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "homepage": "https://github.com/karmaniverous/jeeves-meta#readme",
+  "keywords": [
+    "synthesis",
+    "knowledge",
+    "meta",
+    "jeeves",
+    "service",
+    "fastify",
+    "typescript"
+  ],
+  "license": "BSD-3-Clause",
+  "module": "dist/index.js",
+  "name": "@karmaniverous/jeeves-meta",
+  "publishConfig": {
+    "access": "public"
   },
   "release-it": {
     "git": {
       "changelog": "npx git-cliff --unreleased --strip header",
       "commitMessage": "chore: release @karmaniverous/jeeves-meta v${version}",
-      "tagName": "service/${version}",
-      "requireBranch": "main"
+      "requireBranch": "main",
+      "tagName": "service/${version}"
     },
     "github": {
       "release": true
@@ -110,5 +91,24 @@
     "npm": {
       "publish": true
     }
-  }
+  },
+  "repository": {
+    "directory": "packages/service",
+    "type": "git",
+    "url": "git+https://github.com/karmaniverous/jeeves-meta.git"
+  },
+  "scripts": {
+    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "changelog": "git-cliff -o CHANGELOG.md",
+    "knip": "knip",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "release": "dotenvx run -f .env.local -- release-it",
+    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.prerelease --preRelease",
+    "test": "vitest run",
+    "typecheck": "tsc"
+  },
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "0.15.8"
 }
