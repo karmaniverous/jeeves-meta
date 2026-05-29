@@ -8,8 +8,8 @@ export { type DerivationInputs, derivePhaseState } from './derivePhaseState.js';
 export {
   type ArchitectInvalidator,
   computeInvalidation,
-  type InvalidationResult,
   type InputStatus,
+  type InvalidationResult,
 } from './invalidate.js';
 export {
   buildPhaseCandidates,
