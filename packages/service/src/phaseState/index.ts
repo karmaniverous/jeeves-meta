@@ -9,7 +9,7 @@ export {
   type ArchitectInvalidator,
   computeInvalidation,
   type InvalidationResult,
-  type StalenessInputs,
+  type InputStatus,
 } from './invalidate.js';
 export {
   buildPhaseCandidates,

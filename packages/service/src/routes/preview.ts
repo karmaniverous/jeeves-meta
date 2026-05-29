@@ -74,16 +74,13 @@ export function registerPreviewRoute(
       config,
       targetNode,
     );
-    const { architectInvalidators, stalenessInputs } = invalidation;
+    const { architectInvalidators, inputStatus } = invalidation;
     const { structureHash } = invalidation;
     const structureChanged = structureHash !== meta._structureHash;
     const { steerChanged } = invalidation;
-    const { crossRefsDeclChanged } = stalenessInputs;
+    const { crossRefsDeclChanged } = inputStatus;
 
-    // Use invalidation result for architectEvery check since computeInvalidation
-    // accounts for prompt staleness without mutating meta._synthesisCount.
-    const effectiveSynthesisCount =
-      invalidation.synthesisCountOverride ?? meta._synthesisCount ?? 0;
+    const effectiveSynthesisCount = meta._synthesisCount ?? 0;
     const architectTriggered =
       !meta._builder ||
       structureChanged ||
@@ -150,7 +147,7 @@ export function registerPreviewRoute(
       owedPhase,
       priorityBand,
       phaseState,
-      stalenessInputs,
+      inputStatus,
       architectInvalidators,
     };
   });

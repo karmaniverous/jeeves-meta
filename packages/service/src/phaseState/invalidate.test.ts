@@ -121,9 +121,9 @@ describe('computeInvalidation', () => {
 
     expect(result.phaseState).toEqual(freshPhaseState);
     expect(result.architectInvalidators).toEqual([]);
-    expect(result.stalenessInputs.steerChanged).toBe(false);
-    expect(result.stalenessInputs.crossRefsDeclChanged).toBe(false);
-    expect(result.stalenessInputs.crossRefContentChanged).toBe(false);
+    expect(result.inputStatus.steerChanged).toBe(false);
+    expect(result.inputStatus.crossRefsDeclChanged).toBe(false);
+    expect(result.inputStatus.crossRefContentChanged).toBe(false);
   });
 
   // ── 2. Structure hash mismatch (non-progressive) ───────────────
@@ -214,7 +214,7 @@ describe('computeInvalidation', () => {
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.architectInvalidators).toContain('_crossRefs');
-    expect(result.stalenessInputs.crossRefsDeclChanged).toBe(true);
+    expect(result.inputStatus.crossRefsDeclChanged).toBe(true);
     expect(result.phaseState.architect).toBe('pending');
   });
 
@@ -241,7 +241,7 @@ describe('computeInvalidation', () => {
 
   // ── 7. Prompt staleness — architect snapshot differs ───────────
 
-  it('bumps synthesisCount to architectEvery when architect prompt is stale', async () => {
+  it('does not invalidate architect when architect prompt is stale (#163)', async () => {
     const meta: MetaJson = {
       _phaseState: { ...freshPhaseState },
       _structureHash: HASH_A,
@@ -257,17 +257,16 @@ describe('computeInvalidation', () => {
       node,
     );
 
-    // Soft invalidation signals synthesisCountOverride without mutating meta,
-    // which triggers the architectEvery invalidator
-    expect(meta._synthesisCount).toBe(3); // original value unchanged
-    expect(result.synthesisCountOverride).toBe(10);
-    expect(result.architectInvalidators).toContain('architectEvery');
-    expect(result.stalenessInputs.architectChanged).toBe(true);
+    // Prompt staleness is informational only — no cascade, no storm
+    expect(meta._synthesisCount).toBe(3); // unchanged
+    expect(result.architectInvalidators).not.toContain('architectEvery');
+    expect(result.phaseState).toEqual(freshPhaseState);
+    expect(result.inputStatus.architectChanged).toBe(true);
   });
 
   // ── 8. Prompt staleness — critic snapshot differs ──────────────
 
-  it('bumps synthesisCount to architectEvery when critic prompt is stale', async () => {
+  it('does not invalidate architect when critic prompt is stale (#163)', async () => {
     const meta: MetaJson = {
       _phaseState: { ...freshPhaseState },
       _structureHash: HASH_A,
@@ -283,10 +282,11 @@ describe('computeInvalidation', () => {
       node,
     );
 
-    expect(meta._synthesisCount).toBe(2); // original value unchanged
-    expect(result.synthesisCountOverride).toBe(10);
-    expect(result.architectInvalidators).toContain('architectEvery');
-    expect(result.stalenessInputs.architectChanged).toBe(false);
+    // Prompt staleness is informational only — no cascade, no storm
+    expect(meta._synthesisCount).toBe(2); // unchanged
+    expect(result.architectInvalidators).not.toContain('architectEvery');
+    expect(result.phaseState).toEqual(freshPhaseState);
+    expect(result.inputStatus.architectChanged).toBe(false);
   });
 
   // ── 9. First run (no _builder) ─────────────────────────────────
@@ -337,7 +337,7 @@ describe('computeInvalidation', () => {
       archiveCrossRefContent,
     );
 
-    expect(result.stalenessInputs.crossRefContentChanged).toBe(true);
+    expect(result.inputStatus.crossRefContentChanged).toBe(true);
     expect(result.architectInvalidators).toEqual([]);
     expect(result.phaseState.architect).toBe('fresh');
     expect(result.phaseState.builder).toBe('pending');
@@ -377,7 +377,7 @@ describe('computeInvalidation', () => {
 
     // Architect is invalidated (steer change)
     expect(result.architectInvalidators).toContain('steer');
-    expect(result.stalenessInputs.crossRefContentChanged).toBe(true);
+    expect(result.inputStatus.crossRefContentChanged).toBe(true);
     // Builder invalidation is via architect cascade, not separately applied
     expect(result.phaseState.architect).toBe('pending');
     expect(result.phaseState.builder).toBe('stale');
@@ -446,7 +446,7 @@ describe('computeInvalidation', () => {
 
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
-    expect(result.stalenessInputs.crossRefsDeclChanged).toBe(true);
+    expect(result.inputStatus.crossRefsDeclChanged).toBe(true);
   });
 
   it('does not treat matching prompt snapshots as stale', async () => {
@@ -461,10 +461,9 @@ describe('computeInvalidation', () => {
 
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
-    // No bump — snapshots match
+    // No change — snapshots match
     expect(meta._synthesisCount).toBe(3);
-    expect(result.synthesisCountOverride).toBeNull();
-    expect(result.stalenessInputs.architectChanged).toBe(false);
+    expect(result.inputStatus.architectChanged).toBe(false);
     expect(result.architectInvalidators).not.toContain('architectEvery');
   });
 
@@ -481,8 +480,7 @@ describe('computeInvalidation', () => {
 
     // isPromptStale returns false when snapshot is undefined
     expect(meta._synthesisCount).toBe(3);
-    expect(result.synthesisCountOverride).toBeNull();
-    expect(result.stalenessInputs.architectChanged).toBe(false);
+    expect(result.inputStatus.architectChanged).toBe(false);
   });
 
   it('cross-ref content change does not invalidate builder on first run', async () => {
@@ -510,7 +508,7 @@ describe('computeInvalidation', () => {
     // First run triggers architect invalidation; builder cascade comes from
     // architect, not from cross-ref content change
     expect(result.phaseState.architect).toBe('pending');
-    expect(result.stalenessInputs.crossRefContentChanged).toBe(true);
+    expect(result.inputStatus.crossRefContentChanged).toBe(true);
   });
 
   it('returns correct structureHash in result', async () => {
@@ -542,6 +540,6 @@ describe('computeInvalidation', () => {
       // no crossRefMetas or archiveCrossRefContent
     );
 
-    expect(result.stalenessInputs.crossRefContentChanged).toBe(false);
+    expect(result.inputStatus.crossRefContentChanged).toBe(false);
   });
 });

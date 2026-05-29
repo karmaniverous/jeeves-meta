@@ -72,9 +72,7 @@ export function registerSynthesizeRoute(
               structureHash: invalidation.structureHash,
             },
             invalidation.phaseState,
-            invalidation.synthesisCountOverride !== null
-              ? { _synthesisCount: invalidation.synthesisCountOverride }
-              : {},
+            {},
           );
           cache.invalidate();
         }
