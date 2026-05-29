@@ -12,7 +12,6 @@ import { normalizePath } from '../normalizePath.js';
 import {
   buildPhaseCandidates,
   computeInvalidation,
-  derivePhaseState,
   getOwedPhase,
   getPriorityBand,
   selectPhaseCandidate,
@@ -74,21 +73,8 @@ export function registerPreviewRoute(
       config,
       targetNode,
     );
-    const { architectInvalidators, stalenessInputs } = invalidation;
-    const { structureHash } = invalidation;
-    const structureChanged = structureHash !== meta._structureHash;
-    const { steerChanged } = invalidation;
-    const { crossRefsDeclChanged } = stalenessInputs;
-
-    // Use invalidation result for architectEvery check since computeInvalidation
-    // accounts for prompt staleness without mutating meta._synthesisCount.
-    const effectiveSynthesisCount =
-      invalidation.synthesisCountOverride ?? meta._synthesisCount ?? 0;
-    const architectTriggered =
-      !meta._builder ||
-      structureChanged ||
-      steerChanged ||
-      effectiveSynthesisCount >= config.architectEvery;
+    const { architectInvalidators, inputStatus, phaseState } = invalidation;
+    const architectTriggered = architectInvalidators.length > 0;
 
     // Delta files
     const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
@@ -111,13 +97,6 @@ export function registerPreviewRoute(
       config.depthWeight,
     );
 
-    // Phase state
-    const phaseState = derivePhaseState(meta, {
-      structureChanged,
-      steerChanged,
-      crossRefsChanged: crossRefsDeclChanged,
-      architectEvery: config.architectEvery,
-    });
     const owedPhase = getOwedPhase(phaseState);
     const priorityBand = getPriorityBand(phaseState);
 
@@ -130,10 +109,17 @@ export function registerPreviewRoute(
       architectWillRun: architectTriggered,
       architectReason:
         [
-          ...(!meta._builder ? ['no cached builder (first run)'] : []),
-          ...(structureChanged ? ['structure changed'] : []),
-          ...(steerChanged ? ['steer changed'] : []),
-          ...(effectiveSynthesisCount >= config.architectEvery
+          ...(architectInvalidators.includes('firstRun')
+            ? ['no cached builder (first run)']
+            : []),
+          ...(architectInvalidators.includes('structureHash')
+            ? ['structure changed']
+            : []),
+          ...(architectInvalidators.includes('steer') ? ['steer changed'] : []),
+          ...(architectInvalidators.includes('_crossRefs')
+            ? ['cross-refs changed']
+            : []),
+          ...(architectInvalidators.includes('architectEvery')
             ? ['periodic refresh']
             : []),
         ].join(', ') || 'not triggered',
@@ -150,7 +136,7 @@ export function registerPreviewRoute(
       owedPhase,
       priorityBand,
       phaseState,
-      stalenessInputs,
+      inputStatus,
       architectInvalidators,
     };
   });

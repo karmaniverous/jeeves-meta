@@ -289,12 +289,10 @@ export class Scheduler {
               metaPath: t2.node.metaPath,
               current: currentMeta,
               config: this.config,
-              structureHash: result.structureHash,
+              structureHash: result.inputStatus.structureHash,
             },
             result.phaseState,
-            result.synthesisCountOverride !== null
-              ? { _synthesisCount: result.synthesisCountOverride }
-              : {},
+            {},
           );
           this.cache.invalidate();
 
@@ -311,14 +309,11 @@ export class Scheduler {
             metaPath: t2.node.metaPath,
             current: currentMeta,
             config: this.config,
-            structureHash: result.structureHash,
+            structureHash: result.inputStatus.structureHash,
           },
           result.phaseState,
           {
             _generatedAt: new Date().toISOString(),
-            ...(result.synthesisCountOverride !== null
-              ? { _synthesisCount: result.synthesisCountOverride }
-              : {}),
           },
         );
         dirty = true;

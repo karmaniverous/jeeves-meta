@@ -73,7 +73,7 @@ export const META_ENDPOINTS = [
     method: 'GET',
     path: '/preview',
     description:
-      'Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, stalenessInputs, and architectInvalidators.',
+      'Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, inputStatus, and architectInvalidators.',
   },
   {
     name: 'seed',

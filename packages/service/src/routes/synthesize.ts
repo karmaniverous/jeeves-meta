@@ -69,12 +69,10 @@ export function registerSynthesizeRoute(
               metaPath: targetPath,
               current: meta,
               config,
-              structureHash: invalidation.structureHash,
+              structureHash: invalidation.inputStatus.structureHash,
             },
             invalidation.phaseState,
-            invalidation.synthesisCountOverride !== null
-              ? { _synthesisCount: invalidation.synthesisCountOverride }
-              : {},
+            {},
           );
           cache.invalidate();
         }

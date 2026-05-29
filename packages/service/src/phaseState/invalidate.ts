@@ -20,7 +20,8 @@ import { invalidateArchitect, invalidateBuilder } from './phaseTransitions.js';
 
 /**
  * Check whether a persisted prompt snapshot mismatches the currently-resolved prompt.
- * Returns true when soft invalidation should bump _synthesisCount.
+ * Returns true when the snapshot exists and differs from the resolved prompt.
+ * This is informational only — it does NOT trigger invalidation.
  */
 function isPromptStale(
   snapshot: string | undefined,
@@ -34,15 +35,16 @@ export type ArchitectInvalidator =
   | 'structureHash'
   | 'steer'
   | '_crossRefs'
+  | 'firstRun'
   | 'architectEvery';
 
-/** Staleness inputs for a meta (exposed in /preview). */
-export interface StalenessInputs {
+/** Informational input status for a meta (exposed in /preview). */
+export interface InputStatus {
   structureHash: string;
   steerChanged: boolean;
   architectChanged: boolean;
+  criticChanged: boolean;
   crossRefsDeclChanged: boolean;
-  scopeMtimeMax: string | null;
   crossRefContentChanged: boolean;
 }
 
@@ -50,11 +52,7 @@ export interface StalenessInputs {
 export interface InvalidationResult {
   phaseState: PhaseState;
   architectInvalidators: ArchitectInvalidator[];
-  stalenessInputs: StalenessInputs;
-  structureHash: string;
-  steerChanged: boolean;
-  /** When non-null, callers that persist should set meta._synthesisCount to this value. */
-  synthesisCountOverride: number | null;
+  inputStatus: InputStatus;
 }
 
 /**
@@ -93,10 +91,13 @@ export async function computeInvalidation(
     Boolean(latestArchive),
   );
 
-  // Soft invalidation: compare prompt snapshots against currently-resolved prompts.
-  // On mismatch, signal that _synthesisCount should be bumped to architectEvery so
-  // architect runs on the next natural cycle — but do NOT hard-cascade via
-  // invalidateArchitect and do NOT mutate the input meta.
+  // Prompt staleness detection: compare persisted prompt snapshots against
+  // currently-resolved prompts.  This is INFORMATIONAL ONLY — reported via
+  // inputStatus so /preview can surface it, but it must NEVER feed into
+  // the invalidation cascade.  When a meta naturally reaches architectEvery
+  // through real builder cycles, architect runs with the current prompt and
+  // the snapshot updates.  Coupling prompt changes to invalidation causes a
+  // corpus-wide synthesis storm (see #163).
   const architectChanged = isPromptStale(
     meta._architect,
     config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
@@ -105,10 +106,7 @@ export async function computeInvalidation(
     meta._critic,
     config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
   );
-  const synthesisCountOverride =
-    architectChanged || criticChanged ? config.architectEvery : null;
-  const effectiveSynthesisCount =
-    synthesisCountOverride ?? meta._synthesisCount ?? 0;
+  const effectiveSynthesisCount = meta._synthesisCount ?? 0;
 
   // _crossRefs declaration change
   const currentRefs = (meta._crossRefs ?? []).slice().sort().join(',');
@@ -135,18 +133,13 @@ export async function computeInvalidation(
     architectInvalidators.push('architectEvery');
   }
 
-  // First-run check: no _builder means architect must run
-  const firstRun = !meta._builder;
+  if (!meta._builder) architectInvalidators.push('firstRun');
 
-  if (architectInvalidators.length > 0 || firstRun) {
+  if (architectInvalidators.length > 0) {
     phaseState = invalidateArchitect(phaseState);
   }
 
   // ── Builder-level inputs ──
-  // Scope file mtime check — if any file newer than _generatedAt
-  const scopeMtimeMax: string | null = null;
-  // Note: actual mtime check is done by the caller or via isStale;
-  // here we just detect cross-ref content changes for the cascade.
 
   // Cross-ref _content change (builder-invalidating)
   let crossRefContentChanged = false;
@@ -163,27 +156,20 @@ export async function computeInvalidation(
   // Builder invalidation: scope mtime advances OR cross-ref content changes
   // Scope mtime is already captured by the staleness detection in the caller;
   // here we apply cross-ref content change cascade.
-  if (
-    crossRefContentChanged &&
-    architectInvalidators.length === 0 &&
-    !firstRun
-  ) {
+  if (crossRefContentChanged && architectInvalidators.length === 0) {
     phaseState = invalidateBuilder(phaseState);
   }
 
   return {
     phaseState,
     architectInvalidators,
-    stalenessInputs: {
+    inputStatus: {
       structureHash,
       steerChanged,
       architectChanged,
+      criticChanged,
       crossRefsDeclChanged,
-      scopeMtimeMax,
       crossRefContentChanged,
     },
-    structureHash,
-    steerChanged,
-    synthesisCountOverride,
   };
 }

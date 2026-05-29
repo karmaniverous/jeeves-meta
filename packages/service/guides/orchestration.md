@@ -19,12 +19,17 @@ The `orchestratePhase()` function runs **one phase per tick** using the phase-st
 
 Each meta carries `_phaseState: { architect, builder, critic }` where each value is one of: `fresh`, `stale`, `pending`, `running`, `failed`.
 
+**Invariant:** At most one phase is `pending` or `running`, and it is the first non-fresh phase in pipeline order. When `enforceInvariant()` runs after every transition, stale phases that become the first non-fresh phase are promoted to `pending`; non-first `pending` phases are demoted to `stale`.
+
 **Key transitions:**
-- File change detected → `architect: stale` (cascade: `builder: pending`, `critic: pending`)
-- Architect success → `architect: fresh` (cascade: `builder: pending` if was stale)
-- Builder success → `builder: fresh`, `critic: pending`
-- Critic success → `critic: fresh`; if all three fresh → full-cycle complete (archive + increment `_synthesisCount`)
+- Architect invalidated → `architect: pending` (downstream `fresh` phases become `stale`; already non-fresh phases keep their state). Triggers: structure hash change, steer change, cross-refs declaration change, `_synthesisCount` ≥ `architectEvery`, or first run (no `_builder`).
+- **Progressive metas** (`_state` present): structure changes invalidate builder instead of architect, since the cursor handles incremental processing.
+- Builder invalidated (cross-ref content change, when architect is fresh and not first run) → `builder: pending`; `critic` → `stale` if was `fresh`. When architect is not fresh, builder stays `stale` (not promoted to `pending`).
+- Architect success → `architect: fresh`, `builder: pending` (or stays `failed`), `critic` → `stale` if was `fresh`. Also resets `_synthesisCount` to 0.
+- Builder success → `builder: fresh`, `critic: pending` (or stays `failed`). Architect state preserved.
+- Critic success → `critic: fresh`; if all three fresh → full-cycle complete (archive via `createSnapshot()`, `pruneArchive()`, then increment `_synthesisCount`)
 - Any phase failure → that phase: `failed`; other phases untouched (surgical retry)
+- Phase selected for execution → transitions to `running` before executor spawns
 - Next tick → `failed` phases promoted to `pending` for auto-retry
 
 ### Module Structure
@@ -32,9 +37,7 @@ Each meta carries `_phaseState: { architect, builder, critic }` where each value
 | Module | Responsibility |
 |--------|---------------|
 | `orchestratePhase.ts` | Per-tick driver: discover → derive → select → execute one phase |
-| `runPhase.ts` | Per-phase executors: `runArchitect`, `runBuilder`, `runCritic` |
-| `synthesizeNode.ts` | Legacy single-node full pipeline (retained for compatibility) |
-| `finalizeCycle.ts` | Legacy lock-staged writes |
+| `runPhase.ts` | Per-phase executors: `runArchitect`, `runBuilder`, `runCritic`; lock-staged persistence via `persistPhaseState()` |
 
 ### Error Handling
 

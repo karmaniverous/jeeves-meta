@@ -4,12 +4,12 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 
 ## Features
 
-- **Fastify HTTP API** — `/status`, `/metas`, `/preview`, `/synthesize`, `/synthesize/abort`, `/seed`, `/unlock`, `/config`, `/config/apply`, `/queue`, `/queue/clear`
+- **Fastify HTTP API** — `/status`, `/metas`, `/metas/:path` (GET + PATCH), `/preview`, `/synthesize`, `/synthesize/abort`, `/seed`, `/unlock`, `/config`, `/config/apply`, `/queue`, `/queue/clear`
 - **Phase-state machine** — per-meta `_phaseState` tracking `{ architect, builder, critic }` × `{ fresh, stale, pending, running, failed }`
 - **Built-in scheduler** — croner-based cron with adaptive backoff; picks one phase per tick across entire corpus
 - **Three-layer synthesis queue** — `current` (running phase) + `overrides` (explicit triggers) + `automatic` (scheduler candidates)
 - **Three-phase orchestration** — architect, builder, critic with surgical retry of failed phases
-- **Discovery via watcher** — filesystem-based meta discovery via `/walk` endpoint (no Qdrant dependency)
+- **Discovery via watcher** — filesystem-based meta discovery (no Qdrant dependency)
 - **Ownership tree** — hierarchical scoping with child meta rollup
 - **Cross-meta references** — `_crossRefs` declares relationships to other metas; referenced `_content` included as architect/builder context
 - **Archive management** — timestamped snapshots with configurable pruning
@@ -55,8 +55,8 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/status` | Service health, queue state, dependency checks, phase-state summary |
-| GET | `/metas` | List metas with filtering and field projection |
-| GET | `/metas/:path` | Single meta detail with optional archive |
+| GET | `/metas` | List metas with summary stats and per-meta projection. Response includes `_phaseState` and `owedPhase` per meta. |
+| GET | `/metas/:path` | Full detail for a single meta, with optional archive history. Response includes `_phaseState` and `owedPhase`. |
 | GET | `/preview` | Dry-run: preview inputs for next synthesis |
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
 | POST | `/synthesize/abort` | Abort the currently running synthesis |
@@ -66,7 +66,7 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 | POST | `/config/apply` | Apply a config patch (merge or replace) |
 | GET | `/queue` | Queue state: current (with phase), overrides, automatic, pending |
 | POST | `/queue/clear` | Remove all override queue entries |
-| PATCH | `/metas/:path` | Update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`) |
+| PATCH | `/metas/:path` | Update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`, `_architectTimeout`, `_builderTimeout`, `_criticTimeout`) |
 
 ## Configuration
 
