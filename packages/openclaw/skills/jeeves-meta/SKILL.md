@@ -105,7 +105,8 @@ modify `_crossRefs` — without editing `meta.json` directly on the filesystem.
 **Parameters:**
 - `path` (required): `.meta/` or owner directory path.
 - `updates` (required): Object with properties to set. Supported:
-  `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`.
+  `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`,
+  `_architectTimeout`, `_builderTimeout`, `_criticTimeout`.
   Set a value to `null` to remove the property.
 
 ### meta_queue
@@ -141,6 +142,7 @@ compatibility.
 - **Disabling a meta:** `meta_update` with path and `updates: { _disabled: true }`
 - **Re-enabling a meta:** `meta_update` with path and `updates: { _disabled: null }`
 - **Changing steer via API:** `meta_update` with path and `updates: { _steer: "new focus" }`
+- **Setting per-entity timeouts:** `meta_update` with path and `updates: { _builderTimeout: 600 }`
 - **Reading synthesis output:** Use `watcher_search` filtered by the properties
   configured in `metaProperty` (e.g. `{ "domains": ["meta"] }` in production).
   The default properties are `{ _meta: "current" }` for live metas and
@@ -213,7 +215,9 @@ Key settings:
 
 | `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
 | `serverBaseUrl` | (optional) | Public base URL of the service (e.g. `http://myhost:1938`). When set, progress reports include clickable entity links. |
-| `reportChannel` | (optional) | Gateway channel target for progress messages (e.g. Slack channel ID) |
+| `reportChannel` | (optional) | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
+| `reportTarget` | (optional) | Channel/user ID to send progress messages to |
+| `tier2ScanLimit` | 50 | Max all-fresh candidates to scan per tick in Tier 2 invalidation |
 | `logging.level` | `info` | Log level (trace/debug/info/warn/error) |
 | `logging.file` | (optional) | Log file path |
 
@@ -335,7 +339,7 @@ The `autoSeed` config field enables declarative, config-driven `.meta/`
 creation. It is an array of policy rules, each with the shape:
 
 ```json
-{ "match": "<glob>", "steer": "<optional prompt>", "crossRefs": ["<optional paths>"] }
+{ "match": "<glob>", "steer": "<optional>", "crossRefs": ["<optional>"], "parentDepth": 0 }
 ```
 
 - **`match`** (required) — a glob pattern compatible with `watcher.walk()`.
@@ -345,6 +349,14 @@ creation. It is an array of policy rules, each with the shape:
   seeded `meta.json`.
 - **`crossRefs`** (optional) — array of cross-ref owner paths written as
   `_crossRefs` in the seeded `meta.json`.
+- **`parentDepth`** (optional, default 0) — walk up this many extra parent
+  levels from the matched file's directory.
+- **`architectTimeout`** (optional) — per-category timeout override for
+  the architect phase (seconds, min 30).
+- **`builderTimeout`** (optional) — per-category timeout override for
+  the builder phase (seconds, min 30).
+- **`criticTimeout`** (optional) — per-category timeout override for
+  the critic phase (seconds, min 30).
 
 **Evaluation order:** Rules are processed in array order. If multiple rules
 match the same directory, the last match wins for `steer` and `crossRefs`.
@@ -567,7 +579,8 @@ jeeves-meta <command> [options]
 ```
 
 Commands: `start`, `status`, `list`, `detail`, `preview`, `synthesize`,
-`seed`, `unlock`, `config`, `service install|start|stop|status|remove`.
+`seed`, `unlock`, `abort`, `prune`, `config`, `queue list|clear`,
+`service install|start|stop|status|remove`.
 
 Config resolution: `--config` flag → `JEEVES_META_CONFIG` env var → error.
 All client commands support `-p, --port` to specify the service port (default: 1938).

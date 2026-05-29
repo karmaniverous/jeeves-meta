@@ -8,7 +8,7 @@
  * @module phaseState/invalidate.test
  */
 
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -24,7 +24,7 @@ import { computeInvalidation } from './invalidate.js';
 let mockArchive: MetaJson | null = null;
 
 vi.mock('../archive/index.js', () => ({
-  readLatestArchive: vi.fn(async () => mockArchive),
+  readLatestArchive: vi.fn(() => mockArchive),
 }));
 
 // ── Mock DEFAULT prompts to stable strings ──────────────────────────
@@ -40,7 +40,6 @@ const SCOPE_A = ['file-a.md', 'file-b.md'];
 const SCOPE_B = ['file-a.md', 'file-b.md', 'file-c.md'];
 
 const HASH_A = computeStructureHash(SCOPE_A);
-const HASH_B = computeStructureHash(SCOPE_B);
 
 function makeConfig(overrides?: Partial<MetaConfig>): MetaConfig {
   return {
