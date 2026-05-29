@@ -494,7 +494,7 @@ describe('computeInvalidation', () => {
       _structureHash: HASH_A,
       _builder: 'brief',
       _architect: 'default-architect-prompt', // matches DEFAULT_ARCHITECT_PROMPT mock
-      _critic: 'default-critic-prompt',       // matches DEFAULT_CRITIC_PROMPT mock
+      _critic: 'default-critic-prompt', // matches DEFAULT_CRITIC_PROMPT mock
       _synthesisCount: 3,
     };
 
