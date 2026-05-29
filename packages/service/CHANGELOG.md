@@ -4,10 +4,62 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- *(service)* Add file logging support (#153)
+- *(service)* AutoSeed parentDepth option (#152)
+- Per-entity timeout overrides for synthesis phases (#122)
+- *(service)* Inject ancestor meta context into synthesis (#158)
+- *(service)* Emit ANNOUNCE_SKIP from synthesis workers (#148)
+
+### 🐛 Bug Fixes
+
+- *(service)* Periodic virtual rule re-registration (#117)
+- *(service)* Prompt resolution and soft invalidation (#159)
+- *(service)* Recompute invalidation on targeted trigger (#160)
+- Address Gemini review — remove redundant register, reset 503 counter, eliminate meta mutation (#161)
+- Decouple prompt staleness from invalidation cascade (#163)
+- Lint errors and full docs sync with implementation
+- Resolve export sort after merge of docs-sync branch
+
+### 💼 Other
+
+- Updated core dependency
+- Lintfix
+- Updated core
+- Fix
+
+### 🚜 Refactor
+
+- *(core)* Shared endpoint catalog (#150)
+- SOLID/DRY pass — extract helpers, fix endpoint semantics, derive schema keys
+- *(service)* Simplify trigger persist — match scheduler Tier 2 pattern (#160)
+- DRY pass — deduplicate invalidation result and preview logic
+- Consolidate structureHash, add firstRun invalidator, remove dead scopeMtimeMax
+
+### 📚 Documentation
+
+- Remove ghost module references from orchestration guide
+
+### 🧪 Testing
+
+- Add ANNOUNCE_SKIP sentinel stripping coverage (#148)
+- *(phaseState)* Add dedicated computeInvalidation coverage (#160)
+- Strengthen invalidation coverage — criticChanged, prompt fallback, trivial assertion
+
+### ⚙️ Miscellaneous Tasks
+
+- Update dependencies (jeeves-core 0.5.11, vitest 4.1.7, dotenvx 1.69.1)
+## [0.15.8] - 2026-05-23
+
 ### 🐛 Bug Fixes
 
 - Wire Tier 2 invalidation loop into scheduler (fixes #156)
 - Add configurable tier2ScanLimit, move cache invalidation outside loop
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.15.8
 ## [0.15.7] - 2026-05-22
 
 ### 🐛 Bug Fixes
