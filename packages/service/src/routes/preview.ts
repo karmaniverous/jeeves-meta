@@ -12,7 +12,6 @@ import { normalizePath } from '../normalizePath.js';
 import {
   buildPhaseCandidates,
   computeInvalidation,
-  derivePhaseState,
   getOwedPhase,
   getPriorityBand,
   selectPhaseCandidate,
@@ -74,18 +73,9 @@ export function registerPreviewRoute(
       config,
       targetNode,
     );
-    const { architectInvalidators, inputStatus } = invalidation;
-    const { structureHash } = invalidation;
-    const structureChanged = structureHash !== meta._structureHash;
-    const { steerChanged } = invalidation;
-    const { crossRefsDeclChanged } = inputStatus;
-
-    const effectiveSynthesisCount = meta._synthesisCount ?? 0;
+    const { architectInvalidators, inputStatus, phaseState } = invalidation;
     const architectTriggered =
-      !meta._builder ||
-      structureChanged ||
-      steerChanged ||
-      effectiveSynthesisCount >= config.architectEvery;
+      architectInvalidators.length > 0 || !meta._builder;
 
     // Delta files
     const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
@@ -108,13 +98,6 @@ export function registerPreviewRoute(
       config.depthWeight,
     );
 
-    // Phase state
-    const phaseState = derivePhaseState(meta, {
-      structureChanged,
-      steerChanged,
-      crossRefsChanged: crossRefsDeclChanged,
-      architectEvery: config.architectEvery,
-    });
     const owedPhase = getOwedPhase(phaseState);
     const priorityBand = getPriorityBand(phaseState);
 
@@ -128,9 +111,14 @@ export function registerPreviewRoute(
       architectReason:
         [
           ...(!meta._builder ? ['no cached builder (first run)'] : []),
-          ...(structureChanged ? ['structure changed'] : []),
-          ...(steerChanged ? ['steer changed'] : []),
-          ...(effectiveSynthesisCount >= config.architectEvery
+          ...(architectInvalidators.includes('structureHash')
+            ? ['structure changed']
+            : []),
+          ...(architectInvalidators.includes('steer') ? ['steer changed'] : []),
+          ...(architectInvalidators.includes('_crossRefs')
+            ? ['cross-refs changed']
+            : []),
+          ...(architectInvalidators.includes('architectEvery')
             ? ['periodic refresh']
             : []),
         ].join(', ') || 'not triggered',

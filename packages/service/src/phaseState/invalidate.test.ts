@@ -190,7 +190,7 @@ describe('computeInvalidation', () => {
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.architectInvalidators).toContain('steer');
-    expect(result.steerChanged).toBe(true);
+    expect(result.inputStatus.steerChanged).toBe(true);
     expect(result.phaseState.architect).toBe('pending');
   });
 

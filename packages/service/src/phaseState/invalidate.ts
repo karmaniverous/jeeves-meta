@@ -54,7 +54,6 @@ export interface InvalidationResult {
   architectInvalidators: ArchitectInvalidator[];
   inputStatus: InputStatus;
   structureHash: string;
-  steerChanged: boolean;
 }
 
 /**
@@ -184,6 +183,5 @@ export async function computeInvalidation(
       crossRefContentChanged,
     },
     structureHash,
-    steerChanged,
   };
 }
