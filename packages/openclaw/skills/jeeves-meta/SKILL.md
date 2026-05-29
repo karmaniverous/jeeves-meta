@@ -48,8 +48,12 @@ Full detail for a single meta, with optional archive history. Includes
 Dry-run for the next synthesis candidate. Shows scope files, delta files,
 architect trigger reasons, steer status, structure changes, and the
 phase that would execute next — without running any LLM calls. Includes
-`phaseState` and `owedPhase` (the phase that would run). Use before
-`meta_trigger` to understand what will happen.
+`phaseState`, `owedPhase` (the phase that would run), `inputStatus`
+(informational flags: structureHash, steerChanged, architectChanged,
+criticChanged, crossRefsDeclChanged, crossRefContentChanged), and
+`architectInvalidators` (list of reasons architect was triggered, e.g.
+`structureHash`, `steer`, `_crossRefs`, `firstRun`, `architectEvery`).
+Use before `meta_trigger` to understand what will happen.
 
 **Parameters:**
 - `path` (optional): Specific `.meta/` or owner directory path. If omitted,

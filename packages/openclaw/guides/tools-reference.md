@@ -72,7 +72,7 @@ Dry-run: show what inputs would be gathered for the next synthesis cycle.
 **Parameters:**
 - `path` (string, optional) — specific path, or omit for stalest candidate
 
-**Response:** `{ path, staleness, architectWillRun, architectReason, scope, estimatedTokens, owedPhase, priorityBand, phaseState }`
+**Response:** `{ path, staleness, architectWillRun, architectReason, scope, estimatedTokens, owedPhase, priorityBand, phaseState, inputStatus, architectInvalidators }`
 
 ## meta_trigger
 
