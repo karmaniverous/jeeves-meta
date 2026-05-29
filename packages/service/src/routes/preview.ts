@@ -74,8 +74,7 @@ export function registerPreviewRoute(
       targetNode,
     );
     const { architectInvalidators, inputStatus, phaseState } = invalidation;
-    const architectTriggered =
-      architectInvalidators.length > 0 || !meta._builder;
+    const architectTriggered = architectInvalidators.length > 0;
 
     // Delta files
     const deltaFiles = getDeltaFiles(meta._generatedAt, scopeFiles);
@@ -110,7 +109,9 @@ export function registerPreviewRoute(
       architectWillRun: architectTriggered,
       architectReason:
         [
-          ...(!meta._builder ? ['no cached builder (first run)'] : []),
+          ...(architectInvalidators.includes('firstRun')
+            ? ['no cached builder (first run)']
+            : []),
           ...(architectInvalidators.includes('structureHash')
             ? ['structure changed']
             : []),

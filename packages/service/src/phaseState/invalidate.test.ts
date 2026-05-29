@@ -302,6 +302,7 @@ describe('computeInvalidation', () => {
 
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
+    expect(result.architectInvalidators).toContain('firstRun');
     expect(result.phaseState.architect).toBe('pending');
     expect(result.phaseState.builder).toBe('stale');
     expect(result.phaseState.critic).toBe('stale');
@@ -446,6 +447,7 @@ describe('computeInvalidation', () => {
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
     expect(result.inputStatus.crossRefsDeclChanged).toBe(true);
+    expect(result.architectInvalidators).toContain('firstRun');
   });
 
   it('does not treat matching prompt snapshots as stale', async () => {
@@ -506,6 +508,7 @@ describe('computeInvalidation', () => {
 
     // First run triggers architect invalidation; builder cascade comes from
     // architect, not from cross-ref content change
+    expect(result.architectInvalidators).toContain('firstRun');
     expect(result.phaseState.architect).toBe('pending');
     expect(result.inputStatus.crossRefContentChanged).toBe(true);
   });
@@ -520,7 +523,7 @@ describe('computeInvalidation', () => {
 
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
-    expect(result.structureHash).toBe(HASH_A);
+    expect(result.inputStatus.structureHash).toBe(HASH_A);
   });
 
   it('no cross-ref content change when maps are not provided', async () => {

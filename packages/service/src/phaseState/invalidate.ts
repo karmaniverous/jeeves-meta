@@ -35,16 +35,16 @@ export type ArchitectInvalidator =
   | 'structureHash'
   | 'steer'
   | '_crossRefs'
+  | 'firstRun'
   | 'architectEvery';
 
-/** Staleness inputs for a meta (exposed in /preview). */
+/** Informational input status for a meta (exposed in /preview). */
 export interface InputStatus {
   structureHash: string;
   steerChanged: boolean;
   architectChanged: boolean;
   criticChanged: boolean;
   crossRefsDeclChanged: boolean;
-  scopeMtimeMax: string | null;
   crossRefContentChanged: boolean;
 }
 
@@ -53,7 +53,6 @@ export interface InvalidationResult {
   phaseState: PhaseState;
   architectInvalidators: ArchitectInvalidator[];
   inputStatus: InputStatus;
-  structureHash: string;
 }
 
 /**
@@ -134,18 +133,13 @@ export async function computeInvalidation(
     architectInvalidators.push('architectEvery');
   }
 
-  // First-run check: no _builder means architect must run
-  const firstRun = !meta._builder;
+  if (!meta._builder) architectInvalidators.push('firstRun');
 
-  if (architectInvalidators.length > 0 || firstRun) {
+  if (architectInvalidators.length > 0) {
     phaseState = invalidateArchitect(phaseState);
   }
 
   // ── Builder-level inputs ──
-  // Scope file mtime check — if any file newer than _generatedAt
-  const scopeMtimeMax: string | null = null;
-  // Note: actual mtime check is done by the caller or via isStale;
-  // here we just detect cross-ref content changes for the cascade.
 
   // Cross-ref _content change (builder-invalidating)
   let crossRefContentChanged = false;
@@ -162,11 +156,7 @@ export async function computeInvalidation(
   // Builder invalidation: scope mtime advances OR cross-ref content changes
   // Scope mtime is already captured by the staleness detection in the caller;
   // here we apply cross-ref content change cascade.
-  if (
-    crossRefContentChanged &&
-    architectInvalidators.length === 0 &&
-    !firstRun
-  ) {
+  if (crossRefContentChanged && architectInvalidators.length === 0) {
     phaseState = invalidateBuilder(phaseState);
   }
 
@@ -179,9 +169,7 @@ export async function computeInvalidation(
       architectChanged,
       criticChanged,
       crossRefsDeclChanged,
-      scopeMtimeMax,
       crossRefContentChanged,
     },
-    structureHash,
   };
 }

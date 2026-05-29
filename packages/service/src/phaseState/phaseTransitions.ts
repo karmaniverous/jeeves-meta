@@ -60,7 +60,7 @@ export function enforceInvariant(state: PhaseState): PhaseState {
 
 /**
  * Architect invalidated: architect → pending; builder, critic → stale.
- * Triggers: _structureHash change, _steer change, _architect change,
+ * Triggers: first run, _structureHash change, _steer change,
  * _crossRefs declaration change, _synthesisCount \>= architectEvery.
  */
 export function invalidateArchitect(state: PhaseState): PhaseState {

@@ -289,7 +289,7 @@ export class Scheduler {
               metaPath: t2.node.metaPath,
               current: currentMeta,
               config: this.config,
-              structureHash: result.structureHash,
+              structureHash: result.inputStatus.structureHash,
             },
             result.phaseState,
             {},
@@ -309,7 +309,7 @@ export class Scheduler {
             metaPath: t2.node.metaPath,
             current: currentMeta,
             config: this.config,
-            structureHash: result.structureHash,
+            structureHash: result.inputStatus.structureHash,
           },
           result.phaseState,
           {
