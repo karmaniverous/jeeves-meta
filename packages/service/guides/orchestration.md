@@ -37,9 +37,7 @@ Each meta carries `_phaseState: { architect, builder, critic }` where each value
 | Module | Responsibility |
 |--------|---------------|
 | `orchestratePhase.ts` | Per-tick driver: discover → derive → select → execute one phase |
-| `runPhase.ts` | Per-phase executors: `runArchitect`, `runBuilder`, `runCritic` |
-| `synthesizeNode.ts` | Legacy single-node full pipeline (retained for compatibility) |
-| `finalizeCycle.ts` | Legacy lock-staged writes |
+| `runPhase.ts` | Per-phase executors: `runArchitect`, `runBuilder`, `runCritic`; lock-staged persistence via `persistPhaseState()` |
 
 ### Error Handling
 
