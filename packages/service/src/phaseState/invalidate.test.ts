@@ -261,6 +261,7 @@ describe('computeInvalidation', () => {
     expect(result.architectInvalidators).not.toContain('architectEvery');
     expect(result.phaseState).toEqual(freshPhaseState);
     expect(result.inputStatus.architectChanged).toBe(true);
+    expect(result.inputStatus.criticChanged).toBe(false);
   });
 
   // ── 8. Prompt staleness — critic snapshot differs ──────────────
@@ -286,6 +287,7 @@ describe('computeInvalidation', () => {
     expect(result.architectInvalidators).not.toContain('architectEvery');
     expect(result.phaseState).toEqual(freshPhaseState);
     expect(result.inputStatus.architectChanged).toBe(false);
+    expect(result.inputStatus.criticChanged).toBe(true);
   });
 
   // ── 9. First run (no _builder) ─────────────────────────────────
@@ -428,9 +430,9 @@ describe('computeInvalidation', () => {
 
     const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
-    // Should start with default fresh and remain unchanged
-    expect(result.phaseState).toBeDefined();
-    expect(result.phaseState.architect).toBeDefined();
+    // No changes detected — default phase state should remain fully fresh
+    expect(result.phaseState).toEqual(freshPhaseState);
+    expect(result.architectInvalidators).toEqual([]);
   });
 
   it('treats missing archive with non-empty crossRefs as declaration change', async () => {
@@ -465,6 +467,7 @@ describe('computeInvalidation', () => {
     // No change — snapshots match
     expect(meta._synthesisCount).toBe(3);
     expect(result.inputStatus.architectChanged).toBe(false);
+    expect(result.inputStatus.criticChanged).toBe(false);
     expect(result.architectInvalidators).not.toContain('architectEvery');
   });
 
@@ -482,6 +485,50 @@ describe('computeInvalidation', () => {
     // isPromptStale returns false when snapshot is undefined
     expect(meta._synthesisCount).toBe(3);
     expect(result.inputStatus.architectChanged).toBe(false);
+    expect(result.inputStatus.criticChanged).toBe(false);
+  });
+
+  it('uses DEFAULT prompts when config overrides are undefined', async () => {
+    const meta: MetaJson = {
+      _phaseState: { ...freshPhaseState },
+      _structureHash: HASH_A,
+      _builder: 'brief',
+      _architect: 'default-architect-prompt', // matches DEFAULT_ARCHITECT_PROMPT mock
+      _critic: 'default-critic-prompt',       // matches DEFAULT_CRITIC_PROMPT mock
+      _synthesisCount: 3,
+    };
+
+    // Config with undefined prompts — should fall back to DEFAULT constants
+    const result = await computeInvalidation(
+      meta,
+      SCOPE_A,
+      makeConfig({ defaultArchitect: undefined, defaultCritic: undefined }),
+      node,
+    );
+
+    // Snapshots match the DEFAULT prompts, so no staleness
+    expect(result.inputStatus.architectChanged).toBe(false);
+    expect(result.inputStatus.criticChanged).toBe(false);
+  });
+
+  it('treats undefined _synthesisCount as 0 for architectEvery', async () => {
+    const meta: MetaJson = {
+      _phaseState: { ...freshPhaseState },
+      _structureHash: HASH_A,
+      _builder: 'brief',
+      // _synthesisCount intentionally omitted (undefined)
+    };
+
+    const result = await computeInvalidation(
+      meta,
+      SCOPE_A,
+      makeConfig({ architectEvery: 10 }),
+      node,
+    );
+
+    // undefined ?? 0 = 0, which is < 10, so architectEvery should NOT trigger
+    expect(result.architectInvalidators).not.toContain('architectEvery');
+    expect(result.phaseState).toEqual(freshPhaseState);
   });
 
   it('cross-ref content change does not invalidate builder on first run', async () => {
