@@ -4,9 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Per-entity timeout overrides for synthesis phases (#122)
+
+### 🐛 Bug Fixes
+
+- *(plugin)* Treat watcher 503 as transient with backoff (#102)
+- Address Gemini review — remove redundant register, reset 503 counter, eliminate meta mutation (#161)
+- Lint errors and full docs sync with implementation
+
+### 💼 Other
+
+- Updated core dependency
+- Updated core
+
+### 🚜 Refactor
+
+- *(core)* Shared endpoint catalog (#150)
+- SOLID/DRY pass — extract helpers, fix endpoint semantics, derive schema keys
+
+### 📚 Documentation
+
+- Sync preview response with inputStatus and architectInvalidators
+
+### ⚙️ Miscellaneous Tasks
+
+- Update dependencies (jeeves-core 0.5.11, vitest 4.1.7, dotenvx 1.69.1)
+## [0.12.5] - 2026-05-16
+
 ### 🐛 Bug Fixes
 
 - Pin jeeves-meta-core dependency to ^0.1.1
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.12.5
 ## [0.12.4] - 2026-05-13
 
 ### 🚀 Features
