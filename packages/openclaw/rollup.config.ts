@@ -20,7 +20,12 @@ const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
 const pluginConfig: RollupOptions = {
   input: 'src/index.ts',
   output: { dir: 'dist', format: 'esm' },
-  external: ['@karmaniverous/jeeves', '@karmaniverous/jeeves-meta', /^node:/],
+  external: [
+    '@karmaniverous/jeeves',
+    '@karmaniverous/jeeves-meta',
+    '@karmaniverous/jeeves-meta-core',
+    /^node:/,
+  ],
   onwarn,
   plugins: [
     resolve({ preferBuiltins: true }),
