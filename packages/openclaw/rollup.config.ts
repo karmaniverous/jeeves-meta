@@ -2,9 +2,9 @@
  * Rollup configuration for the OpenClaw plugin package.
  * Two entry points: plugin (ESM + declarations) and CLI (ESM executable).
  *
- * `@karmaniverous/jeeves` is BUNDLED into the plugin output — the plugin
- * runs in OpenClaw's extensions directory where node_modules is not
- * reliably available. All other node: builtins are externalized.
+ * Runtime dependencies (`@karmaniverous/jeeves`, `@karmaniverous/jeeves-meta`)
+ * are externalized — the OpenClaw host environment provides them.
+ * CLI bundles everything for standalone execution.
  */
 
 import commonjs from '@rollup/plugin-commonjs';
@@ -20,7 +20,12 @@ const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
 const pluginConfig: RollupOptions = {
   input: 'src/index.ts',
   output: { dir: 'dist', format: 'esm' },
-  external: ['@karmaniverous/jeeves-meta', /^node:/],
+  external: [
+    '@karmaniverous/jeeves',
+    '@karmaniverous/jeeves-meta',
+    '@karmaniverous/jeeves-meta-core',
+    /^node:/,
+  ],
   onwarn,
   plugins: [
     resolve({ preferBuiltins: true }),
