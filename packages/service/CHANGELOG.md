@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Defer synthesis_start until phase actually executes (#165)
+- Externalize @karmaniverous/jeeves across service and openclaw packages (#167)
+- Delta-aware child meta filtering in context package (#169)
+- Distinguish unsynthesized delta children from non-delta (null vs undefined)
+## [0.15.9] - 2026-05-29
+
 ### 🚀 Features
 
 - *(service)* Add file logging support (#153)
@@ -50,6 +58,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update dependencies (jeeves-core 0.5.11, vitest 4.1.7, dotenvx 1.69.1)
+- Release @karmaniverous/jeeves-meta v0.15.9
 ## [0.15.8] - 2026-05-23
 
 ### 🐛 Bug Fixes
