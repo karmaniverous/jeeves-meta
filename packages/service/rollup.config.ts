@@ -25,6 +25,8 @@ const typescript = typescriptPlugin({
 });
 
 const external = [
+  '@karmaniverous/jeeves',
+  '@karmaniverous/jeeves-meta-core',
   'commander',
   'croner',
   'fastify',
