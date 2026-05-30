@@ -135,7 +135,7 @@ export async function buildContextPackage(
       !info.generatedAt ||
       info.generatedAt > parentGeneratedAt
     ) {
-      childMetas[path] = info.content;
+      childMetas[path] = info.content ?? undefined;
       deltaChildCount++;
     } else {
       // Non-delta: already incorporated in previous synthesis.

@@ -89,16 +89,20 @@ function appendMetaSections(
     return;
   }
 
-  // Delta-aware: separate entries with content from null entries.
-  // Full content entries get subsections; null entries are condensed
-  // into a path listing (#169).
+  // Delta-aware: separate entries into three categories (#169).
+  // - string content → full subsection (delta child with content)
+  // - null → non-delta, already folded into previous synthesis
+  // - undefined → delta child not yet synthesized
   const withContent: [string, string][] = [];
-  const withoutContent: string[] = [];
+  const unchanged: string[] = [];
+  const notYetSynthesized: string[] = [];
   for (const [path, content] of Object.entries(metas)) {
     if (typeof content === 'string') {
       withContent.push([path, content]);
+    } else if (content === null) {
+      unchanged.push(path);
     } else {
-      withoutContent.push(path);
+      notYetSynthesized.push(path);
     }
   }
 
@@ -106,11 +110,18 @@ function appendMetaSections(
   for (const [path, content] of withContent) {
     sections.push(`### ${path}`, content);
   }
-  if (withoutContent.length > 0) {
+  if (notYetSynthesized.length > 0) {
     sections.push(
       '',
-      `### Other children (${withoutContent.length.toString()} — unchanged since last synthesis)`,
-      ...withoutContent.map((p) => `- ${p}`),
+      `### Not yet synthesized (${notYetSynthesized.length.toString()})`,
+      ...notYetSynthesized.map((p) => `- ${p}`),
+    );
+  }
+  if (unchanged.length > 0) {
+    sections.push(
+      '',
+      `### Other children (${unchanged.length.toString()} \u2014 unchanged since last synthesis)`,
+      ...unchanged.map((p) => `- ${p}`),
     );
   }
 }

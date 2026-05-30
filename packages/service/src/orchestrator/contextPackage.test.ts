@@ -333,4 +333,30 @@ describe('buildContextPackage — delta-aware child metas', () => {
     expect(ctx.childMetas[oldChild.ownerPath]).toBeNull();
     expect(ctx.childMetas[newChild.ownerPath]).toBe('new stuff');
   });
+
+  it('sets undefined for delta child with no _content (not yet synthesized)', async () => {
+    const child = makeChildNode('empty-delta');
+    mkdirSync(child.metaPath, { recursive: true });
+    writeFileSync(
+      join(child.metaPath, 'meta.json'),
+      JSON.stringify({
+        _id: 'c7',
+        _generatedAt: '2026-05-01T00:00:00.000Z',
+      }),
+    );
+
+    const node = makeNode(ownerDir, metaDir);
+    node.children.push(child);
+
+    const meta: MetaJson = {
+      _id: 'p6',
+      _generatedAt: '2026-04-01T00:00:00.000Z',
+    };
+    const watcher = createMockWatcher();
+    const ctx = await buildContextPackage(node, meta, watcher);
+
+    // Delta child without _content → undefined (not null)
+    expect(ctx.childMetas).toHaveProperty(child.ownerPath);
+    expect(ctx.childMetas[child.ownerPath]).toBeUndefined();
+  });
 });
