@@ -1,5 +1,6 @@
 /**
- * Tests for buildContextPackage — cross-ref resolution.
+ * Tests for buildContextPackage — cross-ref resolution and delta-aware
+ * child meta filtering.
  *
  * @module orchestrator/contextPackage.test
  */
@@ -175,5 +176,161 @@ describe('buildContextPackage — crossRefMetas', () => {
     const ctx = await buildContextPackage(node, meta, watcher);
 
     expect(ctx.crossRefMetas[refDirB]).toBeNull();
+  });
+});
+
+describe('buildContextPackage — delta-aware child metas', () => {
+  let ownerDir: string;
+  let metaDir: string;
+
+  beforeEach(() => {
+    ownerDir = join(testRoot, 'parent');
+    metaDir = join(ownerDir, '.meta');
+    mkdirSync(metaDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(testRoot, { recursive: true, force: true });
+  });
+
+  function makeChildNode(name: string): MetaNode {
+    const childOwner = join(ownerDir, name);
+    const childMeta = join(childOwner, '.meta');
+    return {
+      ownerPath: childOwner,
+      metaPath: childMeta,
+      treeDepth: 1,
+      parent: null,
+      children: [],
+    };
+  }
+
+  it('includes full _content for children synthesized after parent', async () => {
+    const child = makeChildNode('new-child');
+    mkdirSync(child.metaPath, { recursive: true });
+    writeFileSync(
+      join(child.metaPath, 'meta.json'),
+      JSON.stringify({
+        _id: 'c1',
+        _content: 'new child content',
+        _generatedAt: '2026-05-01T00:00:00.000Z',
+      }),
+    );
+
+    const node = makeNode(ownerDir, metaDir);
+    node.children.push(child);
+
+    const meta: MetaJson = {
+      _id: 'p1',
+      _generatedAt: '2026-04-01T00:00:00.000Z',
+    };
+    const watcher = createMockWatcher();
+    const ctx = await buildContextPackage(node, meta, watcher);
+
+    expect(ctx.childMetas[child.ownerPath]).toBe('new child content');
+  });
+
+  it('excludes _content for children synthesized before parent', async () => {
+    const child = makeChildNode('old-child');
+    mkdirSync(child.metaPath, { recursive: true });
+    writeFileSync(
+      join(child.metaPath, 'meta.json'),
+      JSON.stringify({
+        _id: 'c2',
+        _content: 'old child content that should be omitted',
+        _generatedAt: '2026-03-01T00:00:00.000Z',
+      }),
+    );
+
+    const node = makeNode(ownerDir, metaDir);
+    node.children.push(child);
+
+    const meta: MetaJson = {
+      _id: 'p2',
+      _generatedAt: '2026-04-01T00:00:00.000Z',
+    };
+    const watcher = createMockWatcher();
+    const ctx = await buildContextPackage(node, meta, watcher);
+
+    expect(ctx.childMetas[child.ownerPath]).toBeNull();
+  });
+
+  it('includes all children on first run (no parent _generatedAt)', async () => {
+    const child = makeChildNode('any-child');
+    mkdirSync(child.metaPath, { recursive: true });
+    writeFileSync(
+      join(child.metaPath, 'meta.json'),
+      JSON.stringify({
+        _id: 'c3',
+        _content: 'child content',
+        _generatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+    );
+
+    const node = makeNode(ownerDir, metaDir);
+    node.children.push(child);
+
+    const meta: MetaJson = { _id: 'p3' };
+    const watcher = createMockWatcher();
+    const ctx = await buildContextPackage(node, meta, watcher);
+
+    expect(ctx.childMetas[child.ownerPath]).toBe('child content');
+  });
+
+  it('includes child with no _generatedAt (never synthesized)', async () => {
+    const child = makeChildNode('unsynthesized');
+    mkdirSync(child.metaPath, { recursive: true });
+    writeFileSync(
+      join(child.metaPath, 'meta.json'),
+      JSON.stringify({ _id: 'c4', _content: 'brand new' }),
+    );
+
+    const node = makeNode(ownerDir, metaDir);
+    node.children.push(child);
+
+    const meta: MetaJson = {
+      _id: 'p4',
+      _generatedAt: '2026-04-01T00:00:00.000Z',
+    };
+    const watcher = createMockWatcher();
+    const ctx = await buildContextPackage(node, meta, watcher);
+
+    expect(ctx.childMetas[child.ownerPath]).toBe('brand new');
+  });
+
+  it('correctly splits a mix of delta and non-delta children', async () => {
+    const oldChild = makeChildNode('old');
+    const newChild = makeChildNode('new');
+    mkdirSync(oldChild.metaPath, { recursive: true });
+    mkdirSync(newChild.metaPath, { recursive: true });
+    writeFileSync(
+      join(oldChild.metaPath, 'meta.json'),
+      JSON.stringify({
+        _id: 'c5',
+        _content: 'old stuff',
+        _generatedAt: '2026-02-01T00:00:00.000Z',
+      }),
+    );
+    writeFileSync(
+      join(newChild.metaPath, 'meta.json'),
+      JSON.stringify({
+        _id: 'c6',
+        _content: 'new stuff',
+        _generatedAt: '2026-05-01T00:00:00.000Z',
+      }),
+    );
+
+    const node = makeNode(ownerDir, metaDir);
+    node.children.push(oldChild, newChild);
+
+    const meta: MetaJson = {
+      _id: 'p5',
+      _generatedAt: '2026-04-01T00:00:00.000Z',
+    };
+    const watcher = createMockWatcher();
+    const ctx = await buildContextPackage(node, meta, watcher);
+
+    expect(ctx.childMetas[oldChild.ownerPath]).toBeNull();
+    expect(ctx.childMetas[newChild.ownerPath]).toBe('new stuff');
   });
 });

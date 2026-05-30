@@ -62,18 +62,55 @@ function compileTemplate(text: string, context: TemplateContext): string {
   }
 }
 
-/** Append a keyed record of meta outputs as subsections, if non-empty. */
+/**
+ * Append a keyed record of meta outputs as subsections, if non-empty.
+ *
+ * @param condenseMissing - When true, null entries are condensed into a
+ *   path listing (delta-aware child metas). When false, null entries get
+ *   individual subsections with "(not yet synthesized)" (cross-refs).
+ */
 function appendMetaSections(
   sections: string[],
   heading: string,
   metas: Record<string, unknown>,
+  condenseMissing: boolean = false,
 ): void {
   if (Object.keys(metas).length === 0) return;
-  sections.push('', heading);
+
+  if (!condenseMissing) {
+    // Original behavior: every entry gets a subsection.
+    sections.push('', heading);
+    for (const [path, content] of Object.entries(metas)) {
+      sections.push(
+        `### ${path}`,
+        typeof content === 'string' ? content : '(not yet synthesized)',
+      );
+    }
+    return;
+  }
+
+  // Delta-aware: separate entries with content from null entries.
+  // Full content entries get subsections; null entries are condensed
+  // into a path listing (#169).
+  const withContent: [string, string][] = [];
+  const withoutContent: string[] = [];
   for (const [path, content] of Object.entries(metas)) {
+    if (typeof content === 'string') {
+      withContent.push([path, content]);
+    } else {
+      withoutContent.push(path);
+    }
+  }
+
+  sections.push('', heading);
+  for (const [path, content] of withContent) {
+    sections.push(`### ${path}`, content);
+  }
+  if (withoutContent.length > 0) {
     sections.push(
-      `### ${path}`,
-      typeof content === 'string' ? content : '(not yet synthesized)',
+      '',
+      `### Other children (${withoutContent.length.toString()} — unchanged since last synthesis)`,
+      ...withoutContent.map((p) => `- ${p}`),
     );
   }
 }
@@ -121,7 +158,7 @@ function appendSharedSections(
   }
 
   if (opts.includeChildMetas) {
-    appendMetaSections(sections, '## CHILD META OUTPUTS', ctx.childMetas);
+    appendMetaSections(sections, '## CHILD META OUTPUTS', ctx.childMetas, true);
   }
 
   if (opts.includeCrossRefs) {
