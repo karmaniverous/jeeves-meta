@@ -112,18 +112,28 @@ export async function startService(
     const startMs = Date.now();
     // Strip .meta suffix for human-readable progress reporting
     const ownerPath = path.replace(/\/?\.meta\/?$/, '');
-    await progress.report({
-      type: 'synthesis_start',
-      path: ownerPath,
-    });
 
     try {
+      // Track whether synthesis_start has been emitted (deferred until
+      // a phase actually begins, avoiding orphan "Started" messages
+      // when the meta is skipped/locked/fresh). See #165.
+      let synthesisStartEmitted = false;
+
       const result = await orchestratePhase(
         config,
         executor,
         watcher,
         path,
         async (evt) => {
+          // Emit synthesis_start on first phase_start (deferred guard)
+          if (evt.type === 'phase_start' && !synthesisStartEmitted) {
+            synthesisStartEmitted = true;
+            await progress.report({
+              type: 'synthesis_start',
+              path: ownerPath,
+            });
+          }
+
           // Wire current-phase tracking for GET /queue and POST /synthesize/abort
           if (evt.type === 'phase_start' && evt.phase) {
             queue.setCurrentPhase(ownerPath, evt.phase);
