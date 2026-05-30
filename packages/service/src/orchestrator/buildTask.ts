@@ -62,18 +62,66 @@ function compileTemplate(text: string, context: TemplateContext): string {
   }
 }
 
-/** Append a keyed record of meta outputs as subsections, if non-empty. */
+/**
+ * Append a keyed record of meta outputs as subsections, if non-empty.
+ *
+ * @param condenseMissing - When true, null entries are condensed into a
+ *   path listing (delta-aware child metas). When false, null entries get
+ *   individual subsections with "(not yet synthesized)" (cross-refs).
+ */
 function appendMetaSections(
   sections: string[],
   heading: string,
   metas: Record<string, unknown>,
+  condenseMissing: boolean = false,
 ): void {
   if (Object.keys(metas).length === 0) return;
-  sections.push('', heading);
+
+  if (!condenseMissing) {
+    // Original behavior: every entry gets a subsection.
+    sections.push('', heading);
+    for (const [path, content] of Object.entries(metas)) {
+      sections.push(
+        `### ${path}`,
+        typeof content === 'string' ? content : '(not yet synthesized)',
+      );
+    }
+    return;
+  }
+
+  // Delta-aware: separate entries into three categories (#169).
+  // - string content → full subsection (delta child with content)
+  // - null → non-delta, already folded into previous synthesis
+  // - undefined → delta child not yet synthesized
+  const withContent: [string, string][] = [];
+  const unchanged: string[] = [];
+  const notYetSynthesized: string[] = [];
   for (const [path, content] of Object.entries(metas)) {
+    if (typeof content === 'string') {
+      withContent.push([path, content]);
+    } else if (content === null) {
+      unchanged.push(path);
+    } else {
+      notYetSynthesized.push(path);
+    }
+  }
+
+  sections.push('', heading);
+  for (const [path, content] of withContent) {
+    sections.push(`### ${path}`, content);
+  }
+  if (notYetSynthesized.length > 0) {
     sections.push(
-      `### ${path}`,
-      typeof content === 'string' ? content : '(not yet synthesized)',
+      '',
+      `### Not yet synthesized (${notYetSynthesized.length.toString()})`,
+      ...notYetSynthesized.map((p) => `- ${p}`),
+    );
+  }
+  if (unchanged.length > 0) {
+    sections.push(
+      '',
+      `### Other children (${unchanged.length.toString()} \u2014 unchanged since last synthesis)`,
+      ...unchanged.map((p) => `- ${p}`),
     );
   }
 }
@@ -121,7 +169,7 @@ function appendSharedSections(
   }
 
   if (opts.includeChildMetas) {
-    appendMetaSections(sections, '## CHILD META OUTPUTS', ctx.childMetas);
+    appendMetaSections(sections, '## CHILD META OUTPUTS', ctx.childMetas, true);
   }
 
   if (opts.includeCrossRefs) {

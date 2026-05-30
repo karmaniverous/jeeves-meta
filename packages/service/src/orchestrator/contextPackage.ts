@@ -51,6 +51,31 @@ export function condenseScopeFiles(
     .join('\n');
 }
 
+/** Parsed child meta fields needed for delta-aware context. */
+interface ChildMetaInfo {
+  content: string | null;
+  generatedAt: string | undefined;
+}
+
+/**
+ * Read a meta.json file and extract `_content` and `_generatedAt`.
+ *
+ * @param metaJsonPath - Absolute path to a meta.json file.
+ * @returns Parsed fields, or defaults if missing/unreadable.
+ */
+async function readChildMeta(metaJsonPath: string): Promise<ChildMetaInfo> {
+  try {
+    const raw = await readFile(metaJsonPath, 'utf8');
+    const meta = JSON.parse(raw) as MetaJson;
+    return {
+      content: meta._content ?? null,
+      generatedAt: meta._generatedAt,
+    };
+  } catch {
+    return { content: null, generatedAt: undefined };
+  }
+}
+
 /**
  * Read a meta.json file and extract its `_content` field.
  *
@@ -58,13 +83,8 @@ export function condenseScopeFiles(
  * @returns The `_content` string, or null if missing/unreadable.
  */
 async function readMetaContent(metaJsonPath: string): Promise<string | null> {
-  try {
-    const raw = await readFile(metaJsonPath, 'utf8');
-    const meta = JSON.parse(raw) as MetaJson;
-    return meta._content ?? null;
-  } catch {
-    return null;
-  }
+  const info = await readChildMeta(metaJsonPath);
+  return info.content;
 }
 
 /**
@@ -94,17 +114,42 @@ export async function buildContextPackage(
     'scope and delta files computed',
   );
 
-  // Child meta outputs (parallel reads)
+  // Child meta outputs (parallel reads, delta-aware).
+  // Only include full _content for children synthesized AFTER the parent's
+  // _generatedAt. Non-delta children are already folded into the parent's
+  // previous _content and are listed as path-only references (#169).
+  const parentGeneratedAt = meta._generatedAt;
   const childMetas: Record<string, unknown> = {};
   const childEntries = await Promise.all(
     node.children.map(async (child) => {
-      const content = await readMetaContent(join(child.metaPath, 'meta.json'));
-      return [child.ownerPath, content] as const;
+      const info = await readChildMeta(join(child.metaPath, 'meta.json'));
+      return [child.ownerPath, info] as const;
     }),
   );
-  for (const [path, content] of childEntries) {
-    childMetas[path] = content;
+  let deltaChildCount = 0;
+  for (const [path, info] of childEntries) {
+    // Delta child: no parent timestamp (first run), or child synthesized
+    // after parent. Include full content.
+    if (
+      !parentGeneratedAt ||
+      !info.generatedAt ||
+      info.generatedAt > parentGeneratedAt
+    ) {
+      childMetas[path] = info.content ?? undefined;
+      deltaChildCount++;
+    } else {
+      // Non-delta: already incorporated in previous synthesis.
+      // Include path with null content so the builder knows it exists.
+      childMetas[path] = null;
+    }
   }
+  logger?.debug(
+    {
+      totalChildren: childEntries.length,
+      deltaChildren: deltaChildCount,
+    },
+    'child metas filtered by delta',
+  );
 
   // Cross-referenced meta outputs (parallel reads)
   const crossRefMetas: Record<string, unknown> = {};
