@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Externalize @karmaniverous/jeeves across service and openclaw packages (#167)
+- Also externalize @karmaniverous/jeeves-meta-core in openclaw plugin
+## [0.12.6] - 2026-05-29
+
 ### 🚀 Features
 
 - Per-entity timeout overrides for synthesis phases (#122)
@@ -31,6 +37,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update dependencies (jeeves-core 0.5.11, vitest 4.1.7, dotenvx 1.69.1)
+- Release @karmaniverous/jeeves-meta-openclaw v0.12.6
 ## [0.12.5] - 2026-05-16
 
 ### 🐛 Bug Fixes
