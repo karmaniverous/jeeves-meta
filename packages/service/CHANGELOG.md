@@ -4,12 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 💼 Other
+
+- Updated jeeves core
+## [0.15.10] - 2026-05-30
+
 ### 🐛 Bug Fixes
 
 - Defer synthesis_start until phase actually executes (#165)
 - Externalize @karmaniverous/jeeves across service and openclaw packages (#167)
 - Delta-aware child meta filtering in context package (#169)
 - Distinguish unsynthesized delta children from non-delta (null vs undefined)
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.15.10
 ## [0.15.9] - 2026-05-29
 
 ### 🚀 Features
