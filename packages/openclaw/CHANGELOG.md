@@ -4,10 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 💼 Other
+
+- Updated jeeves core
+## [0.12.7] - 2026-05-30
+
 ### 🐛 Bug Fixes
 
 - Externalize @karmaniverous/jeeves across service and openclaw packages (#167)
 - Also externalize @karmaniverous/jeeves-meta-core in openclaw plugin
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.12.7
 ## [0.12.6] - 2026-05-29
 
 ### 🚀 Features
