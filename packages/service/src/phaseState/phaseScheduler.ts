@@ -50,7 +50,7 @@ export function buildPhaseCandidates(
       const needsArchitect =
         !entry.meta._builder ||
         (entry.meta._synthesisCount ?? 0) >= architectEvery;
-      if (needsArchitect && ps.architect === 'fresh') {
+      if (needsArchitect && isFullyFresh(ps)) {
         ps = { architect: 'pending', builder: 'stale', critic: 'stale' };
       }
     }

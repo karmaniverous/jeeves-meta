@@ -27,12 +27,14 @@ describe('POST /config/apply', () => {
     mkdirSync(testDir, { recursive: true });
     configPath = join(testDir, 'config.json');
 
-    // Write a base config with required fields
+    // Write a base config with required + restart-required fields
+    // (include port so schema defaults don't cause spurious restartRequired)
     writeFileSync(
       configPath,
       JSON.stringify({
         watcherUrl: 'http://localhost:3456',
         schedule: '*/30 * * * *',
+        port: 1938,
       }),
     );
 
@@ -71,6 +73,34 @@ describe('POST /config/apply', () => {
     expect(res.statusCode).toBe(400);
     const json = res.json<{ error: string }>();
     expect(json.error).toBe('Config validation failed');
+  });
+
+  it('returns restartRequired: true when restart-required field changes', async () => {
+    const body = { patch: { port: 9999 } };
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/config/apply',
+      payload: body,
+    });
+
+    expect(res.statusCode).toBe(200);
+    const json = res.json<{ applied: boolean; restartRequired: boolean }>();
+    expect(json.applied).toBe(true);
+    expect(json.restartRequired).toBe(true);
+  });
+
+  it('returns restartRequired: false when no restart-required field changes', async () => {
+    const body = { patch: { schedule: '*/10 * * * *' } };
+    const res = await app!.inject({
+      method: 'POST',
+      url: '/config/apply',
+      payload: body,
+    });
+
+    expect(res.statusCode).toBe(200);
+    const json = res.json<{ applied: boolean; restartRequired: boolean }>();
+    expect(json.applied).toBe(true);
+    expect(json.restartRequired).toBe(false);
   });
 
   it('returns 500 when no configPath is set', async () => {

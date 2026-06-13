@@ -8,7 +8,7 @@
 
 import type { Logger } from 'pino';
 
-import { releaseLock } from '../lock.js';
+import { releaseLock, resolveMetaDir } from '../lock.js';
 import type { SynthesisQueue } from '../queue/index.js';
 import type { RouteDeps } from '../routes/index.js';
 import type { Scheduler } from '../scheduler/index.js';
@@ -68,6 +68,24 @@ export function registerShutdownHandlers(deps: ShutdownDeps): void {
         deps.logger.warn(
           { path: current.path },
           'Failed to release lock during shutdown',
+        );
+      }
+    }
+
+    // Release lock for in-progress override synthesis (only when it
+    // differs from the legacy current item to avoid double-release)
+    const currentPhase = deps.queue.currentPhase;
+    if (currentPhase && currentPhase.path !== current?.path) {
+      try {
+        releaseLock(resolveMetaDir(currentPhase.path));
+        deps.logger.info(
+          { path: currentPhase.path },
+          'Released lock for in-progress override synthesis',
+        );
+      } catch {
+        deps.logger.warn(
+          { path: currentPhase.path },
+          'Failed to release override lock during shutdown',
         );
       }
     }

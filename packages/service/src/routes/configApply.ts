@@ -109,6 +109,16 @@ export function registerConfigApplyRoute(
         .send({ error: `Failed to write config: ${message}` });
     }
 
+    // Compute whether any restart-required fields actually changed
+    // (compares validated output against previous config, catching both
+    // explicit patch keys and implicit changes via replace + schema defaults)
+    const validatedRecord = validatedConfig as Record<string, unknown>;
+    const restartRequired = RESTART_REQUIRED_FIELDS.some(
+      (field) =>
+        JSON.stringify(existing[field]) !==
+        JSON.stringify(validatedRecord[field]),
+    );
+
     // Apply hot-reload callback
     try {
       applyHotReloadedConfig(validatedConfig);
@@ -117,12 +127,13 @@ export function registerConfigApplyRoute(
       return reply.status(200).send({
         applied: true,
         warning: `Config written but callback failed: ${message}`,
-        restartRequired: RESTART_REQUIRED_FIELDS,
+        restartRequired,
       });
     }
 
     return reply.status(200).send({
       applied: true,
+      restartRequired,
     });
   });
 }

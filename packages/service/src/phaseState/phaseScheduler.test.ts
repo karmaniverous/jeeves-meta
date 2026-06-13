@@ -354,6 +354,26 @@ describe('buildPhaseCandidates', () => {
     expect(candidates[0].phaseState.builder).toBe('stale');
   });
 
+  it('Tier 1 cheap invalidation: no-op when only architect is fresh (partially-fresh guard)', () => {
+    // Bug #183: Tier 1 must check ALL phases are fresh, not just architect.
+    // When builder is pending (in-progress cycle), Tier 1 must not override.
+    const entries: MetaEntry[] = [
+      makeEntry('a/.meta', {
+        _synthesisCount: 10,
+        _builder: 'cached brief',
+        _phaseState: {
+          architect: 'fresh',
+          builder: 'pending',
+          critic: 'stale',
+        },
+      }),
+    ];
+    const candidates = buildPhaseCandidates(entries, 10);
+    // Architect should remain fresh — Tier 1 must not override mid-cycle
+    expect(candidates[0].phaseState.architect).toBe('fresh');
+    expect(candidates[0].phaseState.builder).toBe('pending');
+  });
+
   it('Tier 1 cheap invalidation: no-op when architect already non-fresh', () => {
     const entries: MetaEntry[] = [
       makeEntry('a/.meta', {

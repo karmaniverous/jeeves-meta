@@ -36,8 +36,6 @@ export function registerMetasUpdateRoute(
   app: FastifyInstance,
   deps: RouteDeps,
 ): void {
-  void deps; // Signature matches other route registrars; deps unused for direct-read route
-
   app.patch<{ Params: { path: string } }>(
     getEndpoint('updateMeta').path,
     async (request, reply) => {
@@ -85,6 +83,7 @@ export function registerMetasUpdateRoute(
       Object.assign(updated, toSet);
 
       await writeFile(metaJsonPath, JSON.stringify(updated, null, 2) + '\n');
+      deps.cache.invalidate();
 
       // Project the response — exclude the same large fields as the detail route.
       const projected: Record<string, unknown> = {};

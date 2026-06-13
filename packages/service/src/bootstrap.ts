@@ -32,6 +32,27 @@ import { registerShutdownHandlers } from './shutdown/index.js';
 import { HttpWatcherClient } from './watcher-client/index.js';
 
 /**
+ * Compute per-cycle token total from a completed meta.
+ *
+ * Exported for testing.
+ *
+ * Uses `_synthesisCount` as a discriminator: after increment by `runCritic`,
+ * a value of 1 means architect ran this cycle (was 0 pre-increment),
+ * so all three phase token fields are summed. A value \> 1 means architect
+ * was skipped (cached brief reused), so only builder + critic are summed.
+ */
+export function computeCycleTokens(meta: Record<string, unknown>): number {
+  const builderTokens = (meta._builderTokens as number | undefined) ?? 0;
+  const criticTokens = (meta._criticTokens as number | undefined) ?? 0;
+  const architectRan =
+    ((meta._synthesisCount as number | undefined) ?? 1) === 1;
+  const architectTokens = architectRan
+    ? ((meta._architectTokens as number | undefined) ?? 0)
+    : 0;
+  return architectTokens + builderTokens + criticTokens;
+}
+
+/**
  * Bootstrap the service: create logger, build server, start listening,
  * wire scheduler, queue processing, rule registration, config hot-reload,
  * startup lock cleanup, and shutdown.
@@ -188,10 +209,15 @@ export async function startService(
 
       // Emit synthesis_complete only on full-cycle completion
       if (result.cycleComplete) {
+        const updatedMeta = result.phaseResult?.updatedMeta;
+        const tokens = updatedMeta
+          ? computeCycleTokens(updatedMeta)
+          : undefined;
         await progress.report({
           type: 'synthesis_complete',
           path: ownerPath,
           durationMs,
+          tokens,
         });
       }
     } catch (err) {

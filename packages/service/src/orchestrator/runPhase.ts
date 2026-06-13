@@ -7,7 +7,7 @@
  * @module orchestrator/runPhase
  */
 
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { copyFile, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
@@ -97,6 +97,10 @@ export async function persistPhaseState(
     _phaseState: phaseState,
     _structureHash: base.structureHash,
   };
+
+  if (!merged._id) {
+    merged._id = randomUUID();
+  }
 
   // Clean undefined
   if (merged._error === undefined) delete merged._error;
@@ -245,7 +249,38 @@ export async function runBuilder(
       timeout: currentMeta._builderTimeout ?? config.builderTimeout,
       label: 'meta-builder',
     });
-    const builderOutput = parseBuilderOutput(result.output);
+
+    const rawOutput = result.output;
+    // Exact match only — ANNOUNCE_SKIP as the entire output means "no update."
+    // A trailing sentinel on valid output (e.g. JSON + ANNOUNCE_SKIP) is handled
+    // by stripSentinel() inside parseBuilderOutput and is NOT a skip.
+    const isSkip = rawOutput.trim() === 'ANNOUNCE_SKIP';
+
+    if (isSkip) {
+      // ANNOUNCE_SKIP: preserve existing _content, bump _generatedAt only
+      ps = builderSuccess(ps);
+      const skipUpdates: Partial<MetaJson> = {
+        _builderTokens: result.tokens,
+        _generatedAt: new Date().toISOString(),
+        _error: undefined,
+      };
+      const ancestorHash = hashAncestorBuilder(ctx.ancestorBuilder);
+      if (ancestorHash) skipUpdates._ancestorBuilderHash = ancestorHash;
+
+      const updatedMeta = await persistPhaseState(base, ps, skipUpdates);
+
+      await onProgress?.({
+        type: 'phase_complete',
+        path: node.ownerPath,
+        phase: 'builder',
+        tokens: result.tokens,
+        durationMs: Date.now() - builderStart,
+      });
+
+      return { executed: true, phaseState: ps, updatedMeta };
+    }
+
+    const builderOutput = parseBuilderOutput(rawOutput);
     const builderTokens = result.tokens;
 
     // Builder success: builder → fresh, critic → pending

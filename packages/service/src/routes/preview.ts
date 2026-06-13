@@ -43,10 +43,10 @@ export function registerPreviewRoute(
       const normalized = normalizePath(query.path);
       targetNode = findNode(result.tree, normalized);
       if (!targetNode) {
-        return {
+        return reply.status(404).send({
           error: 'NOT_FOUND',
           message: 'Meta path not found: ' + query.path,
-        };
+        });
       }
     } else {
       // Select best phase candidate
