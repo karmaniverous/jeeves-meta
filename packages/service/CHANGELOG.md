@@ -4,9 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- V0.16.0 bug fixes and enhancements (#174, #175, #176, #177, #181, #182, #183, #186, #189)
+
+### 🐛 Bug Fixes
+
+- Address copilot review comments
+
+### 🚜 Refactor
+
+- Extract empty-scope helpers and cycle token computation (DRY/SRP)
+
+### 🧪 Testing
+
+- Add coverage for v0.16.0 changes (17 new tests)
+## [0.15.11] - 2026-06-11
+
 ### 💼 Other
 
 - Updated jeeves core
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.15.11
 ## [0.15.10] - 2026-05-30
 
 ### 🐛 Bug Fixes
