@@ -109,6 +109,11 @@ export function registerConfigApplyRoute(
         .send({ error: `Failed to write config: ${message}` });
     }
 
+    // Compute whether any restart-required fields changed
+    const restartRequired = RESTART_REQUIRED_FIELDS.some((field) =>
+      Object.keys(patch).includes(field),
+    );
+
     // Apply hot-reload callback
     try {
       applyHotReloadedConfig(validatedConfig);
@@ -117,12 +122,13 @@ export function registerConfigApplyRoute(
       return reply.status(200).send({
         applied: true,
         warning: `Config written but callback failed: ${message}`,
-        restartRequired: RESTART_REQUIRED_FIELDS,
+        restartRequired: true,
       });
     }
 
     return reply.status(200).send({
       applied: true,
+      restartRequired,
     });
   });
 }

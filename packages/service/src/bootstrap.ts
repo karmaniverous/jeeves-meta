@@ -188,10 +188,25 @@ export async function startService(
 
       // Emit synthesis_complete only on full-cycle completion
       if (result.cycleComplete) {
+        // Compute per-cycle tokens from updated meta.
+        // _synthesisCount was already incremented to N+1 by runCritic.
+        // Pre-increment value of 0 (post-increment === 1) means architect ran.
+        let cycleTokens: number | undefined;
+        const updatedMeta = result.phaseResult?.updatedMeta;
+        if (updatedMeta) {
+          const builderTokens = updatedMeta._builderTokens ?? 0;
+          const criticTokens = updatedMeta._criticTokens ?? 0;
+          const architectRan = (updatedMeta._synthesisCount ?? 1) === 1;
+          const architectTokens = architectRan
+            ? (updatedMeta._architectTokens ?? 0)
+            : 0;
+          cycleTokens = architectTokens + builderTokens + criticTokens;
+        }
         await progress.report({
           type: 'synthesis_complete',
           path: ownerPath,
           durationMs,
+          tokens: cycleTokens,
         });
       }
     } catch (err) {

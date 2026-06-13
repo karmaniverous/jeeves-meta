@@ -20,6 +20,7 @@ import { normalizePath } from '../normalizePath.js';
 import {
   buildPhaseCandidates,
   derivePhaseState,
+  freshPhaseState,
   getOwedPhase,
   retryAllFailed,
   selectPhaseCandidate,
@@ -144,6 +145,30 @@ export async function orchestratePhase(
     const { scopeFiles } = await getScopeFiles(winner.node, watcher);
     const structureHash = computeStructureHash(scopeFiles);
 
+    // Empty-scope guard (§3.9, #177): skip synthesis when nothing to synthesize
+    if (
+      scopeFiles.length === 0 &&
+      winner.node.children.length === 0 &&
+      (!currentMeta._crossRefs || currentMeta._crossRefs.length === 0) &&
+      !currentMeta._content
+    ) {
+      await persistPhaseState(
+        {
+          metaPath: winner.node.metaPath,
+          current: currentMeta,
+          config,
+          structureHash,
+        },
+        freshPhaseState(),
+        { _generatedAt: new Date().toISOString() },
+      );
+      logger?.info(
+        { path: winner.node.ownerPath },
+        'Empty scope — set all phases fresh, bumped _generatedAt',
+      );
+      return { executed: false };
+    }
+
     // skipUnchanged: bump _generatedAt without altering _phaseState
     if (config.skipUnchanged && currentMeta._generatedAt) {
       const verifiedStale = await isStale(
@@ -219,6 +244,30 @@ async function orchestrateTargeted(
     // Compute structure hash
     const { scopeFiles } = await getScopeFiles(node, watcher);
     const structureHash = computeStructureHash(scopeFiles);
+
+    // Empty-scope guard (§3.9, #177): skip synthesis when nothing to synthesize
+    if (
+      scopeFiles.length === 0 &&
+      node.children.length === 0 &&
+      (!currentMeta._crossRefs || currentMeta._crossRefs.length === 0) &&
+      !currentMeta._content
+    ) {
+      await persistPhaseState(
+        {
+          metaPath: node.metaPath,
+          current: currentMeta,
+          config,
+          structureHash,
+        },
+        freshPhaseState(),
+        { _generatedAt: new Date().toISOString() },
+      );
+      logger?.info(
+        { path: node.ownerPath },
+        'Empty scope — set all phases fresh, bumped _generatedAt',
+      );
+      return { executed: false, metaPath: normalizedTarget };
+    }
 
     return await executePhase(
       node,
