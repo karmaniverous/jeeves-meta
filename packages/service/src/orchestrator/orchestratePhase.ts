@@ -43,6 +43,50 @@ import {
   runCritic,
 } from './runPhase.js';
 
+/**
+ * Check whether a meta has an empty scope — no source files, no children,
+ * no cross-refs, and no prior content. Matches §3.9 empty-scope criteria.
+ */
+function isEmptyScope(
+  scopeFiles: string[],
+  node: MetaNode,
+  meta: MetaJson,
+): boolean {
+  return (
+    scopeFiles.length === 0 &&
+    node.children.length === 0 &&
+    (!meta._crossRefs || meta._crossRefs.length === 0) &&
+    !meta._content
+  );
+}
+
+/**
+ * Handle an empty-scope meta: set all phases fresh, bump _generatedAt.
+ * Prevents perpetual staleness without wasting tokens on synthesis.
+ */
+async function handleEmptyScope(
+  node: MetaNode,
+  currentMeta: MetaJson,
+  config: MetaConfig,
+  structureHash: string,
+  logger?: MinimalLogger,
+): Promise<void> {
+  await persistPhaseState(
+    {
+      metaPath: node.metaPath,
+      current: currentMeta,
+      config,
+      structureHash,
+    },
+    freshPhaseState(),
+    { _generatedAt: new Date().toISOString() },
+  );
+  logger?.info(
+    { path: node.ownerPath },
+    'Empty scope — set all phases fresh, bumped _generatedAt',
+  );
+}
+
 /** Phase runner dispatch map — avoids repeating the same switch/case. */
 const phaseRunners = {
   architect: runArchitect,
@@ -146,25 +190,13 @@ export async function orchestratePhase(
     const structureHash = computeStructureHash(scopeFiles);
 
     // Empty-scope guard (§3.9, #177): skip synthesis when nothing to synthesize
-    if (
-      scopeFiles.length === 0 &&
-      winner.node.children.length === 0 &&
-      (!currentMeta._crossRefs || currentMeta._crossRefs.length === 0) &&
-      !currentMeta._content
-    ) {
-      await persistPhaseState(
-        {
-          metaPath: winner.node.metaPath,
-          current: currentMeta,
-          config,
-          structureHash,
-        },
-        freshPhaseState(),
-        { _generatedAt: new Date().toISOString() },
-      );
-      logger?.info(
-        { path: winner.node.ownerPath },
-        'Empty scope — set all phases fresh, bumped _generatedAt',
+    if (isEmptyScope(scopeFiles, winner.node, currentMeta)) {
+      await handleEmptyScope(
+        winner.node,
+        currentMeta,
+        config,
+        structureHash,
+        logger,
       );
       return { executed: false };
     }
@@ -246,26 +278,8 @@ async function orchestrateTargeted(
     const structureHash = computeStructureHash(scopeFiles);
 
     // Empty-scope guard (§3.9, #177): skip synthesis when nothing to synthesize
-    if (
-      scopeFiles.length === 0 &&
-      node.children.length === 0 &&
-      (!currentMeta._crossRefs || currentMeta._crossRefs.length === 0) &&
-      !currentMeta._content
-    ) {
-      await persistPhaseState(
-        {
-          metaPath: node.metaPath,
-          current: currentMeta,
-          config,
-          structureHash,
-        },
-        freshPhaseState(),
-        { _generatedAt: new Date().toISOString() },
-      );
-      logger?.info(
-        { path: node.ownerPath },
-        'Empty scope — set all phases fresh, bumped _generatedAt',
-      );
+    if (isEmptyScope(scopeFiles, node, currentMeta)) {
+      await handleEmptyScope(node, currentMeta, config, structureHash, logger);
       return { executed: false, metaPath: normalizedTarget };
     }
 
