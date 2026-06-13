@@ -251,9 +251,10 @@ export async function runBuilder(
     });
 
     const rawOutput = result.output;
-    const isSkip =
-      rawOutput.trim() === 'ANNOUNCE_SKIP' ||
-      rawOutput.trim().endsWith('ANNOUNCE_SKIP');
+    // Exact match only — ANNOUNCE_SKIP as the entire output means "no update."
+    // A trailing sentinel on valid output (e.g. JSON + ANNOUNCE_SKIP) is handled
+    // by stripSentinel() inside parseBuilderOutput and is NOT a skip.
+    const isSkip = rawOutput.trim() === 'ANNOUNCE_SKIP';
 
     if (isSkip) {
       // ANNOUNCE_SKIP: preserve existing _content, bump _generatedAt only

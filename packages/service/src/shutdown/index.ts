@@ -72,9 +72,10 @@ export function registerShutdownHandlers(deps: ShutdownDeps): void {
       }
     }
 
-    // Release lock for in-progress override synthesis
+    // Release lock for in-progress override synthesis (only when it
+    // differs from the legacy current item to avoid double-release)
     const currentPhase = deps.queue.currentPhase;
-    if (currentPhase) {
+    if (currentPhase && currentPhase.path !== current?.path) {
       try {
         releaseLock(resolveMetaDir(currentPhase.path));
         deps.logger.info(
