@@ -138,6 +138,27 @@ describe('GET /preview', () => {
     expect(body.scope).toHaveProperty('childMetas');
   });
 
+  it('returns 404 when specified path does not exist', async () => {
+    const owner = join(previewRoot, 'existing');
+    const metaJsonPath = createTestMeta(owner, {
+      _id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      _generatedAt: new Date(Date.now() - 3600_000).toISOString(),
+    });
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({ watcher });
+    app = Fastify();
+    registerPreviewRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({
+      method: 'GET',
+      url: `/preview?path=${encodeURIComponent('j:/does/not/exist/.meta')}`,
+    });
+    expect(res.statusCode).toBe(404);
+    const body = res.json<{ error: string }>();
+    expect(body.error).toBe('NOT_FOUND');
+  });
+
   it('architect is triggered for fresh meta (no _builder)', async () => {
     const owner = join(previewRoot, 'fresh');
     const metaJsonPath = createTestMeta(owner, {

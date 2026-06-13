@@ -34,12 +34,14 @@ import { HttpWatcherClient } from './watcher-client/index.js';
 /**
  * Compute per-cycle token total from a completed meta.
  *
+ * Exported for testing.
+ *
  * Uses `_synthesisCount` as a discriminator: after increment by `runCritic`,
  * a value of 1 means architect ran this cycle (was 0 pre-increment),
- * so all three phase token fields are summed. A value > 1 means architect
+ * so all three phase token fields are summed. A value \> 1 means architect
  * was skipped (cached brief reused), so only builder + critic are summed.
  */
-function computeCycleTokens(meta: Record<string, unknown>): number {
+export function computeCycleTokens(meta: Record<string, unknown>): number {
   const builderTokens = (meta._builderTokens as number | undefined) ?? 0;
   const criticTokens = (meta._criticTokens as number | undefined) ?? 0;
   const architectRan =

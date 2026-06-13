@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { normalizePath } from '../normalizePath.js';
 import {
@@ -168,6 +168,27 @@ describe('PATCH /metas/:path', () => {
     expect(res.statusCode).toBe(404);
     const body = res.json<{ error: string }>();
     expect(body.error).toBe('NOT_FOUND');
+  });
+
+  it('invalidates MetaCache after successful write', async () => {
+    const owner = join(root, 'cacheInvalidate');
+    const { metaJsonPath } = createMeta(owner);
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({ watcher });
+    const invalidateSpy = vi.spyOn(deps.cache, 'invalidate');
+    app = Fastify();
+    registerMetasUpdateRoute(app, deps);
+    await app.ready();
+
+    const encoded = encodeURIComponent(normalizePath(owner));
+    const res = await app.inject({
+      method: 'PATCH',
+      url: `/metas/${encoded}`,
+      payload: { _steer: 'new steer' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(invalidateSpy).toHaveBeenCalledOnce();
   });
 
   it('returns the updated meta, excluding large generated fields', async () => {

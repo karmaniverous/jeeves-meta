@@ -47,7 +47,7 @@ import {
  * Check whether a meta has an empty scope — no source files, no children,
  * no cross-refs, and no prior content. Matches §3.9 empty-scope criteria.
  */
-function isEmptyScope(
+export function isEmptyScope(
   scopeFiles: string[],
   node: MetaNode,
   meta: MetaJson,
