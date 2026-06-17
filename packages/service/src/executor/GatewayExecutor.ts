@@ -213,7 +213,7 @@ export class GatewayExecutor implements MetaExecutor {
     const spawnResult = await this.invoke('sessions_spawn', {
       task: taskWithOutput,
       label,
-      runTimeoutSeconds: timeoutSeconds,
+      
       ...(options?.thinking ? { thinking: options.thinking } : {}),
       ...(options?.model ? { model: options.model } : {}),
     });
