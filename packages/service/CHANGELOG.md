@@ -6,6 +6,15 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- Delegate subagent timeout to gateway lifecycle (#197)
+
+### 💼 Other
+
+- Updated core
+## [0.15.12] - 2026-06-13
+
+### 🚀 Features
+
 - V0.16.0 bug fixes and enhancements (#174, #175, #176, #177, #181, #182, #183, #186, #189)
 
 ### 🐛 Bug Fixes
@@ -19,6 +28,10 @@ All notable changes to this project will be documented in this file.
 ### 🧪 Testing
 
 - Add coverage for v0.16.0 changes (17 new tests)
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.15.12
 ## [0.15.11] - 2026-06-11
 
 ### 💼 Other
