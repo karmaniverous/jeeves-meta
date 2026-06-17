@@ -69,7 +69,7 @@ The service monitors its config file via `fs.watchFile`. Fields are divided into
 
 **Restart-required** (warn on change, no live effect): `port`, `watcherUrl`, `gatewayUrl`, `gatewayApiKey`, `defaultArchitect`, `defaultCritic`.
 
-**Hot-reloadable** (applied immediately): `schedule` (cron reschedule), `logging.level` (Pino level change), and all remaining fields (`reportChannel`, `reportTarget`, `serverBaseUrl`, `watcherHealthIntervalMs`, `tier2ScanLimit`, `autoSeed`, `architectEvery`, `depthWeight`, `maxArchive`, `maxLines`, `architectTimeout`, `builderTimeout`, `criticTimeout`, `thinking`, `skipUnchanged`, `metaProperty`, `metaArchiveProperty`).
+**Hot-reloadable** (applied immediately): `schedule` (cron reschedule), `logging.level` (Pino level change), and all remaining fields (`reportChannel`, `reportTarget`, `serverBaseUrl`, `watcherHealthIntervalMs`, `tier2ScanLimit`, `autoSeed`, `architectEvery`, `depthWeight`, `maxArchive`, `maxLines`, `thinking`, `skipUnchanged`, `metaProperty`, `metaArchiveProperty`).
 
 ## Phase-State Machine
 

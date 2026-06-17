@@ -94,9 +94,6 @@ export async function autoSeedPass(
       candidates.set(dir, {
         steer: rule.steer,
         crossRefs: rule.crossRefs,
-        architectTimeout: rule.architectTimeout,
-        builderTimeout: rule.builderTimeout,
-        criticTimeout: rule.criticTimeout,
       });
     }
   }

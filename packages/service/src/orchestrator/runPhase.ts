@@ -177,7 +177,6 @@ export async function runArchitect(
     const architectTask = buildArchitectTask(ctx, currentMeta, config);
     const result = await executor.spawn(architectTask, {
       thinking: config.thinking,
-      timeout: currentMeta._architectTimeout ?? config.architectTimeout,
       label: 'meta-architect',
     });
     const builderBrief = parseArchitectOutput(result.output);
@@ -246,7 +245,6 @@ export async function runBuilder(
     const builderTask = buildBuilderTask(ctx, currentMeta, config);
     const result = await executor.spawn(builderTask, {
       thinking: config.thinking,
-      timeout: currentMeta._builderTimeout ?? config.builderTimeout,
       label: 'meta-builder',
     });
 
@@ -366,7 +364,6 @@ export async function runCritic(
     const criticTask = buildCriticTask(ctx, metaForCritic, config);
     const result = await executor.spawn(criticTask, {
       thinking: config.thinking,
-      timeout: currentMeta._criticTimeout ?? config.criticTimeout,
       label: 'meta-critic',
     });
     const feedback = parseCriticOutput(result.output);

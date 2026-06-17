@@ -128,8 +128,6 @@ The Builder should:
 4. Merge new findings with previous `_content` (carried in context)
 
 If the scope is small enough to process in one pass, omit chunking instructions.
-The Builder has a timeout of \{{config.builderTimeout}} seconds.
-
 ### 8. Output Structure
 
 Define non-underscore fields for structured data and the _content narrative
@@ -148,7 +146,6 @@ Quote the specific issue and state what to do differently.
 Your task brief will be compiled as a Handlebars template before the Builder
 receives it. You can use these variables to write adaptive instructions:
 
-- `\{{config.builderTimeout}}` — Builder timeout in seconds
 - `\{{config.maxLines}}` — Maximum _content lines
 - `\{{config.architectEvery}}` — Cycles between architect refreshes
 - `\{{config.maxArchive}}` — Archive snapshots retained
@@ -159,7 +156,7 @@ receives it. You can use these variables to write adaptive instructions:
 - `\{{meta._depth}}` — Scheduling depth
 - `\{{meta._emphasis}}` — Scheduling emphasis
 
-Example: "Process files in chunks of 50. You have \{{config.builderTimeout}} seconds."
+Example: "Process files in chunks of 50. Limit output to \{{config.maxLines}} lines."
 
 ## Constraints
 

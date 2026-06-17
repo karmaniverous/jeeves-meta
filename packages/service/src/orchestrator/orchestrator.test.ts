@@ -20,9 +20,6 @@ const sampleConfig: MetaConfig = {
   architectEvery: 10,
   maxArchive: 20,
   maxLines: 500,
-  architectTimeout: 120,
-  builderTimeout: 600,
-  criticTimeout: 300,
   thinking: 'low',
   defaultArchitect: 'You are an architect. Analyze the data shape.',
   defaultCritic: 'You are a critic. Evaluate the synthesis.',
@@ -131,10 +128,10 @@ describe('Handlebars template compilation in prompts', () => {
     const configWithTemplate: MetaConfig = {
       ...sampleConfig,
       defaultArchitect:
-        'Timeout is {{config.builderTimeout}}s. Max {{config.maxLines}} lines.',
+        'Every {{config.architectEvery}} cycles. Max {{config.maxLines}} lines.',
     };
     const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
-    expect(task).toContain('Timeout is 600s');
+    expect(task).toContain('Every 10 cycles');
     expect(task).toContain('Max 500 lines');
   });
 
@@ -163,23 +160,23 @@ describe('Handlebars template compilation in prompts', () => {
   it('escaped \\{{...}} passes through as literal {{...}} for architect output', () => {
     const configWithTemplate: MetaConfig = {
       ...sampleConfig,
-      defaultArchitect: 'Use \\{{config.builderTimeout}} in your brief.',
+      defaultArchitect: 'Use \\{{config.architectEvery}} in your brief.',
     };
     const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
-    // Architect sees literal {{config.builderTimeout}} in its instructions
-    expect(task).toContain('Use {{config.builderTimeout}} in your brief.');
+    // Architect sees literal {{config.architectEvery}} in its instructions
+    expect(task).toContain('Use {{config.architectEvery}} in your brief.');
   });
 
   it('architect-written template expressions resolve in builder prompt', () => {
-    // Architect wrote {{config.builderTimeout}} into _builder
+    // Architect wrote {{config.architectEvery}} into _builder
     const meta: MetaJson = {
       ...sampleMeta,
-      _builder: 'You have {{config.builderTimeout}} seconds to complete.',
+      _builder: 'You have {{config.architectEvery}} cycles to complete.',
     };
     const task = buildBuilderTask(sampleCtx, meta, sampleConfig);
     // Builder sees the resolved value
-    expect(task).toContain('You have 600 seconds to complete.');
-    expect(task).not.toContain('{{config.builderTimeout}}');
+    expect(task).toContain('You have 10 cycles to complete.');
+    expect(task).not.toContain('{{config.architectEvery}}');
   });
 
   it('template compilation gracefully handles invalid expressions', () => {

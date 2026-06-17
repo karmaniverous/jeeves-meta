@@ -145,9 +145,6 @@ export class MetaServiceClient {
       _depth?: number | null;
       _crossRefs?: string[] | null;
       _disabled?: boolean | null;
-      _architectTimeout?: number | null;
-      _builderTimeout?: number | null;
-      _criticTimeout?: number | null;
     },
   ): Promise<unknown> {
     return fetchJson(

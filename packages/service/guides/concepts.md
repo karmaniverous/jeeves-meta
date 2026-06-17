@@ -51,16 +51,6 @@ Set `_disabled: true` on a meta to exclude it from automatic staleness schedulin
 
 The builder can populate an opaque `_state` field in `meta.json` to carry forward intermediate progress across cycles. On timeout (`SpawnTimeoutError`), the service attempts to salvage any advanced `_state` from partial output — preserving progress even when the full synthesis fails.
 
-## Per-Entity Timeout Overrides
-
-Each meta can override the global phase timeouts via reserved properties:
-
-- `_architectTimeout` — seconds (min 30), overrides `architectTimeout` config
-- `_builderTimeout` — seconds (min 30), overrides `builderTimeout` config
-- `_criticTimeout` — seconds (min 30), overrides `criticTimeout` config
-
-These are set via `meta_update` or `PATCH /metas/:path` and take effect on the next phase execution.
-
 ## Token Tracking
 
 Each meta records token usage from LLM subprocess calls:

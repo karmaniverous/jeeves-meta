@@ -18,9 +18,6 @@ describe('metaConfigSchema', () => {
       skipUnchanged: true,
       maxArchive: 20,
       maxLines: 500,
-      architectTimeout: 180,
-      builderTimeout: 360,
-      criticTimeout: 240,
     });
   });
 
@@ -31,9 +28,6 @@ describe('metaConfigSchema', () => {
       depthWeight: 0.5,
       maxArchive: 50,
       maxLines: 1000,
-      architectTimeout: 60,
-      builderTimeout: 300,
-      criticTimeout: 120,
     });
     expect(result.success).toBe(true);
   });
@@ -56,21 +50,6 @@ describe('metaConfigSchema', () => {
     expect(result.data?.defaultCritic).toBeUndefined();
   });
 
-  it('rejects architectTimeout below minimum (30)', () => {
-    const result = metaConfigSchema.safeParse({
-      ...validConfig,
-      architectTimeout: 10,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it('rejects builderTimeout below minimum (60)', () => {
-    const result = metaConfigSchema.safeParse({
-      ...validConfig,
-      builderTimeout: 30,
-    });
-    expect(result.success).toBe(false);
-  });
   it('applies default metaProperty and metaArchiveProperty', () => {
     const result = metaConfigSchema.safeParse(validConfig);
     expect(result.success).toBe(true);

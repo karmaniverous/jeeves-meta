@@ -66,7 +66,7 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 | POST | `/config/apply` | Apply a config patch (merge or replace) |
 | GET | `/queue` | Queue state: current (with phase), overrides, automatic, pending |
 | POST | `/queue/clear` | Remove all override queue entries |
-| PATCH | `/metas/:path` | Update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`, `_architectTimeout`, `_builderTimeout`, `_criticTimeout`) |
+| PATCH | `/metas/:path` | Update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`) |
 
 ## Configuration
 

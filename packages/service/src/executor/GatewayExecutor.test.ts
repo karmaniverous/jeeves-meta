@@ -1,8 +1,9 @@
 /**
  * Tests for GatewayExecutor.
  *
- * Covers: successful spawn, timeout with SpawnTimeoutError, and abort
- * with SpawnAbortedError. All gateway HTTP calls are mocked.
+ * Covers: successful spawn, gateway-side timeout detection (with/without
+ * complete output), safety-valve circuit breaker, and abort with
+ * SpawnAbortedError. All gateway HTTP calls are mocked.
  *
  * @module executor/GatewayExecutor.test
  */
@@ -12,6 +13,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+// Mock sleepAsync to resolve with a minimal macrotask yield (the real 3s
+// initial sleep would exceed vitest's default 5s timeout). Using setTimeout(r, 0)
+// instead of Promise.resolve() so the event loop yields for abort signals
+// and Date.now mock updates.
+vi.mock('@karmaniverous/jeeves', () => ({
+  sleepAsync: vi.fn(() => new Promise<void>((r) => setTimeout(r, 0))),
+}));
 
 import { GatewayExecutor } from './GatewayExecutor.js';
 import { SpawnAbortedError } from './SpawnAbortedError.js';
@@ -42,6 +51,98 @@ function jsonResponse(data: unknown, status = 200) {
   };
 }
 
+/**
+ * Extract the output file path from a sessions_spawn call in the mock history.
+ * Returns undefined if the spawn call hasn't happened yet.
+ */
+function findOutputPath(): string | undefined {
+  for (const call of mockFetch.mock.calls) {
+    const init = call[1] as RequestInit;
+    if (!init.body) continue;
+    try {
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      if (body.tool !== 'sessions_spawn') continue;
+      const args = body.args as Record<string, unknown>;
+      const task = args.task as string;
+      const match = task.match(/Write tool at:\n(.+?output-[a-f0-9-]+\.json)/);
+      if (match?.[1]) return match[1];
+    } catch {
+      continue;
+    }
+  }
+  return undefined;
+}
+
+interface MockHandlers {
+  sessionKey: string;
+  /** Called on sessions_spawn to capture/assert args. */
+  onSpawn?: (args: Record<string, unknown>) => void;
+  /** What sessions_history returns. Defaults to a single endTurn assistant message. */
+  historyMessages?: Array<Record<string, unknown>>;
+  /** Called on sessions_history (e.g. to write the output file). */
+  onHistory?: () => void;
+  /** sessions_list session entries. Default: [\{ key, status: 'done' \}]. */
+  sessions?: Array<Record<string, unknown>>;
+  /** session_status details. Default: \{\} (no timeout). */
+  statusDetails?: Record<string, unknown>;
+}
+
+/**
+ * Install a mock fetch implementation that routes common tool calls.
+ * Covers: session_status, sessions_spawn, sessions_history, sessions_list.
+ */
+function installMock(handlers: MockHandlers) {
+  mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    const tool = body.tool as string;
+
+    if (tool === 'session_status') {
+      return jsonResponse({
+        ok: true,
+        result: { details: handlers.statusDetails ?? {} },
+      });
+    }
+
+    if (tool === 'sessions_spawn') {
+      const args = body.args as Record<string, unknown>;
+      handlers.onSpawn?.(args);
+      return jsonResponse({
+        ok: true,
+        result: { details: { childSessionKey: handlers.sessionKey } },
+      });
+    }
+
+    if (tool === 'sessions_history') {
+      handlers.onHistory?.();
+      return jsonResponse({
+        ok: true,
+        result: {
+          details: {
+            messages: handlers.historyMessages ?? [
+              { role: 'assistant', content: 'Done', stopReason: 'endTurn' },
+            ],
+          },
+        },
+      });
+    }
+
+    if (tool === 'sessions_list') {
+      return jsonResponse({
+        ok: true,
+        result: {
+          details: {
+            sessions: handlers.sessions ?? [
+              { key: handlers.sessionKey, status: 'done' },
+            ],
+          },
+        },
+      });
+    }
+
+    return jsonResponse({ ok: true });
+  });
+}
+
 describe('GatewayExecutor.spawn', () => {
   it('returns output from file-based staging on successful completion', async () => {
     const executor = new GatewayExecutor({
@@ -50,115 +151,56 @@ describe('GatewayExecutor.spawn', () => {
       workspaceDir: testDir,
     });
 
-    const invokeSessionKeys: string[] = [];
-
-    // Mock sessions_spawn → returns sessionKey
-    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
-      const body = JSON.parse(init.body as string) as Record<string, unknown>;
-
-      if (typeof body.sessionKey === 'string') {
-        invokeSessionKeys.push(body.sessionKey);
-      }
-
-      if (body.tool === 'sessions_spawn') {
-        return jsonResponse({
-          ok: true,
-          result: { details: { childSessionKey: 'test-session-1' } },
-        });
-      }
-
-      if (body.tool === 'sessions_history') {
-        // Write the output file to simulate the sub-agent writing it
-        const spawnBody = mockFetch.mock.calls[0]?.[1] as RequestInit;
-        const spawnArgs = (
-          JSON.parse(spawnBody.body as string) as Record<string, unknown>
-        ).args as Record<string, unknown>;
-        const task = spawnArgs.task as string;
-        const pathMatch = task.match(
-          /Write tool at:\n(.+?output-[a-f0-9-]+\.json)/,
-        );
-        if (pathMatch?.[1] && !existsSync(pathMatch[1])) {
+    installMock({
+      sessionKey: 'test-session-1',
+      onHistory: () => {
+        const op = findOutputPath();
+        if (op && !existsSync(op)) {
           writeFileSync(
-            pathMatch[1],
+            op,
             JSON.stringify({ _content: 'Test synthesis output' }),
           );
         }
-
-        return jsonResponse({
-          ok: true,
-          result: {
-            details: {
-              messages: [
-                {
-                  role: 'assistant',
-                  content: 'Done',
-                  stopReason: 'endTurn',
-                },
-              ],
-            },
-          },
-        });
-      }
-
-      if (body.tool === 'sessions_list') {
-        return jsonResponse({
-          ok: true,
-          result: {
-            details: {
-              sessions: [{ key: 'test-session-1', totalTokens: 5000 }],
-            },
-          },
-        });
-      }
-
-      return jsonResponse({ ok: true });
+      },
+      sessions: [{ key: 'test-session-1', totalTokens: 5000 }],
     });
 
-    const result = await executor.spawn('Test task', { timeout: 30 });
+    const result = await executor.spawn('Test task');
 
     expect(result.output).toContain('Test synthesis output');
     expect(result.tokens).toBe(5000);
     // Stateless spawning: no parent sessionKey attached to requests
-    expect(invokeSessionKeys.length).toBe(0);
+    const hasSessionKey = mockFetch.mock.calls.some((call) => {
+      const init = call[1] as RequestInit;
+      if (!init.body) return false;
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      return typeof body.sessionKey === 'string';
+    });
+    expect(hasSessionKey).toBe(false);
   });
 
-  it('throws SpawnTimeoutError when deadline exceeded', async () => {
+  it('does not pass runTimeoutSeconds to sessions_spawn', async () => {
     const executor = new GatewayExecutor({
       gatewayUrl: 'http://localhost:18789',
       pollIntervalMs: 10,
       workspaceDir: testDir,
     });
 
-    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
-      const body = JSON.parse(init.body as string) as Record<string, unknown>;
-
-      if (body.tool === 'sessions_spawn') {
-        return jsonResponse({
-          ok: true,
-          result: { details: { childSessionKey: 'test-session-2' } },
-        });
-      }
-
-      // Always return in-progress (no terminal stopReason)
-      if (body.tool === 'sessions_history') {
-        return jsonResponse({
-          ok: true,
-          result: {
-            details: {
-              messages: [
-                { role: 'assistant', content: 'Working...', stopReason: null },
-              ],
-            },
-          },
-        });
-      }
-
-      return jsonResponse({ ok: true });
+    installMock({
+      sessionKey: 'test-no-timeout',
+      onSpawn: (args) => {
+        expect(args).not.toHaveProperty('runTimeoutSeconds');
+        expect(args).not.toHaveProperty('timeout');
+      },
+      onHistory: () => {
+        const op = findOutputPath();
+        if (op && !existsSync(op))
+          writeFileSync(op, JSON.stringify({ _content: 'ok' }));
+      },
+      sessions: [{ key: 'test-no-timeout', totalTokens: 100, status: 'done' }],
     });
 
-    await expect(executor.spawn('Task', { timeout: 1 })).rejects.toThrow(
-      SpawnTimeoutError,
-    );
+    await executor.spawn('Test task');
   });
 
   it('throws SpawnAbortedError when abort() is called', async () => {
@@ -168,39 +210,19 @@ describe('GatewayExecutor.spawn', () => {
       workspaceDir: testDir,
     });
 
-    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
-      const body = JSON.parse(init.body as string) as Record<string, unknown>;
-
-      if (body.tool === 'sessions_spawn') {
-        return jsonResponse({
-          ok: true,
-          result: { details: { childSessionKey: 'test-session-3' } },
-        });
-      }
-
-      // Return in-progress so the polling loop runs
-      if (body.tool === 'sessions_history') {
-        return jsonResponse({
-          ok: true,
-          result: {
-            details: {
-              messages: [{ role: 'user', content: 'hi' }],
-            },
-          },
-        });
-      }
-
-      return jsonResponse({ ok: true });
+    installMock({
+      sessionKey: 'test-session-3',
+      onSpawn: () => {
+        // Abort immediately after spawn returns
+        setTimeout(() => {
+          executor.abort();
+        }, 10);
+      },
+      historyMessages: [{ role: 'user', content: 'hi' }],
+      sessions: [{ key: 'test-session-3', status: 'running' }],
     });
 
-    // Abort after the spawn call but before polling completes
-    const promise = executor.spawn('Task', { timeout: 30 });
-
-    // Give it time to enter the polling loop
-    await new Promise((r) => setTimeout(r, 100));
-    executor.abort();
-
-    await expect(promise).rejects.toThrow(SpawnAbortedError);
+    await expect(executor.spawn('Task')).rejects.toThrow(SpawnAbortedError);
   });
 
   it('throws on gateway HTTP error during spawn', async () => {
@@ -209,9 +231,15 @@ describe('GatewayExecutor.spawn', () => {
       workspaceDir: testDir,
     });
 
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({ error: 'Unauthorized' }, 401),
-    );
+    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      // session_status is called first for safety-valve query
+      if (body.tool === 'session_status') {
+        return jsonResponse({ ok: true, result: { details: {} } });
+      }
+      // sessions_spawn returns HTTP 401
+      return jsonResponse({ error: 'Unauthorized' }, 401);
+    });
 
     await expect(executor.spawn('Task')).rejects.toThrow('HTTP 401');
   });
@@ -222,9 +250,14 @@ describe('GatewayExecutor.spawn', () => {
       workspaceDir: testDir,
     });
 
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({ ok: true, result: { details: {} } }),
-    );
+    // session_status first, then sessions_spawn
+    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      if (body.tool === 'session_status') {
+        return jsonResponse({ ok: true, result: { details: {} } });
+      }
+      return jsonResponse({ ok: true, result: { details: {} } });
+    });
 
     await expect(executor.spawn('Task')).rejects.toThrow(
       'returned no sessionKey',
@@ -238,65 +271,22 @@ describe('GatewayExecutor.spawn', () => {
       workspaceDir: testDir,
     });
 
-    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
-      const body = JSON.parse(init.body as string) as Record<string, unknown>;
-
-      if (body.tool === 'sessions_spawn') {
-        return jsonResponse({
-          ok: true,
-          result: { details: { childSessionKey: 'sess-info-test' } },
-        });
-      }
-
-      if (body.tool === 'sessions_history') {
-        // Write the output file to simulate sub-agent
-        const spawnBody = mockFetch.mock.calls[0]?.[1] as RequestInit;
-        const spawnArgs = (
-          JSON.parse(spawnBody.body as string) as Record<string, unknown>
-        ).args as Record<string, unknown>;
-        const task = spawnArgs.task as string;
-        const pathMatch = task.match(
-          /Write tool at:\n(.+?output-[a-f0-9-]+\.json)/,
-        );
-        if (pathMatch?.[1] && !existsSync(pathMatch[1])) {
-          writeFileSync(pathMatch[1], 'Session info completion output');
-        }
-
-        // No terminal stopReason — history alone would NOT signal done
-        return jsonResponse({
-          ok: true,
-          result: {
-            details: {
-              messages: [
-                { role: 'assistant', content: 'Working...', stopReason: null },
-              ],
-            },
-          },
-        });
-      }
-
-      if (body.tool === 'sessions_list') {
-        // Session reports completed status — this should trigger completion
-        return jsonResponse({
-          ok: true,
-          result: {
-            details: {
-              sessions: [
-                {
-                  key: 'sess-info-test',
-                  totalTokens: 3000,
-                  status: 'completed',
-                },
-              ],
-            },
-          },
-        });
-      }
-
-      return jsonResponse({ ok: true });
+    installMock({
+      sessionKey: 'sess-info-test',
+      onHistory: () => {
+        const op = findOutputPath();
+        if (op && !existsSync(op))
+          writeFileSync(op, 'Session info completion output');
+      },
+      historyMessages: [
+        { role: 'assistant', content: 'Working...', stopReason: null },
+      ],
+      sessions: [
+        { key: 'sess-info-test', totalTokens: 3000, status: 'completed' },
+      ],
     });
 
-    const result = await executor.spawn('Task', { timeout: 30 });
+    const result = await executor.spawn('Task');
     expect(result.output).toBe('Session info completion output');
     expect(result.tokens).toBe(3000);
   });
@@ -308,54 +298,325 @@ describe('GatewayExecutor.spawn', () => {
       workspaceDir: testDir,
     });
 
+    installMock({
+      sessionKey: 'sess-gone',
+      onHistory: () => {
+        const op = findOutputPath();
+        if (op && !existsSync(op)) writeFileSync(op, 'Gone session output');
+      },
+      historyMessages: [
+        { role: 'assistant', content: 'Hmm', stopReason: null },
+      ],
+      sessions: [],
+    });
+
+    const result = await executor.spawn('Task');
+    expect(result.output).toBe('Gone session output');
+  });
+
+  // ── Task 1 tests: getSessionInfo detects timeout/killed ──
+
+  it('detects gateway-side timeout via sessions_list status and returns output when complete', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    installMock({
+      sessionKey: 'sess-timeout-complete',
+      onHistory: () => {
+        const op = findOutputPath();
+        if (op && !existsSync(op)) {
+          writeFileSync(
+            op,
+            JSON.stringify({ _content: 'Completed before timeout' }),
+          );
+        }
+      },
+      historyMessages: [
+        { role: 'assistant', content: 'Done', stopReason: 'timeout' },
+      ],
+      sessions: [
+        { key: 'sess-timeout-complete', totalTokens: 4000, status: 'timeout' },
+      ],
+    });
+
+    const result = await executor.spawn('Task');
+    expect(result.output).toContain('Completed before timeout');
+    expect(result.tokens).toBe(4000);
+  });
+
+  it('throws SpawnTimeoutError on gateway-side timeout when no output file exists', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    installMock({
+      sessionKey: 'sess-timeout-nofile',
+      historyMessages: [
+        { role: 'assistant', content: 'Working...', stopReason: 'timeout' },
+      ],
+      sessions: [
+        { key: 'sess-timeout-nofile', totalTokens: 1000, status: 'timeout' },
+      ],
+    });
+
+    await expect(executor.spawn('Task')).rejects.toThrow(SpawnTimeoutError);
+  });
+
+  it('detects killed session as completed (not timed out)', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    installMock({
+      sessionKey: 'sess-killed',
+      onHistory: () => {
+        const op = findOutputPath();
+        if (op && !existsSync(op)) {
+          writeFileSync(
+            op,
+            JSON.stringify({ _content: 'Killed session output' }),
+          );
+        }
+      },
+      sessions: [{ key: 'sess-killed', totalTokens: 2000, status: 'killed' }],
+    });
+
+    const result = await executor.spawn('Task');
+    expect(result.output).toContain('Killed session output');
+    expect(result.tokens).toBe(2000);
+  });
+
+  // ── Task 2 test: safety-valve fires when gateway timeout is 0 ──
+
+  it('throws SpawnTimeoutError from safety-valve when gateway reports no timeout', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    // Mock Date.now to advance 10s on each call — deterministic, no real-time dependency.
+    // Safety valve = 1s + 60s = 61s buffer. After ~7 Date.now calls we exceed it.
+    const startTime = Date.now();
+    let callCount = 0;
+    vi.spyOn(Date, 'now').mockImplementation(
+      () => startTime + callCount++ * 10_000,
+    );
+
+    // Return a small timeout so safety valve = 1s + 60s = 61s
+    installMock({
+      sessionKey: 'sess-safety',
+      statusDetails: { runTimeoutSeconds: 1 },
+      historyMessages: [],
+      sessions: [{ key: 'sess-safety', status: 'running' }],
+    });
+
+    await expect(executor.spawn('Task')).rejects.toThrow(SpawnTimeoutError);
+  });
+
+  it('falls back to message content when no staging file is written', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    installMock({
+      sessionKey: 'sess-fallback',
+      historyMessages: [
+        {
+          role: 'assistant',
+          content: 'Fallback output text',
+          stopReason: 'endTurn',
+        },
+      ],
+      sessions: [{ key: 'sess-fallback', status: 'done' }],
+      // no onHistory — staging file is never written
+    });
+
+    const result = await executor.spawn('Task');
+    expect(result.output).toBe('Fallback output text');
+  });
+
+  it('detects timeout from history stopReason even when sessions_list status is not timeout', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    installMock({
+      sessionKey: 'sess-history-timeout',
+      historyMessages: [
+        {
+          role: 'assistant',
+          content: 'Ran out of time',
+          stopReason: 'timeout',
+        },
+      ],
+      sessions: [{ key: 'sess-history-timeout', status: 'done' }],
+      // no staging file — timedOut union fires on history side
+    });
+
+    await expect(executor.spawn('Task')).rejects.toThrow(SpawnTimeoutError);
+  });
+
+  it('falls back to default safety valve when session_status query fails', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    const sessionKey = 'sess-status-fail';
     mockFetch.mockImplementation((_url: string, init: RequestInit) => {
       const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      const tool = body.tool as string;
 
-      if (body.tool === 'sessions_spawn') {
+      if (tool === 'session_status') {
+        return Promise.reject(new Error('session_status unavailable'));
+      }
+      if (tool === 'sessions_spawn') {
         return jsonResponse({
           ok: true,
-          result: { details: { childSessionKey: 'sess-gone' } },
+          result: { details: { childSessionKey: sessionKey } },
         });
       }
-
-      if (body.tool === 'sessions_history') {
-        // Write output file
-        const spawnBody = mockFetch.mock.calls[0]?.[1] as RequestInit;
-        const spawnArgs = (
-          JSON.parse(spawnBody.body as string) as Record<string, unknown>
-        ).args as Record<string, unknown>;
-        const task = spawnArgs.task as string;
-        const pathMatch = task.match(
-          /Write tool at:\n(.+?output-[a-f0-9-]+\.json)/,
-        );
-        if (pathMatch?.[1] && !existsSync(pathMatch[1])) {
-          writeFileSync(pathMatch[1], 'Gone session output');
+      if (tool === 'sessions_history') {
+        const op = findOutputPath();
+        if (op && !existsSync(op)) {
+          writeFileSync(
+            op,
+            JSON.stringify({ _content: 'Status fail fallback output' }),
+          );
         }
-
         return jsonResponse({
           ok: true,
           result: {
             details: {
               messages: [
-                { role: 'assistant', content: 'Hmm', stopReason: null },
+                {
+                  role: 'assistant',
+                  content: 'ANNOUNCE_SKIP',
+                  stopReason: 'endTurn',
+                },
               ],
             },
           },
         });
       }
-
-      if (body.tool === 'sessions_list') {
-        // Session NOT in list — treated as cleaned up / completed
+      if (tool === 'sessions_list') {
         return jsonResponse({
           ok: true,
-          result: { details: { sessions: [] } },
+          result: {
+            details: {
+              sessions: [{ key: sessionKey, status: 'done', totalTokens: 100 }],
+            },
+          },
         });
       }
-
       return jsonResponse({ ok: true });
     });
 
-    const result = await executor.spawn('Task', { timeout: 30 });
-    expect(result.output).toBe('Gone session output');
+    const result = await executor.spawn('Task');
+    expect(result.output).toContain('Status fail fallback output');
+  });
+
+  it('cleans up staging file after successful read', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    installMock({
+      sessionKey: 'sess-cleanup',
+      onHistory: () => {
+        const op = findOutputPath();
+        if (op && !existsSync(op)) {
+          writeFileSync(
+            op,
+            JSON.stringify({ _content: 'Cleanup test output' }),
+          );
+        }
+      },
+      sessions: [{ key: 'sess-cleanup', status: 'done', totalTokens: 100 }],
+    });
+
+    await executor.spawn('Task');
+
+    const outputPath = findOutputPath();
+    expect(outputPath).toBeDefined();
+    expect(existsSync(outputPath!)).toBe(false);
+  });
+
+  it('continues polling when sessions_list throws transiently', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+    });
+
+    const sessionKey = 'sess-transient';
+    let sessionsListCallCount = 0;
+
+    mockFetch.mockImplementation((_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as Record<string, unknown>;
+      const tool = body.tool as string;
+
+      if (tool === 'session_status') {
+        return jsonResponse({ ok: true, result: { details: {} } });
+      }
+      if (tool === 'sessions_spawn') {
+        return jsonResponse({
+          ok: true,
+          result: { details: { childSessionKey: sessionKey } },
+        });
+      }
+      if (tool === 'sessions_history') {
+        const op = findOutputPath();
+        if (op && !existsSync(op)) {
+          writeFileSync(
+            op,
+            JSON.stringify({ _content: 'Transient recovery output' }),
+          );
+        }
+        return jsonResponse({
+          ok: true,
+          result: {
+            details: {
+              messages: [
+                { role: 'assistant', content: 'Working...', stopReason: null },
+              ],
+            },
+          },
+        });
+      }
+      if (tool === 'sessions_list') {
+        sessionsListCallCount++;
+        if (sessionsListCallCount === 1) {
+          return Promise.reject(new Error('transient network failure'));
+        }
+        return jsonResponse({
+          ok: true,
+          result: {
+            details: {
+              sessions: [{ key: sessionKey, status: 'done', totalTokens: 200 }],
+            },
+          },
+        });
+      }
+      return jsonResponse({ ok: true });
+    });
+
+    const result = await executor.spawn('Task');
+    expect(result.output).toContain('Transient recovery output');
   });
 });

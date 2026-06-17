@@ -24,7 +24,7 @@ import { SpawnAbortedError } from './SpawnAbortedError.js';
 import { SpawnTimeoutError } from './SpawnTimeoutError.js';
 
 const DEFAULT_POLL_INTERVAL_MS = 5000;
-const DEFAULT_TIMEOUT_MS = 600_000; // 10 minutes
+const DEFAULT_SAFETY_VALVE_MS = 3_600_000; // 1 hour fallback
 
 /** Options for the GatewayExecutor. */
 export interface GatewayExecutorOptions {
@@ -93,6 +93,46 @@ export class GatewayExecutor implements MetaExecutor {
     }
   }
 
+  /** Read and clean up the staging output file. Returns content or undefined if absent. */
+  private readStagingFile(outputPath: string): string | undefined {
+    if (!existsSync(outputPath)) return undefined;
+    try {
+      return readFileSync(outputPath, 'utf8');
+    } finally {
+      this.cleanupOutputFile(outputPath);
+    }
+  }
+
+  /** Extract plain text from a message content field, skipping ANNOUNCE_SKIP sentinels. */
+  private static extractMessageText(
+    content: string | Array<{ type: string; text?: string }> | undefined,
+  ): string | undefined {
+    if (!content) return undefined;
+    const text =
+      typeof content === 'string'
+        ? content
+        : Array.isArray(content)
+          ? content
+              .filter((b) => b.type === 'text' && b.text)
+              .map((b) => b.text!)
+              .join('\n')
+          : '';
+    return text && text.trim() !== 'ANNOUNCE_SKIP' ? text : undefined;
+  }
+
+  /** Check history messages for terminal completion. */
+  private static checkHistoryCompletion(
+    messages: Array<{ role: string; stopReason?: string }>,
+  ): { done: boolean; timedOut: boolean } {
+    if (messages.length === 0) return { done: false, timedOut: false };
+    const last = messages[messages.length - 1];
+    if (last.role !== 'assistant' || !last.stopReason)
+      return { done: false, timedOut: false };
+    if (last.stopReason === 'toolUse' || last.stopReason === 'error')
+      return { done: false, timedOut: false };
+    return { done: true, timedOut: last.stopReason === 'timeout' };
+  }
+
   /** Invoke a gateway tool via the /tools/invoke HTTP endpoint. */
   private async invoke(
     tool: string,
@@ -132,10 +172,16 @@ export class GatewayExecutor implements MetaExecutor {
     return data;
   }
 
-  /** Look up session metadata (tokens, completion status) via sessions_list. */
+  /**
+   * Look up session metadata (tokens, completion status) via sessions_list.
+   *
+   * Detects gateway-side timeout (`status: "timeout"`) and killed sessions
+   * (`status: "killed"`) as completed, with a `timedOut` flag to distinguish
+   * timeout from normal completion.
+   */
   private async getSessionInfo(
     sessionKey: string,
-  ): Promise<{ tokens?: number; completed: boolean }> {
+  ): Promise<{ tokens?: number; completed: boolean; timedOut: boolean }> {
     try {
       const result = await this.invoke('sessions_list', {
         limit: 200,
@@ -156,13 +202,19 @@ export class GatewayExecutor implements MetaExecutor {
         // With limit=200 this is reliable; a false positive here only
         // means we read the output file slightly early (still correct
         // if the file exists).
-        return { completed: true };
+        return { completed: true, timedOut: false };
       }
 
-      const done = match.status === 'completed' || match.status === 'done';
-      return { tokens: match.totalTokens, completed: done };
+      const status = match.status;
+      const done =
+        status === 'completed' ||
+        status === 'done' ||
+        status === 'timeout' ||
+        status === 'killed';
+      const timedOut = status === 'timeout';
+      return { tokens: match.totalTokens, completed: done, timedOut };
     } catch {
-      return { completed: false };
+      return { completed: false, timedOut: false };
     }
   }
 
@@ -176,6 +228,31 @@ export class GatewayExecutor implements MetaExecutor {
     this.controller.abort();
   }
 
+  /**
+   * Query the gateway's configured subagent run timeout.
+   *
+   * Returns the value in milliseconds, or `undefined` if the query fails
+   * or the value is absent/zero (no timeout configured).
+   */
+  private async queryGatewayRunTimeout(): Promise<number | undefined> {
+    try {
+      const result = await this.invoke('session_status', {});
+      const details = (result.result?.details ?? result.result ?? {}) as Record<
+        string,
+        unknown
+      >;
+      const runTimeoutSeconds =
+        (details.runTimeoutSeconds as number | undefined) ??
+        (details.timeout as number | undefined);
+      if (typeof runTimeoutSeconds === 'number' && runTimeoutSeconds > 0) {
+        return runTimeoutSeconds * 1000;
+      }
+    } catch {
+      // Gateway unreachable or field not exposed — fall back to default
+    }
+    return undefined;
+  }
+
   async spawn(
     task: string,
     options?: MetaSpawnOptions,
@@ -183,9 +260,14 @@ export class GatewayExecutor implements MetaExecutor {
     // Fresh controller for each spawn call
     this.controller = new AbortController();
 
-    const timeoutSeconds = options?.timeout ?? DEFAULT_TIMEOUT_MS / 1000;
-    const timeoutMs = timeoutSeconds * 1000;
-    const deadline = Date.now() + timeoutMs;
+    // Safety-valve deadline: gateway's runTimeoutSeconds + 60s buffer,
+    // defaulting to 1 hour if the gateway value is 0/absent/query fails.
+    // This is a circuit breaker, not a timeout mechanism.
+    const gatewayTimeoutMs = await this.queryGatewayRunTimeout();
+    const safetyValveMs = gatewayTimeoutMs
+      ? gatewayTimeoutMs + 60_000
+      : DEFAULT_SAFETY_VALVE_MS;
+    const safetyDeadline = Date.now() + safetyValveMs;
 
     // Ensure workspace dir exists
     if (!existsSync(this.workspaceDir)) {
@@ -213,7 +295,6 @@ export class GatewayExecutor implements MetaExecutor {
     const spawnResult = await this.invoke('sessions_spawn', {
       task: taskWithOutput,
       label,
-      runTimeoutSeconds: timeoutSeconds,
       ...(options?.thinking ? { thinking: options.thinking } : {}),
       ...(options?.model ? { model: options.model } : {}),
     });
@@ -230,10 +311,23 @@ export class GatewayExecutor implements MetaExecutor {
       );
     }
 
-    // Step 2: Poll for completion via sessions_history
+    // Step 2: Poll for completion — gateway owns the subagent lifecycle.
+    // Loop exits via: (a) completion detection, (b) abort signal,
+    // (c) gateway-side timeout detection, or (d) safety-valve circuit breaker.
     await sleepAsync(3000);
 
-    while (Date.now() < deadline) {
+    while (true) {
+      // Safety-valve circuit breaker
+      if (Date.now() >= safetyDeadline) {
+        this.cleanupOutputFile(outputPath);
+        throw new SpawnTimeoutError(
+          'Safety-valve deadline exceeded (' +
+            safetyValveMs.toString() +
+            'ms) — gateway timeout may be misconfigured',
+          outputPath,
+        );
+      }
+
       // Check for abort before each poll iteration
       if (this.controller.signal.aborted) {
         this.cleanupOutputFile(outputPath);
@@ -259,70 +353,55 @@ export class GatewayExecutor implements MetaExecutor {
         }>;
 
         // Check 1: terminal stop reason in history
-        let historyDone = false;
-        if (msgArray.length > 0) {
-          const lastMsg = msgArray[msgArray.length - 1];
-          if (
-            lastMsg.role === 'assistant' &&
-            lastMsg.stopReason &&
-            lastMsg.stopReason !== 'toolUse' &&
-            lastMsg.stopReason !== 'error'
-          ) {
-            historyDone = true;
-          }
-        }
+        const { done: historyDone, timedOut: historyTimedOut } =
+          GatewayExecutor.checkHistoryCompletion(msgArray);
 
         // Check 2: session completion status via sessions_list
         const sessionInfo = await this.getSessionInfo(sessionKey);
+        const timedOut = sessionInfo.timedOut || historyTimedOut;
 
         if (historyDone || sessionInfo.completed) {
           const tokens = sessionInfo.tokens;
 
-          // Read output from file (sub-agent wrote it via Write tool)
-          if (existsSync(outputPath)) {
-            try {
-              const output = readFileSync(outputPath, 'utf8');
-              return { output, tokens };
-            } finally {
-              try {
-                unlinkSync(outputPath);
-              } catch {
-                /* cleanup best-effort */
-              }
-            }
+          // Gateway-side timeout detected — check staging file for recovery
+          if (timedOut) {
+            const output = this.readStagingFile(outputPath);
+            if (output !== undefined) return { output, tokens };
+            // No output or partial output — throw for _state recovery (§3.16.6)
+            throw new SpawnTimeoutError(
+              'Gateway-side timeout detected (session status: timeout)',
+              outputPath,
+            );
           }
+
+          // Normal completion — read output from file
+          const output = this.readStagingFile(outputPath);
+          if (output !== undefined) return { output, tokens };
 
           // Fallback: extract from message content if file wasn't written.
           // Skip ANNOUNCE_SKIP sentinel messages — the real output is in
           // a preceding assistant message (the file write).
           for (let i = msgArray.length - 1; i >= 0; i--) {
             const msg = msgArray[i];
-            if (msg.role === 'assistant' && msg.content) {
-              const text =
-                typeof msg.content === 'string'
-                  ? msg.content
-                  : Array.isArray(msg.content)
-                    ? msg.content
-                        .filter((b) => b.type === 'text' && b.text)
-                        .map((b) => b.text!)
-                        .join('\n')
-                    : '';
-              if (text && text.trim() !== 'ANNOUNCE_SKIP')
-                return { output: text, tokens };
+            if (msg.role === 'assistant') {
+              const text = GatewayExecutor.extractMessageText(msg.content);
+              if (text !== undefined) return { output: text, tokens };
             }
           }
           return { output: '', tokens };
         }
-      } catch {
+      } catch (err) {
+        // Re-throw SpawnTimeoutError and SpawnAbortedError — only swallow transient poll failures
+        if (
+          err instanceof SpawnTimeoutError ||
+          err instanceof SpawnAbortedError
+        ) {
+          throw err;
+        }
         // Transient poll failure — keep trying
       }
 
       await sleepAsync(this.pollIntervalMs);
     }
-
-    throw new SpawnTimeoutError(
-      'Synthesis subprocess timed out after ' + timeoutMs.toString() + 'ms',
-      outputPath,
-    );
   }
 }
