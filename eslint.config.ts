@@ -65,6 +65,10 @@ export default [
     },
     rules: {
       ...strictTypeCheckedRules,
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: true },
+      ],
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',

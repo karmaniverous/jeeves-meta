@@ -8,8 +8,6 @@
 export interface MetaSpawnOptions {
   /** Model override for this subprocess. */
   model?: string;
-  /** Timeout in seconds. */
-  timeout?: number;
   /** Label for the spawned session. */
   label?: string;
   /** Thinking level (e.g. "low", "medium", "high"). */

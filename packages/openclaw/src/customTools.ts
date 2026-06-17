@@ -301,7 +301,7 @@ function buildMetaUpdateTool(
         updates: {
           type: 'object',
           description:
-            'Properties to set. Supported: _steer, _emphasis, _depth, _crossRefs, _disabled, _architectTimeout, _builderTimeout, _criticTimeout. Set to null to remove.',
+            'Properties to set. Supported: _steer, _emphasis, _depth, _crossRefs, _disabled. Set to null to remove.',
           properties: {
             _steer: { type: ['string', 'null'] },
             _emphasis: { type: ['number', 'null'] },
@@ -313,9 +313,6 @@ function buildMetaUpdateTool(
               ],
             },
             _disabled: { type: ['boolean', 'null'] },
-            _architectTimeout: { type: ['number', 'null'] },
-            _builderTimeout: { type: ['number', 'null'] },
-            _criticTimeout: { type: ['number', 'null'] },
           },
         },
       },

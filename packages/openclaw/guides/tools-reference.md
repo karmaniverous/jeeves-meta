@@ -124,7 +124,7 @@ Update user-settable reserved properties on a meta entity. Delegates to `PATCH /
 
 **Parameters:**
 - `path` (string, required) — `.meta/` or owner directory path
-- `updates` (object, required) — properties to set. Supported: `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`, `_architectTimeout`, `_builderTimeout`, `_criticTimeout`. Set a value to `null` to remove the property.
+- `updates` (object, required) — properties to set. Supported: `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`. Set a value to `null` to remove the property.
 
 **Response:** `{ path, meta }` — the updated meta with large generated fields (`_architect`, `_builder`, `_critic`, `_content`, `_feedback`) excluded.
 

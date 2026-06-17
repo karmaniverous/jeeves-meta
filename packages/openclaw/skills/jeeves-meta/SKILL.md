@@ -109,8 +109,7 @@ modify `_crossRefs` — without editing `meta.json` directly on the filesystem.
 **Parameters:**
 - `path` (required): `.meta/` or owner directory path.
 - `updates` (required): Object with properties to set. Supported:
-  `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`,
-  `_architectTimeout`, `_builderTimeout`, `_criticTimeout`.
+  `_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`.
   Set a value to `null` to remove the property.
 
 ### meta_queue
@@ -146,7 +145,6 @@ compatibility.
 - **Disabling a meta:** `meta_update` with path and `updates: { _disabled: true }`
 - **Re-enabling a meta:** `meta_update` with path and `updates: { _disabled: null }`
 - **Changing steer via API:** `meta_update` with path and `updates: { _steer: "new focus" }`
-- **Setting per-entity timeouts:** `meta_update` with path and `updates: { _builderTimeout: 600 }`
 - **Reading synthesis output:** Use `watcher_search` filtered by the properties
   configured in `metaProperty` (e.g. `{ "domains": ["meta"] }` in production).
   The default properties are `{ _meta: "current" }` for live metas and
@@ -210,9 +208,6 @@ Key settings:
 | `depthWeight` | 0.5 | Exponent for depth-based scheduling (0 = pure staleness) |
 | `maxArchive` | 20 | Max archived snapshots per meta |
 | `maxLines` | 500 | Max lines for builder context |
-| `architectTimeout` | 180s | Architect subprocess timeout |
-| `builderTimeout` | 360s | Builder subprocess timeout |
-| `criticTimeout` | 240s | Critic subprocess timeout |
 | `skipUnchanged` | true | Skip candidates with no changes since last synthesis |
 | `thinking` | `low` | Thinking level for spawned LLM sessions |
 | `port` | 1938 | HTTP API listen port |
@@ -296,12 +291,12 @@ to override the defaults for that specific entity.
 **Template variables:** All prompts (default, config-overridden, and per-meta)
 are compiled as Handlebars templates at synthesis time with access to:
 
-- `{{config.builderTimeout}}`, `{{config.maxLines}}`, `{{config.architectEvery}}`, etc.
+- `{{config.maxLines}}`, `{{config.architectEvery}}`, etc.
 - `{{scope.fileCount}}`, `{{scope.deltaCount}}`, `{{scope.childCount}}`, `{{scope.crossRefCount}}`
 - `{{meta._depth}}`, `{{meta._emphasis}}`
 
 The architect prompt can write template expressions into its `_builder` output
-using escaped syntax (`\{{config.builderTimeout}}`). These pass through the
+using escaped syntax (`\{{config.maxLines}}`). These pass through the
 architect compilation as literal `{{...}}` text and resolve when the builder
 prompt is compiled.
 
@@ -355,14 +350,7 @@ creation. It is an array of policy rules, each with the shape:
   `_crossRefs` in the seeded `meta.json`.
 - **`parentDepth`** (optional, default 0) — walk up this many extra parent
   levels from the matched file's directory.
-- **`architectTimeout`** (optional) — per-category timeout override for
-  the architect phase (seconds, min 30).
-- **`builderTimeout`** (optional) — per-category timeout override for
-  the builder phase (seconds, min 30).
-- **`criticTimeout`** (optional) — per-category timeout override for
-  the critic phase (seconds, min 30).
-
-**Evaluation order:** Rules are processed in array order. If multiple rules
+**Evaluation order: Rules are processed in array order. If multiple rules
 match the same directory, the last match wins for `steer` and `crossRefs`.
 
 **Behavior:**
@@ -666,8 +654,7 @@ progressive work is not lost on timeout — only the content update is skipped.
 **Fix:**
 1. Check if `_state` advanced (partial recovery succeeded) — subsequent
    cycles can continue from where the builder left off
-2. Increase timeout in config (`architectTimeout`, `builderTimeout`,
-   `criticTimeout`)
+2. Check the gateway's `agents.defaults.subagents.runTimeoutSeconds` setting and increase it if needed
 3. Check if the LLM provider is slow or rate-limited
 4. Check scope size: large scopes with many files take longer
 

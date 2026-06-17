@@ -98,7 +98,7 @@
     "url": "git+https://github.com/karmaniverous/jeeves-meta.git"
   },
   "scripts": {
-    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin \"@rollup/plugin-typescript={outputToFilesystem:true}\"",
     "changelog": "git-cliff -o CHANGELOG.md",
     "knip": "knip",
     "lint": "eslint .",

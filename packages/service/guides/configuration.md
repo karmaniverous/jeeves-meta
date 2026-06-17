@@ -19,9 +19,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `depthWeight` | number | `0.5` | Exponent for depth weighting in staleness formula (min 0) |
 | `maxArchive` | integer | `20` | Maximum archive snapshots per meta (min 1) |
 | `maxLines` | integer | `500` | Max context lines in subprocess prompts (min 50) |
-| `architectTimeout` | integer | `180` | Architect subprocess timeout in seconds (min 30) |
-| `builderTimeout` | integer | `360` | Builder subprocess timeout in seconds (min 60) |
-| `criticTimeout` | integer | `240` | Critic subprocess timeout in seconds (min 30) |
+
 | `thinking` | string | `"low"` | Thinking level for spawned sessions |
 | `skipUnchanged` | boolean | `true` | Skip candidates with no file changes |
 | `metaProperty` | object | `{ _meta: "current" }` | Watcher metadata for live meta.json files |
@@ -53,9 +51,7 @@ Each rule in the `autoSeed` array has the shape:
 | `steer` | string | — | Steering prompt written as `_steer` in seeded `meta.json` |
 | `crossRefs` | string[] | — | Cross-ref owner paths written as `_crossRefs` |
 | `parentDepth` | integer | `0` | Walk up this many extra parent levels from the matched file's directory |
-| `architectTimeout` | integer | — | Per-category timeout override for architect phase (seconds, min 30) |
-| `builderTimeout` | integer | — | Per-category timeout override for builder phase (seconds, min 30) |
-| `criticTimeout` | integer | — | Per-category timeout override for critic phase (seconds, min 30) |
+
 
 ## Hot-Reload
 
