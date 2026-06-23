@@ -54,6 +54,28 @@ describe('SynthesisQueue', () => {
     expect(result.position).toBe(0);
   });
 
+  it('deduplication normalizes .meta suffix (currentPhase vs enqueue)', () => {
+    // currentPhase is set with owner path, enqueue with .meta path
+    queue.setCurrentPhase('/owner/path', 'architect');
+    const result = queue.enqueue('/owner/path/.meta');
+    expect(result.alreadyQueued).toBe(true);
+  });
+
+  it('deduplication normalizes .meta suffix (enqueue vs enqueue)', () => {
+    queue.enqueue('/owner/path/.meta');
+    const result = queue.enqueue('/owner/path');
+    expect(result.alreadyQueued).toBe(true);
+  });
+
+  it('has normalizes .meta suffix', () => {
+    queue.setCurrentPhase('/owner/path', 'builder');
+    expect(queue.has('/owner/path/.meta')).toBe(true);
+    expect(queue.has('/owner/path')).toBe(true);
+    queue.clearCurrentPhase();
+    queue.enqueue('/some/meta/.meta');
+    expect(queue.has('/some/meta')).toBe(true);
+  });
+
   it('dequeue returns entries in FIFO order', () => {
     queue.enqueue('/meta/a');
     queue.enqueue('/meta/b');

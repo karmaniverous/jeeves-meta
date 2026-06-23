@@ -41,6 +41,11 @@ export interface QueueState {
 
 const DEPTH_WARNING_THRESHOLD = 3;
 
+/** Strip trailing .meta suffix for consistent path comparison. */
+function normQueuePath(p: string): string {
+  return p.endsWith('.meta') ? p.slice(0, -5).replace(/[/\\]$/, '') : p;
+}
+
 /**
  * Synthesis queue.
  *
@@ -70,13 +75,20 @@ export class SynthesisQueue {
    * Deduped by path. Returns position and whether already queued.
    */
   enqueue(path: string): EnqueueResult {
+    const norm = normQueuePath(path);
+
     // Check if currently executing
-    if (this.currentPhaseItem?.path === path) {
+    if (
+      this.currentPhaseItem &&
+      normQueuePath(this.currentPhaseItem.path) === norm
+    ) {
       return { position: 0, alreadyQueued: true };
     }
 
     // Check if already in queue
-    const existing = this.entries.findIndex((e) => e.path === path);
+    const existing = this.entries.findIndex(
+      (e) => normQueuePath(e.path) === norm,
+    );
     if (existing !== -1) {
       return { position: existing, alreadyQueued: true };
     }
@@ -128,8 +140,14 @@ export class SynthesisQueue {
 
   /** Check whether a path is in the queue or currently being synthesized. */
   has(path: string): boolean {
-    if (this.currentPhaseItem?.path === path) return true;
-    return this.entries.some((e) => e.path === path);
+    const norm = normQueuePath(path);
+    if (
+      this.currentPhaseItem &&
+      normQueuePath(this.currentPhaseItem.path) === norm
+    ) {
+      return true;
+    }
+    return this.entries.some((e) => normQueuePath(e.path) === norm);
   }
 
   // ── Current-item tracking ──────────────────────────────────────────
