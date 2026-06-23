@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Batch fixes #179, #184, #194, #199, #200
+- Normalize .meta suffix in queue path comparisons
+## [0.16.0] - 2026-06-17
+
 ### 🚀 Features
 
 - Delegate subagent timeout to gateway lifecycle (#197)
@@ -11,6 +17,10 @@ All notable changes to this project will be documented in this file.
 ### 💼 Other
 
 - Updated core
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.16.0
 ## [0.15.12] - 2026-06-13
 
 ### 🚀 Features
