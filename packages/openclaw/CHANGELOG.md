@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Batch fixes #179, #184, #194, #199, #200
+## [0.13.0] - 2026-06-17
+
 ### 🚀 Features
 
 - Delegate subagent timeout to gateway lifecycle (#197)
@@ -11,6 +16,10 @@ All notable changes to this project will be documented in this file.
 ### 💼 Other
 
 - Updated core
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.13.0
 ## [0.12.8] - 2026-06-11
 
 ### 💼 Other
