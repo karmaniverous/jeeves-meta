@@ -92,7 +92,7 @@ describe('GET /status', () => {
     const logger = makeTestLogger();
     const queue = new SynthesisQueue(logger);
     queue.enqueue('/meta/a');
-    queue.enqueue('/meta/b', true);
+    queue.enqueue('/meta/b');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
     app = Fastify();
@@ -145,8 +145,7 @@ describe('GET /status', () => {
   it('shows currentTarget in nested health when synthesis is active', async () => {
     const logger = makeTestLogger();
     const queue = new SynthesisQueue(logger);
-    queue.enqueue('/meta/active');
-    queue.dequeue();
+    queue.setCurrentPhase('/meta/active', 'builder');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
     app = Fastify();
@@ -177,8 +176,7 @@ describe('GET /status', () => {
   it('returns serviceState "synthesizing" when a synthesis is in progress', async () => {
     const logger = makeTestLogger();
     const queue = new SynthesisQueue(logger);
-    queue.enqueue('/meta/active');
-    queue.dequeue();
+    queue.setCurrentPhase('/meta/active', 'builder');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
     app = Fastify();

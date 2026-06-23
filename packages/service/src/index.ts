@@ -142,8 +142,9 @@ export { Scheduler } from './scheduler/index.js';
 
 // ── Queue ──
 export {
+  type CurrentItem,
   type EnqueueResult,
-  type QueueItem,
+  type QueueEntry,
   type QueueState,
   SynthesisQueue,
 } from './queue/index.js';

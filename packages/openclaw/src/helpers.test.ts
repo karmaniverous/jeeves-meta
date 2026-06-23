@@ -92,10 +92,31 @@ describe('resolvePluginSetting', () => {
 });
 
 describe('getConfigRoot', () => {
-  it('delegates with correct default', () => {
+  const originalEnv = process.env['JEEVES_CONFIG_ROOT'];
+
+  afterEach(() => {
+    if (originalEnv === undefined) {
+      delete process.env['JEEVES_CONFIG_ROOT'];
+    } else {
+      process.env['JEEVES_CONFIG_ROOT'] = originalEnv;
+    }
+  });
+
+  it('returns plugin config value when set', () => {
+    const api = makeApi({ configRoot: '/custom/config' });
+    expect(getConfigRoot(api)).toBe('/custom/config');
+  });
+
+  it('returns env var when plugin config absent', () => {
+    const api = makeApi({});
+    process.env['JEEVES_CONFIG_ROOT'] = '/env/config';
+    expect(getConfigRoot(api)).toBe('/env/config');
+  });
+
+  it('throws when neither plugin config nor env var is set', () => {
     const api = makeApi({});
     delete process.env['JEEVES_CONFIG_ROOT'];
-    expect(getConfigRoot(api)).toBe('j:/config');
+    expect(() => getConfigRoot(api)).toThrow('configRoot not configured');
   });
 });
 

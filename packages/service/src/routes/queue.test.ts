@@ -20,7 +20,7 @@ describe('queue routes', () => {
     await app.close();
   });
 
-  it('GET /queue returns current, pending, and state', async () => {
+  it('GET /queue returns current, pending, and automatic', async () => {
     const queue = new SynthesisQueue(makeTestLogger());
     queue.enqueue('/meta/a');
     queue.enqueue('/meta/b');
@@ -35,20 +35,16 @@ describe('queue routes', () => {
     const body = res.json<{
       current: unknown;
       pending: unknown[];
-      state: { depth: number; items: unknown[] };
+      automatic: unknown[];
     }>();
     expect(body.current).toBeNull();
     expect(body.pending).toHaveLength(2);
-    expect(body.state.depth).toBe(2);
-    expect(body.state.items).toHaveLength(2);
   });
 
-  it('POST /queue/clear removes override entries only', async () => {
+  it('POST /queue/clear removes pending entries', async () => {
     const queue = new SynthesisQueue(makeTestLogger());
-    queue.enqueue('/meta/current');
-    queue.dequeue();
-    queue.enqueueOverride('/meta/override-a');
-    queue.enqueueOverride('/meta/override-b');
+    queue.enqueue('/meta/a');
+    queue.enqueue('/meta/b');
 
     app = Fastify();
     registerQueueRoutes(app, makeTestDeps({ queue }));
@@ -57,8 +53,7 @@ describe('queue routes', () => {
     const res = await app.inject({ method: 'POST', url: '/queue/clear' });
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ cleared: 2 });
-    expect(queue.current?.path).toBe('/meta/current');
-    expect(queue.overrides).toHaveLength(0);
+    expect(queue.items).toHaveLength(0);
   });
 
   it('POST /synthesize/abort returns idle when nothing running', async () => {
@@ -77,13 +72,22 @@ describe('queue routes', () => {
     const metaDir = join(ownerDir, '.meta');
     mkdirSync(metaDir, { recursive: true });
     writeFileSync(
+      join(metaDir, 'meta.json'),
+      JSON.stringify({
+        _phaseState: {
+          architect: 'fresh',
+          builder: 'running',
+          critic: 'stale',
+        },
+      }),
+    );
+    writeFileSync(
       join(metaDir, '.lock'),
       JSON.stringify({ _lockPid: process.pid, _lockStartedAt: new Date() }),
     );
 
     const queue = new SynthesisQueue(makeTestLogger());
-    queue.enqueue(ownerDir);
-    queue.dequeue();
+    queue.setCurrentPhase(ownerDir, 'builder');
     const abort = vi.fn();
 
     app = Fastify();
@@ -92,7 +96,10 @@ describe('queue routes', () => {
 
     const res = await app.inject({ method: 'POST', url: '/synthesize/abort' });
     expect(res.statusCode).toBe(200);
-    expect(res.json()).toEqual({ status: 'aborted', path: ownerDir });
+    const body = res.json<{ status: string; path: string; phase: string }>();
+    expect(body.status).toBe('aborted');
+    expect(body.path).toBe(ownerDir);
+    expect(body.phase).toBe('builder');
     expect(abort).toHaveBeenCalledTimes(1);
     expect(existsSync(join(metaDir, '.lock'))).toBe(false);
 

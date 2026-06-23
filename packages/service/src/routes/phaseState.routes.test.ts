@@ -86,17 +86,13 @@ describe('phase-state operator surfaces (Task #18)', () => {
       const res = await app.inject({ method: 'GET', url: '/queue' });
       const body = res.json<{
         current: unknown;
-        overrides: unknown[];
-        automatic: unknown[];
         pending: unknown[];
-        state: { depth: number; items: unknown[] };
+        automatic: unknown[];
       }>();
 
       expect(body).toHaveProperty('current');
-      expect(body).toHaveProperty('overrides');
-      expect(body).toHaveProperty('automatic');
       expect(body).toHaveProperty('pending');
-      expect(body).toHaveProperty('state');
+      expect(body).toHaveProperty('automatic');
     });
 
     it('current includes phase when phase-aware item is set', async () => {
@@ -120,11 +116,11 @@ describe('phase-state operator surfaces (Task #18)', () => {
       expect(body.current.startedAt).toBeDefined();
     });
 
-    it('overrides reflect enqueued override entries', async () => {
+    it('pending reflects enqueued entries', async () => {
       const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
-      queue.enqueueOverride('/meta/override-a');
-      queue.enqueueOverride('/meta/override-b');
+      queue.enqueue('/meta/pending-a');
+      queue.enqueue('/meta/pending-b');
 
       const deps = makeTestDeps({ queue });
       app = Fastify();
@@ -133,23 +129,23 @@ describe('phase-state operator surfaces (Task #18)', () => {
 
       const res = await app.inject({ method: 'GET', url: '/queue' });
       const body = res.json<{
-        overrides: Array<{
+        pending: Array<{
           path: string;
           owedPhase: string | null;
           enqueuedAt: string;
         }>;
       }>();
 
-      expect(body.overrides).toHaveLength(2);
-      expect(body.overrides[0].path).toBe('/meta/override-a');
-      expect(body.overrides[1].path).toBe('/meta/override-b');
+      expect(body.pending).toHaveLength(2);
+      expect(body.pending[0].path).toBe('/meta/pending-a');
+      expect(body.pending[1].path).toBe('/meta/pending-b');
     });
 
-    it('POST /queue/clear removes only overrides', async () => {
+    it('POST /queue/clear removes pending entries', async () => {
       const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
-      queue.enqueueOverride('/meta/override-a');
-      queue.enqueue('/meta/legacy-item');
+      queue.enqueue('/meta/pending-a');
+      queue.enqueue('/meta/pending-b');
 
       const deps = makeTestDeps({ queue });
       app = Fastify();
@@ -158,11 +154,10 @@ describe('phase-state operator surfaces (Task #18)', () => {
 
       const res = await app.inject({ method: 'POST', url: '/queue/clear' });
       expect(res.statusCode).toBe(200);
-      expect(res.json()).toEqual({ cleared: 1 });
+      expect(res.json()).toEqual({ cleared: 2 });
 
-      // Legacy queue should be unaffected
-      expect(queue.depth).toBe(1);
-      expect(queue.overrides).toHaveLength(0);
+      expect(queue.depth).toBe(0);
+      expect(queue.items).toHaveLength(0);
     });
   });
 

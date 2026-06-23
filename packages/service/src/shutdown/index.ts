@@ -56,36 +56,18 @@ export function registerShutdownHandlers(deps: ShutdownDeps): void {
     }
 
     // 2. Release lock for in-progress synthesis
-    const current = deps.queue.current;
-    if (current) {
-      try {
-        releaseLock(current.path);
-        deps.logger.info(
-          { path: current.path },
-          'Released lock for in-progress synthesis',
-        );
-      } catch {
-        deps.logger.warn(
-          { path: current.path },
-          'Failed to release lock during shutdown',
-        );
-      }
-    }
-
-    // Release lock for in-progress override synthesis (only when it
-    // differs from the legacy current item to avoid double-release)
     const currentPhase = deps.queue.currentPhase;
-    if (currentPhase && currentPhase.path !== current?.path) {
+    if (currentPhase) {
       try {
         releaseLock(resolveMetaDir(currentPhase.path));
         deps.logger.info(
           { path: currentPhase.path },
-          'Released lock for in-progress override synthesis',
+          'Released lock for in-progress synthesis',
         );
       } catch {
         deps.logger.warn(
           { path: currentPhase.path },
-          'Failed to release override lock during shutdown',
+          'Failed to release lock during shutdown',
         );
       }
     }

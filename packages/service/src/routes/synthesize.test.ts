@@ -60,7 +60,7 @@ describe('POST /synthesize', () => {
     expect(body.path).toBe('/meta/target/.meta');
     expect(body.queuePosition).toBe(0);
     expect(body.alreadyQueued).toBe(false);
-    expect(queue.overrides).toHaveLength(1);
+    expect(queue.items).toHaveLength(1);
   });
 
   it('normalizes owner path to .meta path', async () => {
@@ -81,7 +81,7 @@ describe('POST /synthesize', () => {
     const body = res.json<{ status: string; path: string }>();
     expect(body.status).toBe('queued');
     expect(body.path).toMatch(/[/\\]some[/\\]owner[/\\]dir[/\\]\.meta$/);
-    expect(queue.overrides).toHaveLength(1);
+    expect(queue.items).toHaveLength(1);
   });
 
   it('preserves path already ending in .meta', async () => {
@@ -102,7 +102,7 @@ describe('POST /synthesize', () => {
     const body = res.json<{ status: string; path: string }>();
     expect(body.status).toBe('queued');
     expect(body.path).toBe('/some/owner/dir/.meta');
-    expect(queue.overrides).toHaveLength(1);
+    expect(queue.items).toHaveLength(1);
   });
 
   it('returns queue position', async () => {
@@ -123,9 +123,8 @@ describe('POST /synthesize', () => {
     });
 
     const body = res.json<{ queuePosition: number }>();
-    // /meta/third is 3rd item — position 0 is front of queue
-    // With priority=true (path provided), it goes to front
-    expect(body.queuePosition).toBe(0);
+    // /meta/third is 3rd item — FIFO, position 2
+    expect(body.queuePosition).toBe(2);
   });
 
   it('returns already-queued status for duplicate path', async () => {
@@ -186,7 +185,7 @@ describe('POST /synthesize', () => {
 
     expect(res.statusCode).toBe(202);
     const body = res.json<{ status: string; path: string }>();
-    expect(body.status).toBe('accepted');
+    expect(body.status).toBe('queued');
     expect(body.path).toContain('stale');
   });
 
@@ -230,7 +229,7 @@ describe('POST /synthesize', () => {
     const bodyExplicit = resExplicit.json<{ status: string; path: string }>();
     expect(bodyExplicit.status).toBe('queued');
     expect(bodyExplicit.path).toContain('disabled-stale');
-    expect(queue.overrides).toHaveLength(1);
+    expect(queue.items).toHaveLength(1);
   });
 
   it('recomputes invalidation instead of trusting cached _phaseState (#160)', async () => {
@@ -278,7 +277,7 @@ describe('POST /synthesize', () => {
     const body = res.json<{ status: string; owedPhase: string | null }>();
     expect(body.status).toBe('queued');
     expect(body.owedPhase).toBe('architect');
-    expect(queue.overrides).toHaveLength(1);
+    expect(queue.items).toHaveLength(1);
   });
 
   it('returns 503 when watcher unreachable and no path provided', async () => {

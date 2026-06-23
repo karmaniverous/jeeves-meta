@@ -162,7 +162,7 @@ describe('GatewayExecutor.spawn', () => {
           );
         }
       },
-      sessions: [{ key: 'test-session-1', totalTokens: 5000 }],
+      sessions: [{ key: 'test-session-1', totalTokens: 5000, status: 'done' }],
     });
 
     const result = await executor.spawn('Test task');
