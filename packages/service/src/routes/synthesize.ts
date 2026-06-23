@@ -92,7 +92,7 @@ export function registerSynthesizeRoute(
         });
       }
 
-      const result = queue.enqueueOverride(targetPath);
+      const result = queue.enqueue(targetPath);
       return reply.code(202).send({
         status: 'queued',
         path: targetPath,
@@ -128,8 +128,9 @@ export function registerSynthesizeRoute(
     const enqueueResult = queue.enqueue(stalest);
 
     return reply.code(202).send({
-      status: 'accepted',
+      status: 'queued',
       path: stalest,
+      owedPhase: winner.owedPhase,
       queuePosition: enqueueResult.position,
       alreadyQueued: enqueueResult.alreadyQueued,
     });

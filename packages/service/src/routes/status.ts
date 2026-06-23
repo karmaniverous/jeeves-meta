@@ -70,8 +70,8 @@ export type { ServiceState };
 /** Derive service-specific state from current activity and lifecycle. */
 function deriveServiceState(deps: RouteDeps): ServiceState {
   if (deps.shuttingDown) return 'stopping';
-  if (deps.queue.current || deps.queue.currentPhase) return 'synthesizing';
-  if (deps.queue.depth > 0 || deps.queue.overrides.length > 0) return 'waiting';
+  if (deps.queue.currentPhase) return 'synthesizing';
+  if (deps.queue.depth > 0) return 'waiting';
   return 'idle';
 }
 
@@ -145,7 +145,7 @@ export function registerStatusRoute(
 
       return {
         serviceState: deriveServiceState(deps),
-        currentTarget: queue.current?.path ?? queue.currentPhase?.path ?? null,
+        currentTarget: queue.currentPhase?.path ?? null,
         queue: queue.getState(),
         stats: {
           totalSyntheses: stats.totalSyntheses,

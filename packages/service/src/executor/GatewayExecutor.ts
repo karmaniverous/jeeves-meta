@@ -120,17 +120,21 @@ export class GatewayExecutor implements MetaExecutor {
     return text && text.trim() !== 'ANNOUNCE_SKIP' ? text : undefined;
   }
 
-  /** Check history messages for terminal completion. */
+  /**
+   * Check history messages for timeout detection.
+   *
+   * Does NOT determine completion — session completion is authoritative
+   * (via sessions_list). History stop reasons can false-positive on
+   * sessions_yield artifacts (#200).
+   */
   private static checkHistoryCompletion(
     messages: Array<{ role: string; stopReason?: string }>,
-  ): { done: boolean; timedOut: boolean } {
-    if (messages.length === 0) return { done: false, timedOut: false };
+  ): { timedOut: boolean } {
+    if (messages.length === 0) return { timedOut: false };
     const last = messages[messages.length - 1];
     if (last.role !== 'assistant' || !last.stopReason)
-      return { done: false, timedOut: false };
-    if (last.stopReason === 'toolUse' || last.stopReason === 'error')
-      return { done: false, timedOut: false };
-    return { done: true, timedOut: last.stopReason === 'timeout' };
+      return { timedOut: false };
+    return { timedOut: last.stopReason === 'timeout' };
   }
 
   /** Invoke a gateway tool via the /tools/invoke HTTP endpoint. */
@@ -352,15 +356,17 @@ export class GatewayExecutor implements MetaExecutor {
           usage?: { totalTokens?: number };
         }>;
 
-        // Check 1: terminal stop reason in history
-        const { done: historyDone, timedOut: historyTimedOut } =
+        // Check 1: history-based timeout detection (stop reason)
+        const { timedOut: historyTimedOut } =
           GatewayExecutor.checkHistoryCompletion(msgArray);
 
         // Check 2: session completion status via sessions_list
+        // Gate on session completion only — history stop reasons can
+        // false-positive on sessions_yield artifacts (#200).
         const sessionInfo = await this.getSessionInfo(sessionKey);
         const timedOut = sessionInfo.timedOut || historyTimedOut;
 
-        if (historyDone || sessionInfo.completed) {
+        if (sessionInfo.completed) {
           const tokens = sessionInfo.tokens;
 
           // Gateway-side timeout detected — check staging file for recovery

@@ -4,7 +4,11 @@
  * @module helpers
  */
 
-import { type PluginApi, resolvePluginSetting } from '@karmaniverous/jeeves';
+import {
+  type PluginApi,
+  resolveOptionalPluginSetting,
+  resolvePluginSetting,
+} from '@karmaniverous/jeeves';
 
 import { PLUGIN_ID } from './constants.js';
 
@@ -21,11 +25,16 @@ export function getServiceUrl(api: PluginApi): string {
 
 /** Resolve the platform config root. */
 export function getConfigRoot(api: PluginApi): string {
-  return resolvePluginSetting(
+  const value = resolveOptionalPluginSetting(
     api,
     PLUGIN_ID,
     'configRoot',
     'JEEVES_CONFIG_ROOT',
-    'j:/config',
   );
+  if (!value) {
+    throw new Error(
+      'configRoot not configured — set it in plugin config or via JEEVES_CONFIG_ROOT env var',
+    );
+  }
+  return value;
 }

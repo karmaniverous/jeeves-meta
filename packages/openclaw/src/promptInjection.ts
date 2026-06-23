@@ -108,7 +108,7 @@ export async function generateMetaMenu(
       }
     }
     const parts: string[] = [];
-    for (const state of ['fresh', 'pending', 'running', 'failed']) {
+    for (const state of ['fresh', 'pending', 'running', 'stale', 'failed']) {
       if (totals[state]) {
         parts.push(totals[state].toString() + ' ' + state);
       }
@@ -131,7 +131,7 @@ export async function generateMetaMenu(
     }
     if (failedParts.length > 0) {
       phaseLines.push(
-        '> Failed: ' +
+        '⚠ Failed: ' +
           failedParts.slice(0, 10).join(', ') +
           (failedParts.length > 10
             ? ' (+' + (failedParts.length - 10).toString() + ' more)'

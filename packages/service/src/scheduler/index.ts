@@ -187,7 +187,6 @@ export class Scheduler {
       return;
     }
 
-    // Enqueue using the legacy queue path (backward compat with processQueue)
     this.queue.enqueue(candidate.path);
     this.logger.info(
       { path: candidate.path, phase: candidate.phase, band: candidate.band },

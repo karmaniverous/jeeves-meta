@@ -1,8 +1,8 @@
 /**
  * Queue management and abort routes.
  *
- * - GET /queue — 3-layer queue model (current, overrides, automatic, pending)
- * - POST /queue/clear — remove override entries only
+ * - GET /queue — 3-layer queue model (current, pending, automatic)
+ * - POST /queue/clear — remove pending entries
  * - POST /synthesize/abort — abort the current synthesis
  *
  * @module routes/queue
@@ -34,25 +34,25 @@ export function registerQueueRoutes(
 
   app.get(getEndpoint('queue').path, async () => {
     const currentPhase = queue.currentPhase;
-    const overrides = queue.overrides;
+    const pending = queue.items;
 
-    // Compute owedPhase for each override entry by reading meta state
-    const enrichedOverrides = await Promise.all(
-      overrides.map(async (o) => {
+    // Compute owedPhase for each pending entry by reading meta state
+    const enrichedPending = await Promise.all(
+      pending.map(async (entry) => {
         try {
-          const metaDir = resolveMetaDir(o.path);
+          const metaDir = resolveMetaDir(entry.path);
           const meta = await readMetaJson(metaDir);
           const ps = derivePhaseState(meta);
           return {
-            path: o.path,
+            path: entry.path,
             owedPhase: getOwedPhase(ps),
-            enqueuedAt: o.enqueuedAt,
+            enqueuedAt: entry.enqueuedAt,
           };
         } catch {
           return {
-            path: o.path,
+            path: entry.path,
             owedPhase: null as string | null,
-            enqueuedAt: o.enqueuedAt,
+            enqueuedAt: entry.enqueuedAt,
           };
         }
       }),
@@ -83,22 +83,6 @@ export function registerQueueRoutes(
       // If listing fails, automatic stays empty
     }
 
-    // Legacy: pending is the union of overrides + automatic + legacy queue items
-    const pendingItems = [
-      ...enrichedOverrides.map((o) => ({
-        path: o.path,
-        owedPhase: o.owedPhase,
-      })),
-      ...automatic.map((a) => ({
-        path: a.path,
-        owedPhase: a.owedPhase,
-      })),
-      ...queue.pending.map((item) => ({
-        path: item.path,
-        owedPhase: null as string | null,
-      })),
-    ];
-
     return {
       current: currentPhase
         ? {
@@ -106,65 +90,52 @@ export function registerQueueRoutes(
             phase: currentPhase.phase,
             startedAt: currentPhase.startedAt,
           }
-        : queue.current
-          ? {
-              path: queue.current.path,
-              phase: null,
-              startedAt: queue.current.enqueuedAt,
-            }
-          : null,
-      overrides: enrichedOverrides,
+        : null,
+      pending: enrichedPending,
       automatic,
-      pending: pendingItems,
-      // Legacy state
-      state: queue.getState(),
     };
   });
 
   app.post(getEndpoint('queueClear').path, () => {
-    const removed = queue.clearOverrides();
+    const removed = queue.clear();
     return { cleared: removed };
   });
 
   app.post(getEndpoint('abort').path, async (_request, reply) => {
-    // Check 3-layer current first
     const currentPhase = queue.currentPhase;
-    const current = currentPhase ?? queue.current;
 
-    if (!current) {
+    if (!currentPhase) {
       return reply.status(200).send({ status: 'idle' });
     }
 
     // Abort the executor
     deps.executor?.abort();
 
-    const metaDir = resolveMetaDir(current.path);
-    const phase = currentPhase?.phase ?? null;
+    const metaDir = resolveMetaDir(currentPhase.path);
+    const { phase } = currentPhase;
 
     // Transition running phase to failed and write _error to meta.json
-    if (phase) {
-      try {
-        const meta = await readMetaJson(metaDir);
-        let ps = derivePhaseState(meta);
-        ps = phaseFailed(ps, phase);
+    try {
+      const meta = await readMetaJson(metaDir);
+      let ps = derivePhaseState(meta);
+      ps = phaseFailed(ps, phase);
 
-        const updated = {
-          ...meta,
-          _phaseState: ps,
-          _error: {
-            step: phase,
-            code: 'ABORT',
-            message: 'Aborted by operator',
-          },
-        };
+      const updated = {
+        ...meta,
+        _phaseState: ps,
+        _error: {
+          step: phase,
+          code: 'ABORT',
+          message: 'Aborted by operator',
+        },
+      };
 
-        const lockPath = join(metaDir, '.lock');
-        const metaJsonPath = join(metaDir, 'meta.json');
-        await writeFile(lockPath, JSON.stringify(updated, null, 2) + '\n');
-        await copyFile(lockPath, metaJsonPath);
-      } catch {
-        // Best-effort — meta may be unreadable
-      }
+      const lockPath = join(metaDir, '.lock');
+      const metaJsonPath = join(metaDir, 'meta.json');
+      await writeFile(lockPath, JSON.stringify(updated, null, 2) + '\n');
+      await copyFile(lockPath, metaJsonPath);
+    } catch {
+      // Best-effort — meta may be unreadable
     }
 
     // Release the lock for the current meta path
@@ -174,12 +145,12 @@ export function registerQueueRoutes(
       // Lock may already be released
     }
 
-    deps.logger.info({ path: current.path }, 'Synthesis aborted');
+    deps.logger.info({ path: currentPhase.path }, 'Synthesis aborted');
 
     return {
       status: 'aborted',
-      path: current.path,
-      ...(phase ? { phase } : {}),
+      path: currentPhase.path,
+      phase,
     };
   });
 }

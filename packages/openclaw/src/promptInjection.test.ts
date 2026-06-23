@@ -225,6 +225,7 @@ describe('generateMetaMenu', () => {
     expect(menu).toContain('Phases:');
     expect(menu).toContain('fresh');
     expect(menu).toContain('pending');
+    expect(menu).toContain('1 stale');
   });
 
   it('includes failed-phase alert when metas have failed phases', async () => {
@@ -264,7 +265,7 @@ describe('generateMetaMenu', () => {
       },
     });
     const menu = await generateMetaMenu(client);
-    expect(menu).toContain('Failed:');
+    expect(menu).toContain('⚠ Failed:');
     expect(menu).toContain('j:/domains/test/.meta (builder)');
   });
 
