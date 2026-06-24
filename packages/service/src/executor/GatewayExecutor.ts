@@ -388,11 +388,16 @@ export class GatewayExecutor implements MetaExecutor {
             );
           }
 
-          // Normal completion — retry loop for staging file visibility before fallback
+          // Normal completion — read staging file with retry for delayed visibility
+          const output = this.readStagingFile(outputPath);
+          if (output !== undefined) return { output, tokens };
+
+          // Staging file not yet visible — retry with bounded grace window
           for (let i = 0; i < this.stagingRetries; i++) {
-            const output = this.readStagingFile(outputPath);
-            if (output !== undefined) return { output, tokens };
             await sleepAsync(this.stagingRetryDelayMs);
+            const retryOutput = this.readStagingFile(outputPath);
+            if (retryOutput !== undefined)
+              return { output: retryOutput, tokens };
           }
 
           // Fallback: extract from message content if file wasn't written.

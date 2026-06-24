@@ -15,6 +15,30 @@ import type {
   StatusResponse,
 } from './serviceClient.js';
 
+/** Phase statuses that require per-phase breakdown (everything except fresh). */
+const nonFreshStatuses = phaseStatuses.filter((s) => s !== 'fresh');
+
+/**
+ * Format a duration in seconds as a compound human-readable interval.
+ *
+ * Produces at most two units: `2d 3h`, `1h 35m`, `45m`, etc.
+ * Returns `'never synthesized'` for non-finite input.
+ *
+ * @param seconds - Duration in seconds.
+ * @returns Formatted interval string.
+ */
+export function formatAge(seconds: number): string {
+  if (!isFinite(seconds)) return 'never synthesized';
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0 && h > 0) return `${d.toString()}d ${h.toString()}h`;
+  if (d > 0) return `${d.toString()}d`;
+  if (h > 0 && m > 0) return `${h.toString()}h ${m.toString()}m`;
+  if (h > 0) return `${h.toString()}h`;
+  return `${Math.max(m, 1).toString()}m`;
+}
+
 /**
  * Generate the Meta menu Markdown for TOOLS.md.
  *
@@ -40,18 +64,6 @@ export async function generateMetaMenu(
   }
 
   const { summary } = metas;
-
-  const formatAge = (seconds: number): string => {
-    if (!isFinite(seconds)) return 'never synthesized';
-    const d = Math.floor(seconds / 86400);
-    const h = Math.floor((seconds % 86400) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    if (d > 0 && h > 0) return `${d.toString()}d ${h.toString()}h`;
-    if (d > 0) return `${d.toString()}d`;
-    if (h > 0 && m > 0) return `${h.toString()}h ${m.toString()}m`;
-    if (h > 0) return `${h.toString()}h`;
-    return `${Math.max(m, 1).toString()}m`;
-  };
 
   // Find stalest age
   let stalestAge = 0;
@@ -107,7 +119,6 @@ export async function generateMetaMenu(
     }
     const parts: string[] = [];
     if (freshTotal > 0) parts.push(freshTotal.toString() + ' fresh');
-    const nonFreshStatuses = phaseStatuses.filter((s) => s !== 'fresh');
     for (const phase of phaseNames) {
       for (const state of nonFreshStatuses) {
         const count = phaseSummary[phase][state];
