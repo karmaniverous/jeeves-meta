@@ -4,9 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Release 0.17.0 batch (#178, #185, #187, #188, #190, #191, #192, #193, #202, #203)
+
+### 💼 Other
+
+- Updated core
+
+### 🚜 Refactor
+
+- SOLID/DRY pass — extract formatAge, fix staging retry semantics, hoist nonFreshStatuses
+
+### 🧪 Testing
+
+- Validate coverage and documentation sync
+## [0.13.1] - 2026-06-23
+
 ### 🐛 Bug Fixes
 
 - Batch fixes #179, #184, #194, #199, #200
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.13.1
 ## [0.13.0] - 2026-06-17
 
 ### 🚀 Features
