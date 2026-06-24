@@ -54,7 +54,7 @@ export const META_ENDPOINTS = [
     method: 'PATCH',
     path: '/metas/:path',
     description:
-      'Update user-settable reserved properties on a meta entity. Returns the updated meta.json content. Rejects unknown property keys with a 400 error.',
+      'Update user-settable reserved properties on a meta entity. Returns { path, meta } with large fields excluded. Rejects unknown property keys with a 400 error.',
   },
   {
     name: 'synthesize',

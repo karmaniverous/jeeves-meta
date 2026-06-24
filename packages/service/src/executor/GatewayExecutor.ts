@@ -395,6 +395,12 @@ export class GatewayExecutor implements MetaExecutor {
           // Staging file not yet visible — retry with bounded grace window
           for (let i = 0; i < this.stagingRetries; i++) {
             await sleepAsync(this.stagingRetryDelayMs);
+            // Check abort after yield point — signal may have been
+            // set externally (e.g. operator abort) during the sleep.
+            if (this.aborted) {
+              this.cleanupOutputFile(outputPath);
+              throw new SpawnAbortedError();
+            }
             const retryOutput = this.readStagingFile(outputPath);
             if (retryOutput !== undefined)
               return { output: retryOutput, tokens };
