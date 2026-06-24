@@ -38,6 +38,10 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `watcherHealthIntervalMs` | integer | `60000` | Periodic watcher health check interval in ms (min 0). 0 = disabled. |
 | `tier2ScanLimit` | integer | `50` | Max all-fresh candidates to scan per tick in Tier 2 invalidation (min 1) |
 | `autoSeed` | array | `[]` | Auto-seed policy rules (see below). Rules evaluated in order; last match wins for steer/crossRefs. |
+| `workspaceDir` | string | OS tmpdir + `/jeeves-meta` | Directory for synthesis staging files written by sub-agent sessions |
+| `stagingRetries` | integer | `10` | Max retries when staging file is not yet visible after session completion (min 0) |
+| `stagingRetryDelayMs` | integer | `250` | Delay between staging file retry attempts in ms (min 0) |
+| `previewDeltaFilesCap` | integer | `50` | Maximum number of delta files included in `/preview` response (min 1) |
 | `logging.level` | string | `"info"` | Log level (trace/debug/info/warn/error) |
 | `logging.file` | string | — | Log file path |
 

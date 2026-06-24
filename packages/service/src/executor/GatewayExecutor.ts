@@ -36,6 +36,10 @@ export interface GatewayExecutorOptions {
   pollIntervalMs?: number;
   /** Workspace directory for output staging. Default: OS temp dir + /jeeves-meta. */
   workspaceDir?: string;
+  /** Max retries when staging file not yet visible after session completion. Default: 10. */
+  stagingRetries?: number;
+  /** Delay between retries in ms. Default: 250. */
+  stagingRetryDelayMs?: number;
 }
 
 /** Response shape from /tools/invoke. */
@@ -72,6 +76,8 @@ export class GatewayExecutor implements MetaExecutor {
   private readonly apiKey: string | undefined;
   private readonly pollIntervalMs: number;
   private readonly workspaceDir: string;
+  private readonly stagingRetries: number;
+  private readonly stagingRetryDelayMs: number;
   private controller: AbortController = new AbortController();
 
   constructor(options: GatewayExecutorOptions = {}) {
@@ -82,6 +88,8 @@ export class GatewayExecutor implements MetaExecutor {
     this.apiKey = options.apiKey;
     this.pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
     this.workspaceDir = options.workspaceDir ?? join(tmpdir(), 'jeeves-meta');
+    this.stagingRetries = options.stagingRetries ?? 10;
+    this.stagingRetryDelayMs = options.stagingRetryDelayMs ?? 250;
   }
 
   /** Remove a temp output file if it exists. */
@@ -380,9 +388,12 @@ export class GatewayExecutor implements MetaExecutor {
             );
           }
 
-          // Normal completion — read output from file
-          const output = this.readStagingFile(outputPath);
-          if (output !== undefined) return { output, tokens };
+          // Normal completion — retry loop for staging file visibility before fallback
+          for (let i = 0; i < this.stagingRetries; i++) {
+            const output = this.readStagingFile(outputPath);
+            if (output !== undefined) return { output, tokens };
+            await sleepAsync(this.stagingRetryDelayMs);
+          }
 
           // Fallback: extract from message content if file wasn't written.
           // Skip ANNOUNCE_SKIP sentinel messages — the real output is in

@@ -7,6 +7,8 @@
  *
  */
 
+import type { PhaseName, PhaseStatus } from './phases.js';
+
 /** Summary statistics from GET /metas. */
 export interface MetaListSummary {
   total: number;
@@ -51,3 +53,14 @@ export type GatewayDepHealth = DepHealth;
 
 /** Service lifecycle state. */
 export type ServiceState = 'idle' | 'synthesizing' | 'waiting' | 'stopping';
+
+/** Phase state summary: per-phase counts of each status. */
+export type PhaseStateSummary = Record<PhaseName, Record<PhaseStatus, number>>;
+
+/** Next phase candidate from the scheduler. */
+export interface NextPhaseCandidate {
+  path: string;
+  phase: PhaseName;
+  band: number;
+  staleness: number;
+}

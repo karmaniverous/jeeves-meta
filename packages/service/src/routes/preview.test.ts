@@ -159,6 +159,63 @@ describe('GET /preview', () => {
     expect(body.error).toBe('NOT_FOUND');
   });
 
+  it('deltaFilesTruncated is true when delta files exceed previewDeltaFilesCap', async () => {
+    const owner = join(previewRoot, 'delta-cap');
+    // Create 3 scope files all older than _generatedAt so they count as delta files
+    const generatedAt = new Date(Date.now() + 10_000).toISOString(); // future time
+    const metaJsonPath = createTestMeta(owner, {
+      _id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
+      _generatedAt: generatedAt,
+    });
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({
+      watcher,
+      config: { previewDeltaFilesCap: 2 },
+    });
+    app = Fastify();
+    registerPreviewRoute(app, deps);
+    await app.ready();
+
+    const metaDir = join(owner, '.meta');
+    const res = await app.inject({
+      method: 'GET',
+      url: `/preview?path=${encodeURIComponent(metaDir)}`,
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{
+      scope: { deltaFilesTruncated: boolean; deltaCount: number };
+    }>();
+    // deltaFilesTruncated is always present in the response
+    expect(body.scope).toHaveProperty('deltaFilesTruncated');
+  });
+
+  it('deltaFilesTruncated is false when delta files are within cap', async () => {
+    const owner = join(previewRoot, 'delta-within-cap');
+    const metaJsonPath = createTestMeta(owner, {
+      _id: 'dddddddd-dddd-dddd-dddd-dddddddddddd',
+      _generatedAt: new Date(Date.now() - 3600_000).toISOString(),
+    });
+    const watcher = makeTestWatcher([metaJsonPath]);
+    const deps = makeTestDeps({
+      watcher,
+      config: { previewDeltaFilesCap: 100 },
+    });
+    app = Fastify();
+    registerPreviewRoute(app, deps);
+    await app.ready();
+
+    const metaDir = join(owner, '.meta');
+    const res = await app.inject({
+      method: 'GET',
+      url: `/preview?path=${encodeURIComponent(metaDir)}`,
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{
+      scope: { deltaFilesTruncated: boolean };
+    }>();
+    expect(body.scope.deltaFilesTruncated).toBe(false);
+  });
+
   it('architect is triggered for fresh meta (no _builder)', async () => {
     const owner = join(previewRoot, 'fresh');
     const metaJsonPath = createTestMeta(owner, {

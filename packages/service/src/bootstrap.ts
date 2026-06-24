@@ -74,6 +74,9 @@ export async function startService(
   const executor = new GatewayExecutor({
     gatewayUrl: config.gatewayUrl,
     apiKey: config.gatewayApiKey,
+    workspaceDir: config.workspaceDir,
+    stagingRetries: config.stagingRetries,
+    stagingRetryDelayMs: config.stagingRetryDelayMs,
   });
 
   // Runtime stats (mutable, shared with routes)

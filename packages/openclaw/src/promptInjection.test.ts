@@ -223,9 +223,16 @@ describe('generateMetaMenu', () => {
     });
     const menu = await generateMetaMenu(client);
     expect(menu).toContain('Phases:');
-    expect(menu).toContain('fresh');
-    expect(menu).toContain('pending');
-    expect(menu).toContain('1 stale');
+    // Fresh is aggregated across all phases (8+7+9=24)
+    expect(menu).toContain('24 fresh');
+    // Non-fresh show per-phase breakdown
+    expect(menu).toContain('2 pending architect');
+    expect(menu).toContain('1 pending builder');
+    expect(menu).toContain('1 running builder');
+    expect(menu).toContain('1 stale builder');
+    expect(menu).toContain('1 failed critic');
+    // Old aggregated format not present
+    expect(menu).not.toMatch(/\d+ pending,/);
   });
 
   it('includes failed-phase alert when metas have failed phases', async () => {
@@ -302,6 +309,8 @@ describe('generateMetaMenu', () => {
     expect(menu).toContain('j:/domains/email/.meta');
     expect(menu).toContain('architect');
     expect(menu).toContain('band 3');
+    // 172800s = exactly 2 days
+    expect(menu).toContain('staleness 2d)');
   });
 
   it('omits phase sections when no phaseStateSummary in health', async () => {
@@ -310,5 +319,119 @@ describe('generateMetaMenu', () => {
     expect(menu).not.toContain('Phase State');
     expect(menu).not.toContain('Failed:');
     expect(menu).not.toContain('Next:');
+  });
+
+  // ── Issue #187: compound interval format ──
+
+  it('formats staleness with compound day+hour intervals', async () => {
+    const allFreshHealth = {
+      phaseStateSummary: {
+        architect: { fresh: 1, stale: 0, pending: 0, running: 0, failed: 0 },
+        builder: { fresh: 1, stale: 0, pending: 0, running: 0, failed: 0 },
+        critic: { fresh: 1, stale: 0, pending: 0, running: 0, failed: 0 },
+      },
+      nextPhase: {
+        path: 'j:/domains/test/.meta',
+        phase: 'architect' as const,
+        band: 1,
+        staleness: 97200, // 1 day + 3 hours
+      },
+      dependencies: {
+        watcher: { ...defaultWatcher },
+        gateway: { ...defaultGateway },
+      },
+    };
+    const client = mockClient({
+      statusOverrides: { health: allFreshHealth },
+      metasOverrides: {
+        metas: [{ stalenessSeconds: 5400 }], // 1h 30m
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    // Next phase staleness: 97200s = 1d 3h
+    expect(menu).toContain('staleness 1d 3h)');
+    // Stalest display: 5400s = 1h 30m
+    expect(menu).toContain('1h 30m');
+  });
+
+  it('formats hour+minute intervals correctly', async () => {
+    const client = mockClient({
+      statusOverrides: {
+        health: {
+          phaseStateSummary: {
+            architect: {
+              fresh: 1,
+              stale: 0,
+              pending: 0,
+              running: 0,
+              failed: 0,
+            },
+            builder: { fresh: 1, stale: 0, pending: 0, running: 0, failed: 0 },
+            critic: { fresh: 1, stale: 0, pending: 0, running: 0, failed: 0 },
+          },
+          nextPhase: {
+            path: 'j:/domains/test/.meta',
+            phase: 'builder' as const,
+            band: 2,
+            staleness: 5700, // 1h 35m
+          },
+          dependencies: {
+            watcher: { ...defaultWatcher },
+            gateway: { ...defaultGateway },
+          },
+        },
+      },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('staleness 1h 35m)');
+  });
+
+  // ── Issue #185: failed-entity overflow (>10) test coverage ──
+
+  it('truncates failed-phase list with (+N more) when more than 10 entries', async () => {
+    // Build 12 failed metas to trigger the overflow branch
+    const failedMetas = Array.from({ length: 12 }, (_, i) => ({
+      stalenessSeconds: 100,
+      path: `j:/domains/test-${(i + 1).toString()}/.meta`,
+      phaseState: {
+        architect: 'failed' as const,
+        builder: 'fresh' as const,
+        critic: 'fresh' as const,
+      },
+    }));
+
+    const client = mockClient({
+      statusOverrides: {
+        health: {
+          phaseStateSummary: {
+            architect: {
+              fresh: 0,
+              stale: 0,
+              pending: 0,
+              running: 0,
+              failed: 12,
+            },
+            builder: { fresh: 12, stale: 0, pending: 0, running: 0, failed: 0 },
+            critic: { fresh: 12, stale: 0, pending: 0, running: 0, failed: 0 },
+          },
+          nextPhase: null,
+          dependencies: {
+            watcher: { ...defaultWatcher },
+            gateway: { ...defaultGateway },
+          },
+        },
+      },
+      metasOverrides: { metas: failedMetas },
+    });
+    const menu = await generateMetaMenu(client);
+    expect(menu).toContain('⚠ Failed:');
+    // First 10 entries shown, +2 overflow
+    expect(menu).toContain('(+2 more)');
+    // Verify some of the first 10 entries are shown
+    expect(menu).toContain('j:/domains/test-1/.meta (architect)');
+    expect(menu).toContain('j:/domains/test-10/.meta (architect)');
+    // Entry 11 and 12 should NOT appear directly
+    expect(menu).not.toContain('j:/domains/test-11/.meta');
+    expect(menu).not.toContain('j:/domains/test-12/.meta');
   });
 });

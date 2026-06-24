@@ -12,6 +12,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { sleepAsync } from '@karmaniverous/jeeves';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock sleepAsync to resolve with a minimal macrotask yield (the real 3s
@@ -555,6 +556,80 @@ describe('GatewayExecutor.spawn', () => {
     const outputPath = findOutputPath();
     expect(outputPath).toBeDefined();
     expect(existsSync(outputPath!)).toBe(false);
+  });
+
+  // ── Issue #202: staging file retry loop ──
+
+  it('retries staging file read when file not immediately visible after completion', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+      stagingRetries: 5,
+      stagingRetryDelayMs: 99, // unique value — distinguishable from pollIntervalMs
+    });
+
+    let stagingFileWritten = false;
+    let retrySleepCount = 0;
+
+    // Override sleepAsync: write the file when the 2nd staging retry sleep fires
+    const sleepMock = vi.mocked(sleepAsync);
+    sleepMock.mockImplementation(async (ms?: number) => {
+      if (ms === 99) {
+        retrySleepCount++;
+        if (retrySleepCount >= 2 && !stagingFileWritten) {
+          const op = findOutputPath();
+          if (op) {
+            writeFileSync(op, JSON.stringify({ _content: 'Retry output' }));
+            stagingFileWritten = true;
+          }
+        }
+      }
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    installMock({
+      sessionKey: 'sess-staging-retry',
+      sessions: [
+        { key: 'sess-staging-retry', totalTokens: 300, status: 'done' },
+      ],
+      // No onHistory — staging file not written during poll
+    });
+
+    const result = await executor.spawn('Task');
+    expect(result.output).toContain('Retry output');
+    expect(retrySleepCount).toBeGreaterThanOrEqual(2);
+
+    // Restore default mock
+    sleepMock.mockImplementation(
+      () => new Promise<void>((r) => setTimeout(r, 0)),
+    );
+  });
+
+  it('falls back to message text after exhausting all staging retries', async () => {
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+      stagingRetries: 3,
+      stagingRetryDelayMs: 0,
+    });
+
+    installMock({
+      sessionKey: 'sess-retry-exhaust',
+      historyMessages: [
+        {
+          role: 'assistant',
+          content: 'Exhausted retry fallback',
+          stopReason: 'endTurn',
+        },
+      ],
+      sessions: [{ key: 'sess-retry-exhaust', status: 'done' }],
+      // No onHistory — staging file never written
+    });
+
+    const result = await executor.spawn('Task');
+    expect(result.output).toBe('Exhausted retry fallback');
   });
 
   it('continues polling when sessions_list throws transiently', async () => {

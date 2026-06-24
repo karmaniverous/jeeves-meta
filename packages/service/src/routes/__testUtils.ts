@@ -38,6 +38,9 @@ const DEFAULT_TEST_CONFIG: RouteDeps['config'] = {
   tier2ScanLimit: 50,
   logging: { level: 'info' },
   autoSeed: [],
+  stagingRetries: 10,
+  stagingRetryDelayMs: 250,
+  previewDeltaFilesCap: 50,
 };
 
 /** Default service stats for tests. */

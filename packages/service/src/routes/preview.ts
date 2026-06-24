@@ -127,9 +127,10 @@ export function registerPreviewRoute(
         ownedFiles: scopeFiles.length,
         childMetas: targetNode.children.length,
         deltaFiles: deltaFiles
-          .slice(0, 50)
+          .slice(0, config.previewDeltaFilesCap)
           .map((f) => ({ path: f, action: 'modified' as const })),
         deltaCount: deltaFiles.length,
+        deltaFilesTruncated: deltaFiles.length > config.previewDeltaFilesCap,
       },
       estimatedTokens,
       // New phase-state fields (additive)
