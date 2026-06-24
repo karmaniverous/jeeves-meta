@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@karmaniverous/jeeves": "^0.5.12",
-    "@karmaniverous/jeeves-meta-core": "^0.2.0",
+    "@karmaniverous/jeeves-meta-core": "^0.2.1",
     "commander": "^14",
     "croner": "^10",
     "fastify": "^5.8",
