@@ -4,12 +4,12 @@
  * @module routes/preview.test
  */
 
-import { rmSync } from 'node:fs';
+import { rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createTestMeta,
@@ -161,15 +161,38 @@ describe('GET /preview', () => {
 
   it('deltaFilesTruncated is true when delta files exceed previewDeltaFilesCap', async () => {
     const owner = join(previewRoot, 'delta-cap');
-    // Create 3 scope files all older than _generatedAt so they count as delta files
-    const generatedAt = new Date(Date.now() + 10_000).toISOString(); // future time
+    // _generatedAt in the past so newly-created scope files count as delta files
+    const generatedAt = new Date(Date.now() - 60_000).toISOString(); // 1 min ago
     const metaJsonPath = createTestMeta(owner, {
       _id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
       _generatedAt: generatedAt,
     });
-    const watcher = makeTestWatcher([metaJsonPath]);
+
+    // Create 3 scope files in the owner directory (not under .meta/).
+    // Their on-disk mtimes are current, which is newer than generatedAt.
+    const scopeFiles = ['scope-a.ts', 'scope-b.ts', 'scope-c.ts'].map(
+      (name) => {
+        const fp = join(owner, name);
+        writeFileSync(fp, 'content');
+        return fp;
+      },
+    );
+
+    // Use a mock that routes the two walk() calls separately:
+    //   1st call (discoverMetas): '**/.meta/meta.json'  → return only the meta
+    //   2nd call (getScopeFiles): '<ownerPath>/**'       → return meta + scope files
+    const customWatcher = {
+      walk: vi
+        .fn()
+        .mockResolvedValueOnce([metaJsonPath]) // discoverMetas
+        .mockResolvedValue([metaJsonPath, ...scopeFiles]), // getScopeFiles
+      registerRules: vi.fn().mockResolvedValue(undefined),
+      scan: vi.fn().mockResolvedValue({ points: [], cursor: null }),
+    };
+
+    // Cap at 2, but we have 3 delta scope files — so deltaFilesTruncated must be true
     const deps = makeTestDeps({
-      watcher,
+      watcher: customWatcher,
       config: { previewDeltaFilesCap: 2 },
     });
     app = Fastify();
@@ -185,8 +208,9 @@ describe('GET /preview', () => {
     const body = res.json<{
       scope: { deltaFilesTruncated: boolean; deltaCount: number };
     }>();
-    // deltaFilesTruncated is always present in the response
-    expect(body.scope).toHaveProperty('deltaFilesTruncated');
+    expect(body.scope.deltaFilesTruncated).toBe(true);
+    // deltaCount is the total before truncation
+    expect(body.scope.deltaCount).toBe(3);
   });
 
   it('deltaFilesTruncated is false when delta files are within cap', async () => {

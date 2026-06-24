@@ -6,7 +6,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { generateMetaMenu } from './promptInjection.js';
+import { formatAge, generateMetaMenu } from './promptInjection.js';
 import type {
   MetaServiceClient,
   MetasResponse,
@@ -69,6 +69,40 @@ function mockClient(overrides?: {
       .mockResolvedValue({ ...defaultMetas, ...overrides?.metasOverrides }),
   } as unknown as MetaServiceClient;
 }
+
+// ── Direct unit tests for formatAge (Issue #187) ──
+
+describe('formatAge', () => {
+  it("returns 'never synthesized' for Infinity", () => {
+    expect(formatAge(Infinity)).toBe('never synthesized');
+  });
+
+  it("returns '1m' for 0 seconds (minimum floor)", () => {
+    expect(formatAge(0)).toBe('1m');
+  });
+
+  it('returns minutes-only for sub-hour durations', () => {
+    expect(formatAge(45 * 60)).toBe('45m'); // 45 minutes
+  });
+
+  it('returns hours-only when minutes are zero', () => {
+    expect(formatAge(3600)).toBe('1h'); // exactly 1 hour
+  });
+
+  it('returns hour+minute compound for sub-day durations', () => {
+    expect(formatAge(5400)).toBe('1h 30m'); // 1h 30m
+    expect(formatAge(5700)).toBe('1h 35m'); // 1h 35m
+  });
+
+  it('returns days-only when hours are zero', () => {
+    expect(formatAge(86400)).toBe('1d'); // exactly 1 day
+  });
+
+  it('returns day+hour compound when both are present', () => {
+    expect(formatAge(97200)).toBe('1d 3h'); // 1d 3h
+    expect(formatAge(90000)).toBe('1d 1h'); // 25h = 1d 1h
+  });
+});
 
 describe('generateMetaMenu', () => {
   it('generates menu with entity summary', async () => {

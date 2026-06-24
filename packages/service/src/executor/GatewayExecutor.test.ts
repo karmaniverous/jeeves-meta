@@ -632,6 +632,51 @@ describe('GatewayExecutor.spawn', () => {
     expect(result.output).toBe('Exhausted retry fallback');
   });
 
+  it('falls back immediately when stagingRetries is 0 (no retry iterations)', async () => {
+    // With stagingRetries: 0, the executor performs the initial unconditional read,
+    // finds no file, executes the loop 0 times, then falls back to message content.
+    // This explicitly tests the SOLID/DRY refactor where the initial read now
+    // precedes the loop and the loop only fires when that first read misses.
+    const executor = new GatewayExecutor({
+      gatewayUrl: 'http://localhost:18789',
+      pollIntervalMs: 10,
+      workspaceDir: testDir,
+      stagingRetries: 0,
+      stagingRetryDelayMs: 9999, // would be observable if the loop ran
+    });
+
+    const sleepMock = vi.mocked(sleepAsync);
+    const retrySleepcalls: (number | undefined)[] = [];
+    sleepMock.mockImplementation(async (ms?: number) => {
+      if (ms === 9999) retrySleepcalls.push(ms);
+      await new Promise<void>((r) => setTimeout(r, 0));
+    });
+
+    installMock({
+      sessionKey: 'sess-zero-retries',
+      historyMessages: [
+        {
+          role: 'assistant',
+          content: 'Zero-retry fallback',
+          stopReason: 'endTurn',
+        },
+      ],
+      sessions: [{ key: 'sess-zero-retries', status: 'done' }],
+      // No onHistory — staging file never written
+    });
+
+    const result = await executor.spawn('Task');
+    // Must fall back to message content
+    expect(result.output).toBe('Zero-retry fallback');
+    // Retry delay must never have been called (loop ran 0 times)
+    expect(retrySleepcalls).toHaveLength(0);
+
+    // Restore default mock
+    sleepMock.mockImplementation(
+      () => new Promise<void>((r) => setTimeout(r, 0)),
+    );
+  });
+
   it('continues polling when sessions_list throws transiently', async () => {
     const executor = new GatewayExecutor({
       gatewayUrl: 'http://localhost:18789',
