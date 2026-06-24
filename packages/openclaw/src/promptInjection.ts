@@ -7,13 +7,37 @@
  * @module promptInjection
  */
 
-import { phaseNames } from '@karmaniverous/jeeves-meta-core';
+import { phaseNames, phaseStatuses } from '@karmaniverous/jeeves-meta-core';
 
 import type {
   MetaServiceClient,
   MetasResponse,
   StatusResponse,
 } from './serviceClient.js';
+
+/** Phase statuses that require per-phase breakdown (everything except fresh). */
+const nonFreshStatuses = phaseStatuses.filter((s) => s !== 'fresh');
+
+/**
+ * Format a duration in seconds as a compound human-readable interval.
+ *
+ * Produces at most two units: `2d 3h`, `1h 35m`, `45m`, etc.
+ * Returns `'never synthesized'` for non-finite input.
+ *
+ * @param seconds - Duration in seconds.
+ * @returns Formatted interval string.
+ */
+export function formatAge(seconds: number): string {
+  if (!isFinite(seconds)) return 'never synthesized';
+  const d = Math.floor(seconds / 86400);
+  const h = Math.floor((seconds % 86400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (d > 0 && h > 0) return `${d.toString()}d ${h.toString()}h`;
+  if (d > 0) return `${d.toString()}d`;
+  if (h > 0 && m > 0) return `${h.toString()}h ${m.toString()}m`;
+  if (h > 0) return `${h.toString()}h`;
+  return `${Math.max(m, 1).toString()}m`;
+}
 
 /**
  * Generate the Meta menu Markdown for TOOLS.md.
@@ -40,13 +64,6 @@ export async function generateMetaMenu(
   }
 
   const { summary } = metas;
-
-  const formatAge = (seconds: number): string => {
-    if (!isFinite(seconds)) return 'never synthesized';
-    if (seconds < 3600) return Math.round(seconds / 60).toString() + 'm';
-    if (seconds < 86400) return Math.round(seconds / 3600).toString() + 'h';
-    return Math.round(seconds / 86400).toString() + 'd';
-  };
 
   // Find stalest age
   let stalestAge = 0;
@@ -93,24 +110,19 @@ export async function generateMetaMenu(
 
   // Phase-state summary from /status health
   const phaseLines: string[] = [];
-  const phaseSummary = status.health.phaseStateSummary as
-    | Record<string, Record<string, number>>
-    | undefined;
+  const phaseSummary = status.health.phaseStateSummary;
   if (phaseSummary) {
-    // Aggregate counts across all phases
-    const totals: Record<string, number> = {};
+    // Fresh counts are aggregated; non-fresh show <count> <state> <phase>
+    let freshTotal = 0;
     for (const phase of phaseNames) {
-      const counts = phaseSummary[phase];
-      for (const [state, count] of Object.entries(counts)) {
-        if (count > 0) {
-          totals[state] = (totals[state] ?? 0) + count;
-        }
-      }
+      freshTotal += phaseSummary[phase].fresh;
     }
     const parts: string[] = [];
-    for (const state of ['fresh', 'pending', 'running', 'stale', 'failed']) {
-      if (totals[state]) {
-        parts.push(totals[state].toString() + ' ' + state);
+    if (freshTotal > 0) parts.push(freshTotal.toString() + ' fresh');
+    for (const phase of phaseNames) {
+      for (const state of nonFreshStatuses) {
+        const count = phaseSummary[phase][state];
+        if (count > 0) parts.push(`${count.toString()} ${state} ${phase}`);
       }
     }
     if (parts.length > 0) {
@@ -141,9 +153,7 @@ export async function generateMetaMenu(
   }
 
   // Next-phase indicator from /status health
-  const nextPhase = status.health.nextPhase as
-    | { path: string; phase: string; band: number; staleness: number }
-    | undefined;
+  const nextPhase = status.health.nextPhase;
   if (nextPhase) {
     phaseLines.push(
       'Next: ' +

@@ -40,20 +40,21 @@ export const META_ENDPOINTS = [
     method: 'GET',
     path: '/metas',
     description:
-      'List metas with summary stats and per-meta projection. Response includes _phaseState and owedPhase per meta.',
+      'List metas with summary stats and per-meta projection. Response includes phaseState and owedPhase per meta.',
   },
   {
     name: 'metaDetail',
     method: 'GET',
     path: '/metas/:path',
     description:
-      'Full detail for a single meta, with optional archive history. Response includes _phaseState and owedPhase.',
+      'Full detail for a single meta, with optional archive history. Response includes phaseState, owedPhase, and crossRefs.',
   },
   {
     name: 'updateMeta',
     method: 'PATCH',
     path: '/metas/:path',
-    description: 'Update user-settable reserved properties on a meta entity.',
+    description:
+      'Update user-settable reserved properties on a meta entity. Returns { path, meta } with large fields excluded. Rejects unknown property keys with a 400 error.',
   },
   {
     name: 'synthesize',

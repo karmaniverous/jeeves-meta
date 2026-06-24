@@ -11,6 +11,8 @@ export type {
   MetaListSummary,
   MetasItem,
   MetasResponse,
+  NextPhaseCandidate,
+  PhaseStateSummary,
   ServiceState,
   WatcherDepHealth,
 } from './contracts.js';

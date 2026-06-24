@@ -193,7 +193,7 @@ function buildMetaSeedTool(
         crossRefs: {
           type: 'string',
           description:
-            'JSON array of cross-ref owner paths (e.g. \'["j:/path/a","j:/path/b"]\').',
+            'JSON array of cross-ref owner paths (e.g. \'["<drive label>:/path/a","<drive label>:/path/b"]\'). Use server_drives to discover available drive labels.',
         },
         steer: {
           type: 'string',

@@ -39,6 +39,9 @@ function createTestConfig() {
     tier2ScanLimit: 50,
     logging: { level: 'info' },
     autoSeed: [],
+    stagingRetries: 10,
+    stagingRetryDelayMs: 250,
+    previewDeltaFilesCap: 50,
   };
 }
 

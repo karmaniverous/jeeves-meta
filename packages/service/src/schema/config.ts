@@ -69,6 +69,18 @@ export const serviceConfigSchema = metaConfigSchema.extend({
    * Rules are evaluated in order; last match wins for steer/crossRefs.
    */
   autoSeed: z.array(autoSeedRuleSchema).optional().default([]),
+
+  /** Optional workspace directory for synthesis staging files. Defaults to `os.tmpdir() + '/jeeves-meta'`. */
+  workspaceDir: z.string().optional(),
+
+  /** Max retries when staging file not yet visible after session completion. Default: 10. */
+  stagingRetries: z.number().int().min(0).default(10),
+
+  /** Delay between staging file retries in ms. Default: 250. */
+  stagingRetryDelayMs: z.number().int().min(0).default(250),
+
+  /** Maximum number of delta files returned in /preview response. Default: 50. */
+  previewDeltaFilesCap: z.number().int().min(1).default(50),
 });
 
 /** Inferred type for service configuration. */

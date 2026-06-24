@@ -16,6 +16,8 @@ import {
   type MetaListSummary,
   type MetasItem,
   type MetasResponse,
+  type NextPhaseCandidate,
+  type PhaseStateSummary,
   type ServiceState,
   type WatcherDepHealth,
 } from '@karmaniverous/jeeves-meta-core';
@@ -27,6 +29,8 @@ export type {
   MetaListSummary,
   MetasItem,
   MetasResponse,
+  NextPhaseCandidate,
+  PhaseStateSummary,
   ServiceState,
   WatcherDepHealth,
 };
@@ -54,6 +58,10 @@ export interface StatusResponse {
       watcher: WatcherDepHealth;
       gateway: GatewayDepHealth;
     };
+    /** Per-phase counts of each status, from the scheduler. */
+    phaseStateSummary?: PhaseStateSummary;
+    /** Next phase candidate from the scheduler. */
+    nextPhase?: NextPhaseCandidate | null;
     [key: string]: unknown;
   };
 }

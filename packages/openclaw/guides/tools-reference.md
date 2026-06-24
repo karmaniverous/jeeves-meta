@@ -74,6 +74,13 @@ Dry-run: show what inputs would be gathered for the next synthesis cycle.
 
 **Response:** `{ path, staleness, architectWillRun, architectReason, scope, estimatedTokens, owedPhase, priorityBand, phaseState, inputStatus, architectInvalidators }`
 
+The `scope` object includes:
+- `ownedFiles` (number) — total scope file count
+- `childMetas` (number) — direct child meta count
+- `deltaFiles` (array) — files modified since last synthesis, capped at `previewDeltaFilesCap`
+- `deltaCount` (number) — total delta file count before cap
+- `deltaFilesTruncated` (boolean) — true when `deltaCount > previewDeltaFilesCap` (some delta files omitted from `deltaFiles`)
+
 ## meta_trigger
 
 Enqueue synthesis for a specific meta or the stalest candidate.

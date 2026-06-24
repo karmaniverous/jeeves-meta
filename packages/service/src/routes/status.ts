@@ -11,7 +11,8 @@ import { createStatusHandler } from '@karmaniverous/jeeves';
 import {
   type DepHealth,
   getEndpoint,
-  type PhaseName,
+  type NextPhaseCandidate,
+  type PhaseStateSummary,
   type PhaseStatus,
   type ServiceState,
 } from '@karmaniverous/jeeves-meta-core';
@@ -75,10 +76,7 @@ function deriveServiceState(deps: RouteDeps): ServiceState {
   return 'idle';
 }
 
-/** Phase state count record. */
-type PhaseStateCounts = Record<PhaseStatus, number>;
-
-function emptyPhaseCounts(): PhaseStateCounts {
+function emptyPhaseCounts(): Record<PhaseStatus, number> {
   return { fresh: 0, stale: 0, pending: 0, running: 0, failed: 0 };
 }
 
@@ -99,18 +97,13 @@ export function registerStatusRoute(
       ]);
 
       // Phase state summary
-      const phaseStateSummary: Record<PhaseName, PhaseStateCounts> = {
+      const phaseStateSummary: PhaseStateSummary = {
         architect: emptyPhaseCounts(),
         builder: emptyPhaseCounts(),
         critic: emptyPhaseCounts(),
       };
 
-      let nextPhase: {
-        path: string;
-        phase: PhaseName;
-        band: number;
-        staleness: number;
-      } | null = null;
+      let nextPhase: NextPhaseCandidate | null = null;
 
       try {
         const metaResult = await cache.get(config, watcher);

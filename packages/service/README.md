@@ -14,6 +14,8 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Cross-meta references** — `_crossRefs` declares relationships to other metas; referenced `_content` included as architect/builder context
 - **Archive management** — timestamped snapshots with configurable pruning
 - **Lock staging** — write to `.lock` → copy to `meta.json` → archive (crash-safe)
+- **Staging file retry** — configurable retries (`stagingRetries`, `stagingRetryDelayMs`) when sub-agent output file is not yet visible after session completion (network/NFS latency)
+- **Preview delta cap** — `/preview` response includes `deltaFilesTruncated` flag and `deltaCount` total when delta files exceed `previewDeltaFilesCap`
 - **Virtual rule registration** — registers 3 watcher inference rules at startup with retry
 - **Progress reporting** — real-time synthesis events via gateway channel messages
 - **Graceful shutdown** — stop scheduler, release locks, close server
