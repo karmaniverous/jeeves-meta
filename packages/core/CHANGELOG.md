@@ -6,7 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ### 🚀 Features
 
+- Release 0.17.0 batch (#178, #185, #187, #188, #190, #191, #192, #193, #202, #203)
+
+### 🐛 Bug Fixes
+
+- Abort check in staging retry loop, accurate updateMeta description (copilot review)
+## [0.2.0] - 2026-06-17
+
+### 🚀 Features
+
 - Delegate subagent timeout to gateway lifecycle (#197)
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-core v0.2.0
 ## [0.1.3] - 2026-05-29
 
 ### 🐛 Bug Fixes
