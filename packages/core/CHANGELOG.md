@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Batch resolve #204, #206, #207, #208
+## [0.2.1] - 2026-06-24
+
 ### 🚀 Features
 
 - Release 0.17.0 batch (#178, #185, #187, #188, #190, #191, #192, #193, #202, #203)
@@ -11,6 +16,10 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Abort check in staging retry loop, accurate updateMeta description (copilot review)
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-core v0.2.1
 ## [0.2.0] - 2026-06-17
 
 ### 🚀 Features
