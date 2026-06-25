@@ -414,8 +414,6 @@ describe('I/O integration (Tasks #14-17)', () => {
     maxArchive: 20,
     maxLines: 500,
     thinking: 'low',
-    defaultArchitect: '',
-    defaultCritic: '',
     skipUnchanged: true,
     metaProperty: { _meta: 'current' },
     metaArchiveProperty: { _meta: 'archive' },

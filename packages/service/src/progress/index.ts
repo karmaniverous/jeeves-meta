@@ -39,6 +39,12 @@ export type ProgressReporterConfig = {
   reportTarget?: string;
   /** Optional base URL for the service, used to construct entity links. */
   serverBaseUrl?: string;
+  /**
+   * Optional mapping of server drive labels to absolute filesystem paths.
+   * Used on Linux to resolve absolute paths to jeeves-server browse paths.
+   * Example: `{ "content": "/opt/jeeves/content" }`
+   */
+  serverDriveRoots?: Record<string, string>;
 };
 
 function formatNumber(n: number): string {
@@ -71,21 +77,75 @@ function encodePathSegments(p: string): string {
     .join('/');
 }
 
-/** Build a link (or plain path) to the owner directory. */
-function buildDirectoryLink(path: string, serverBaseUrl?: string): string {
-  const normalized = normalizePath(path).replace(/^([A-Za-z]):/, '/$1');
-  const encoded = encodePathSegments(normalized);
+/**
+ * Resolve a filesystem path to a jeeves-server browse path segment.
+ *
+ * - Windows: `j:/domains/foo` → `/j/domains/foo` (drive-letter transform).
+ * - Linux with serverDriveRoots: `/opt/jeeves/content/slack` + roots
+ *   `{ content: "/opt/jeeves/content" }` → `/content/slack`.
+ * - Linux without serverDriveRoots: returns the normalized path unchanged
+ *   (browse link will be invalid, but this is the pre-existing behavior).
+ */
+function resolveServerPath(
+  path: string,
+  serverDriveRoots?: Record<string, string>,
+): string {
+  const normalized = normalizePath(path);
 
-  if (!serverBaseUrl) return normalized;
+  // Windows: drive letter present — use existing transform
+  if (/^[A-Za-z]:/.test(normalized)) {
+    return normalized.replace(/^([A-Za-z]):/, '/$1');
+  }
+
+  // Linux: attempt serverDriveRoots resolution (longest/most-specific root wins)
+  if (serverDriveRoots) {
+    const sorted = Object.entries(serverDriveRoots)
+      .map(
+        ([label, root]) =>
+          [label, normalizePath(root).replace(/\/+$/, '')] as const,
+      )
+      .sort((a, b) => b[1].length - a[1].length);
+
+    for (const [label, normalizedRoot] of sorted) {
+      if (
+        normalized === normalizedRoot ||
+        normalized.startsWith(normalizedRoot + '/')
+      ) {
+        const relative = normalized
+          .slice(normalizedRoot.length)
+          .replace(/^\//, '');
+        return `/${label}${relative ? '/' + relative : ''}`;
+      }
+    }
+  }
+
+  // Fallback: no drive roots configured or no match — return as-is
+  return normalized;
+}
+
+/** Build a link (or plain path) to the owner directory. */
+function buildDirectoryLink(
+  path: string,
+  serverBaseUrl?: string,
+  serverDriveRoots?: Record<string, string>,
+): string {
+  const resolved = resolveServerPath(path, serverDriveRoots);
+  const encoded = encodePathSegments(resolved);
+
+  if (!serverBaseUrl) return resolved;
 
   const base = serverBaseUrl.replace(/\/+$/, '');
   return `${base}/path${encoded}`;
 }
 
 /** Build a link (or plain path) to the entity's meta.json output file. */
-function buildMetaJsonLink(path: string, serverBaseUrl?: string): string {
-  const normalized = normalizePath(path).replace(/^([A-Za-z]):/, '/$1');
-  const metaJsonPath = `${normalized}/.meta/meta.json`;
+function buildMetaJsonLink(
+  path: string,
+  serverBaseUrl?: string,
+  serverDriveRoots?: Record<string, string>,
+): string {
+  const resolved = resolveServerPath(path, serverDriveRoots);
+  const metaJsonPath = `${resolved}/.meta/meta.json`;
   const encoded = encodePathSegments(metaJsonPath);
 
   if (!serverBaseUrl) return metaJsonPath;
@@ -97,10 +157,15 @@ function buildMetaJsonLink(path: string, serverBaseUrl?: string): string {
 export function formatProgressEvent(
   event: ProgressEvent,
   serverBaseUrl?: string,
+  serverDriveRoots?: Record<string, string>,
 ): string {
   switch (event.type) {
     case 'synthesis_start': {
-      const dirLink = buildDirectoryLink(event.path, serverBaseUrl);
+      const dirLink = buildDirectoryLink(
+        event.path,
+        serverBaseUrl,
+        serverDriveRoots,
+      );
       return `🔬 Started meta synthesis: ${dirLink}`;
     }
 
@@ -120,7 +185,11 @@ export function formatProgressEvent(
     }
 
     case 'synthesis_complete': {
-      const metaLink = buildMetaJsonLink(event.path, serverBaseUrl);
+      const metaLink = buildMetaJsonLink(
+        event.path,
+        serverBaseUrl,
+        serverDriveRoots,
+      );
       const tokenStr = formatTokens(event.tokens);
       const duration =
         event.durationMs !== undefined
@@ -130,7 +199,11 @@ export function formatProgressEvent(
     }
 
     case 'error': {
-      const dirLink = buildDirectoryLink(event.path, serverBaseUrl);
+      const dirLink = buildDirectoryLink(
+        event.path,
+        serverBaseUrl,
+        serverDriveRoots,
+      );
       const phase = event.phase ? `${titleCasePhase(event.phase)} ` : '';
       const error = event.error ?? 'Unknown error';
       return `❌ Synthesis failed at ${phase}phase: ${dirLink}\n   Error: ${error}`;
@@ -167,7 +240,11 @@ export class ProgressReporter {
     const target = this.config.reportTarget ?? this.config.reportChannel;
     if (!target) return;
 
-    const message = formatProgressEvent(event, this.config.serverBaseUrl);
+    const message = formatProgressEvent(
+      event,
+      this.config.serverBaseUrl,
+      this.config.serverDriveRoots,
+    );
     const url = new URL('/tools/invoke', this.config.gatewayUrl);
 
     const args: GatewayInvokeRequest['args'] = {

@@ -27,8 +27,6 @@ const DEFAULT_TEST_CONFIG: RouteDeps['config'] = {
   maxArchive: 20,
   maxLines: 500,
   thinking: 'low',
-  defaultArchitect: 'arch',
-  defaultCritic: 'crit',
   skipUnchanged: true,
   metaProperty: {},
   metaArchiveProperty: {},

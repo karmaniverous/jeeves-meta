@@ -23,6 +23,8 @@ import { serviceConfigSchema } from './schema/config.js';
 function makeConfig(overrides: Partial<ServiceConfig> = {}): ServiceConfig {
   return serviceConfigSchema.parse({
     watcherUrl: 'http://127.0.0.1:1936',
+    metaProperty: { _meta: 'current' },
+    metaArchiveProperty: { _meta: 'archive' },
     ...overrides,
   });
 }
@@ -235,8 +237,6 @@ describe('RESTART_REQUIRED_FIELDS', () => {
     expect(RESTART_REQUIRED_FIELDS).toContain('watcherUrl');
     expect(RESTART_REQUIRED_FIELDS).toContain('gatewayUrl');
     expect(RESTART_REQUIRED_FIELDS).toContain('gatewayApiKey');
-    expect(RESTART_REQUIRED_FIELDS).toContain('defaultArchitect');
-    expect(RESTART_REQUIRED_FIELDS).toContain('defaultCritic');
   });
 
   it('does not include hot-reloadable fields', () => {

@@ -197,7 +197,7 @@ export function buildArchitectTask(
   const sections = [
     `# jeeves-meta · ARCHITECT · ${ctx.path}`,
     '',
-    config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+    DEFAULT_ARCHITECT_PROMPT,
     '',
     '## SCOPE',
     `Path: ${ctx.path}`,
@@ -302,6 +302,9 @@ export function buildBuilderTask(
     '',
     'DIAGRAMS: When diagrams would aid understanding, use PlantUML in fenced code blocks (```plantuml).',
     'PlantUML is rendered natively by the serving infrastructure. NEVER use ASCII art diagrams.',
+    '',
+    'IMPORTANT: Do not call sessions_spawn or sessions_yield. Read all files directly using the tools',
+    'available in your session. Do not attempt to parallelize work by spawning sub-agents.',
   );
 
   return compileTemplate(
@@ -326,7 +329,7 @@ export function buildCriticTask(
   const sections = [
     `# jeeves-meta · CRITIC · ${ctx.path}`,
     '',
-    config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
+    DEFAULT_CRITIC_PROMPT,
     '',
     '## SYNTHESIS TO EVALUATE',
     meta._content ?? '(No content produced)',

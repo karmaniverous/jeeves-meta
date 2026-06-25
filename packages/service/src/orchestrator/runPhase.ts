@@ -187,7 +187,7 @@ export async function runArchitect(
 
     const architectUpdates: Partial<MetaJson> = {
       _builder: builderBrief,
-      _architect: config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+      _architect: DEFAULT_ARCHITECT_PROMPT,
       _synthesisCount: 0,
       _architectTokens: architectTokens,
       _generatedAt: new Date().toISOString(),
@@ -279,6 +279,14 @@ export async function runBuilder(
     }
 
     const builderOutput = parseBuilderOutput(rawOutput);
+    if (!builderOutput) {
+      throw new Error(
+        'Builder output is not valid JSON — expected { _content|content: string, ... }. ' +
+          'Raw output (' +
+          rawOutput.length.toString() +
+          ' chars) did not match any JSON extraction strategy.',
+      );
+    }
     const builderTokens = result.tokens;
 
     // Builder success: builder → fresh, critic → pending
@@ -314,6 +322,7 @@ export async function runBuilder(
         const raw = await readFile(err.outputPath, 'utf8');
         const partial = parseBuilderOutput(raw);
         if (
+          partial !== null &&
           partial.state !== undefined &&
           JSON.stringify(partial.state) !== JSON.stringify(currentMeta._state)
         ) {
@@ -375,7 +384,7 @@ export async function runCritic(
 
     const updates: Partial<MetaJson> = {
       _feedback: feedback,
-      _critic: config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
+      _critic: DEFAULT_CRITIC_PROMPT,
       _criticTokens: criticTokens,
       _error: undefined,
     };

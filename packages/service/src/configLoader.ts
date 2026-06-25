@@ -1,13 +1,13 @@
 /**
  * Load and resolve jeeves-meta service config.
  *
- * Supports \@file: indirection and environment-variable substitution (dollar-brace pattern).
+ * Supports environment-variable substitution (dollar-brace pattern).
  *
  * @module configLoader
  */
 
 import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 
 import { type ServiceConfig, serviceConfigSchema } from './schema/config.js';
 
@@ -41,19 +41,6 @@ function substituteEnvVars(value: unknown): unknown {
   }
 
   return value;
-}
-
-/**
- * Resolve \@file: references in a config value.
- *
- * @param value - String value that may start with "\@file:".
- * @param baseDir - Base directory for resolving relative paths.
- * @returns The resolved string (file contents or original value).
- */
-function resolveFileRef(value: string, baseDir: string): string {
-  if (!value.startsWith('@file:')) return value;
-  const filePath = join(baseDir, value.slice(6));
-  return readFileSync(filePath, 'utf8');
 }
 
 /**
@@ -111,8 +98,7 @@ export function resolveConfigPath(args: string[]): string {
 /**
  * Load service config from a JSON file.
  *
- * Resolves \@file: references for defaultArchitect and defaultCritic,
- * and substitutes environment-variable placeholders throughout.
+ * Substitutes environment-variable placeholders throughout.
  *
  * @param configPath - Path to config JSON file.
  * @returns Validated ServiceConfig.
@@ -120,14 +106,6 @@ export function resolveConfigPath(args: string[]): string {
 export function loadServiceConfig(configPath: string): ServiceConfig {
   const rawText = readFileSync(configPath, 'utf8');
   const raw = substituteEnvVars(JSON.parse(rawText)) as Record<string, unknown>;
-  const baseDir = dirname(configPath);
-
-  if (typeof raw['defaultArchitect'] === 'string') {
-    raw['defaultArchitect'] = resolveFileRef(raw['defaultArchitect'], baseDir);
-  }
-  if (typeof raw['defaultCritic'] === 'string') {
-    raw['defaultCritic'] = resolveFileRef(raw['defaultCritic'], baseDir);
-  }
 
   return serviceConfigSchema.parse(raw);
 }

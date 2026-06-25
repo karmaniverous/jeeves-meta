@@ -74,8 +74,6 @@ const baseConfig: MetaConfig = {
   maxArchive: 20,
   maxLines: 500,
   thinking: 'low',
-  defaultArchitect: '',
-  defaultCritic: '',
   skipUnchanged: true,
   metaProperty: { _meta: 'current' },
   metaArchiveProperty: { _meta: 'archive' },

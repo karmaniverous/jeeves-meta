@@ -50,8 +50,6 @@ function makeConfig(overrides?: Partial<MetaConfig>): MetaConfig {
     maxArchive: 20,
     maxLines: 500,
     thinking: 'low',
-    defaultArchitect: 'default-architect-prompt',
-    defaultCritic: 'default-critic-prompt',
     skipUnchanged: true,
     metaProperty: { _meta: 'current' },
     metaArchiveProperty: { _meta: 'archive' },
@@ -485,7 +483,7 @@ describe('computeInvalidation', () => {
     expect(result.inputStatus.criticChanged).toBe(false);
   });
 
-  it('uses DEFAULT prompts when config overrides are undefined', async () => {
+  it('always compares prompt snapshots against DEFAULT constants (no config override)', async () => {
     const meta: MetaJson = {
       _phaseState: { ...freshPhaseState },
       _structureHash: HASH_A,
@@ -495,15 +493,9 @@ describe('computeInvalidation', () => {
       _synthesisCount: 3,
     };
 
-    // Config with undefined prompts — should fall back to DEFAULT constants
-    const result = await computeInvalidation(
-      meta,
-      SCOPE_A,
-      makeConfig({ defaultArchitect: undefined, defaultCritic: undefined }),
-      node,
-    );
+    const result = await computeInvalidation(meta, SCOPE_A, makeConfig(), node);
 
-    // Snapshots match the DEFAULT prompts, so no staleness
+    // Snapshots match DEFAULT constants — no staleness
     expect(result.inputStatus.architectChanged).toBe(false);
     expect(result.inputStatus.criticChanged).toBe(false);
   });

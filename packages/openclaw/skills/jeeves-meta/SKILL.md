@@ -202,8 +202,8 @@ Key settings:
 | `watcherUrl` | (required) | Watcher service URL (e.g. `http://localhost:1936`) |
 | `gatewayUrl` | `http://127.0.0.1:18789` | OpenClaw gateway URL for subprocess spawning |
 | `gatewayApiKey` | (optional) | API key for gateway authentication |
-| `metaProperty` | `{ _meta: "current" }` | Watcher metadata properties applied to live `.meta/meta.json` files. `Record<string, unknown>` — any shape accepted. |
-| `metaArchiveProperty` | `{ _meta: "archive" }` | Watcher metadata properties applied to `.meta/archive/**` snapshots. Same shape flexibility. |
+| `metaProperty` | (required) | Watcher metadata properties applied to live `.meta/meta.json` files. `Record<string, unknown>` — any shape accepted. Avoid underscore-prefixed keys (e.g. `_meta`) — they may conflict with watcher reserved fields and break rendering. |
+| `metaArchiveProperty` | (required) | Watcher metadata properties applied to `.meta/archive/**` snapshots. Same shape flexibility and underscore-prefix caveat as `metaProperty`. |
 | `architectEvery` | 10 | Re-run architect every N cycles even if structure unchanged |
 | `depthWeight` | 0.5 | Exponent for depth-based scheduling (0 = pure staleness) |
 | `maxArchive` | 20 | Max archived snapshots per meta |
@@ -214,6 +214,7 @@ Key settings:
 
 | `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
 | `serverBaseUrl` | (optional) | Public base URL of the service (e.g. `http://myhost:1938`). When set, progress reports include clickable entity links. |
+| `serverDriveRoots` | (optional) | Drive label to absolute path mapping for Linux path resolution in progress links (e.g. `{ "content": "/opt/jeeves/content" }`). |
 | `reportChannel` | (optional) | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
 | `reportTarget` | (optional) | Channel/user ID to send progress messages to |
 | `tier2ScanLimit` | 50 | Max all-fresh candidates to scan per tick in Tier 2 invalidation |
@@ -275,24 +276,13 @@ properties.
 
 ### Prompt System
 
-The service ships with built-in default architect and critic prompts. Most
-installations need no prompt configuration at all.
-
-**Overriding defaults:** Set `defaultArchitect` and/or `defaultCritic` in the
-config to replace the built-in prompts. Supports `@file:` references resolved
-relative to the config file's directory:
-
-```json
-{
-  "defaultArchitect": "@file:jeeves-meta/prompts/architect.md",
-  "defaultCritic": "@file:jeeves-meta/prompts/critic.md"
-}
-```
+The service ships with built-in default architect and critic prompts. Prompts
+ship with the package and cannot be overridden via config.
 
 **Per-meta overrides:** Set `_architect` or `_critic` directly in a `meta.json`
 to override the defaults for that specific entity.
 
-**Template variables:** All prompts (default, config-overridden, and per-meta)
+**Template variables:** All prompts (built-in and per-meta)
 are compiled as Handlebars templates at synthesis time with access to:
 
 - `{{config.maxLines}}`, `{{config.architectEvery}}`, etc.
@@ -306,19 +296,20 @@ prompt is compiled.
 
 ### Minimal Config Example
 
-A minimum viable config file requires only `watcherUrl`:
+A minimum viable config file requires `watcherUrl`, `metaProperty`, and `metaArchiveProperty`:
 
 ```json
 {
   "watcherUrl": "http://localhost:1936",
   "gatewayUrl": "http://127.0.0.1:18789",
-  "gatewayApiKey": "your-api-key"
+  "gatewayApiKey": "your-api-key",
+  "metaProperty": { "_meta": "current" },
+  "metaArchiveProperty": { "_meta": "archive" }
 }
 ```
 
 All other fields use sensible defaults (port 1938, schedule every 30 min,
-depth weight 0.5, built-in prompts, etc). Add `reportChannel`, `metaProperty`,
-`logging`, etc. as needed.
+depth weight 0.5, built-in prompts, etc). Add `reportChannel`, `logging`, etc. as needed.
 
 ### Adding New Metas
 
@@ -414,8 +405,6 @@ restart-required fields:
 - `watcherUrl` — watcher service URL
 - `gatewayUrl` — OpenClaw gateway URL
 - `gatewayApiKey` — gateway authentication key
-- `defaultArchitect` — architect system prompt
-- `defaultCritic` — critic system prompt
 
 Edit the config file and save; the service detects changes via `fs.watchFile`.
 When a restart-required field changes, the service logs a warning but the
@@ -461,14 +450,11 @@ Before the synthesis engine can operate:
    - Verify: `curl http://localhost:6333/healthz`
 
 4. **Config file** must exist at the path specified by `JEEVES_META_CONFIG`
-   - Must contain valid `watcherUrl`
-   - `defaultArchitect` and `defaultCritic` are optional (built-in defaults
-     ship with the package). Set them only to override the defaults.
+   - Must contain valid `watcherUrl`, `metaProperty`, and `metaArchiveProperty`
+   - Built-in architect and critic prompts ship with the package; no prompt
+     configuration is required
 
-5. **Prompt files** must exist only if using `@file:` references in config
-   - Not needed if using the built-in defaults (most installations)
-
-6. **`.meta/` directories** must exist and be within paths the watcher indexes
+5. **`.meta/` directories** must exist and be within paths the watcher indexes
    - Seed new metas: `jeeves-meta seed <path>`
 
 ### Installation
@@ -700,12 +686,11 @@ not yet indexed new files
 - First-run quality is lower — the feedback loop needs 2-3 cycles to calibrate.
 - Changing `metaProperty` requires both a meta service restart AND a watcher reindex.
   The service restart re-registers virtual rules; the reindex retags existing points.
-- `defaultArchitect`/`defaultCritic` are optional — built-in defaults ship with
-  the package. The `@file:` prefix (when used) is resolved relative to the config
-  file's directory, not the working directory.
-- All prompts are compiled as Handlebars templates. Avoid using `{{` in prompt
-  overrides unless you intend template variable resolution. Escape with `\{{`
-  for literal double-braces.
+- Built-in architect and critic prompts ship with the package and cannot be
+  overridden via config.
+- All prompts (built-in and per-meta `_architect`/`_critic`) are compiled as
+  Handlebars templates. Avoid using `{{` in prompt text unless you intend
+  template variable resolution. Escape with `\{{` for literal double-braces.
 - The synthesis queue is single-threaded with three layers: `current` (the
   running phase), `overrides` (explicitly triggered entries, highest priority),
   and `automatic` (scheduler-computed candidates). Override entries are

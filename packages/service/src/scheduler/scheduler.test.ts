@@ -28,8 +28,6 @@ function createTestConfig() {
     maxArchive: 20,
     maxLines: 500,
     thinking: 'low',
-    defaultArchitect: 'You are the architect...',
-    defaultCritic: 'You are the critic...',
     skipUnchanged: true,
     metaProperty: { _meta: 'current' },
     metaArchiveProperty: { _meta: 'archive' },
