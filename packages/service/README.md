@@ -19,7 +19,7 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Virtual rule registration** — registers 3 watcher inference rules at startup with retry
 - **Progress reporting** — real-time synthesis events via gateway channel messages
 - **Graceful shutdown** — stop scheduler, release locks, close server
-- **Built-in prompts** — default architect and critic prompts ship with the package; optional config overrides via `@file:` or inline strings
+- **Built-in prompts** — default architect and critic prompts ship with the package
 - **Handlebars templates** — prompts compiled with `{ config, meta, scope }` context; architect can write template expressions into builder briefs
 - **Config hot-reload** — all synthesis parameters reload without restart; restart-required fields (port, URLs) warn on change
 - **Auto-seed policy** — config-driven declarative `.meta/` creation via `autoSeed` rules

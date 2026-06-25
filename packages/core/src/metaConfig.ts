@@ -28,22 +28,14 @@ export const metaConfigSchema = z.object({
   /** Thinking level for spawned synthesis sessions. */
   thinking: z.string().default('low'),
 
-  /** Resolved architect system prompt text. Falls back to built-in default. */
-  defaultArchitect: z.string().optional(),
-
-  /** Resolved critic system prompt text. Falls back to built-in default. */
-  defaultCritic: z.string().optional(),
-
   /** Skip unchanged candidates, bump _generatedAt. */
   skipUnchanged: z.boolean().default(true),
 
-  /** Watcher metadata properties applied to live .meta/meta.json files. */
-  metaProperty: z.record(z.string(), z.unknown()).default({ _meta: 'current' }),
+  /** Watcher metadata properties applied to live .meta/meta.json files. No default — set by installer. */
+  metaProperty: z.record(z.string(), z.unknown()),
 
-  /** Watcher metadata properties applied to archive snapshots. */
-  metaArchiveProperty: z
-    .record(z.string(), z.unknown())
-    .default({ _meta: 'archive' }),
+  /** Watcher metadata properties applied to archive snapshots. No default — set by installer. */
+  metaArchiveProperty: z.record(z.string(), z.unknown()),
 });
 
 /** Inferred type for core meta configuration. */

@@ -15,8 +15,6 @@ function makeConfig(overrides: Partial<MetaConfig> = {}): MetaConfig {
     watcherUrl: 'http://localhost:1936',
     gatewayUrl: 'http://localhost:3000',
     gatewayApiKey: 'test',
-    defaultArchitect: 'architect prompt',
-    defaultCritic: 'critic prompt',
     architectEvery: 5,
     thinking: 'low',
     maxLines: 500,

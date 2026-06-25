@@ -30,8 +30,6 @@ function makeConfig(): ServiceConfig {
     maxArchive: 20,
     maxLines: 500,
     thinking: 'low',
-    defaultArchitect: 'a',
-    defaultCritic: 'c',
     skipUnchanged: true,
     metaProperty: {},
     metaArchiveProperty: {},

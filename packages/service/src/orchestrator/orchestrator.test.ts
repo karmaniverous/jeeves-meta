@@ -1,4 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+// Mock prompts so tests use stable, known template expressions.
+vi.mock('../prompts/index.js', () => ({
+  DEFAULT_ARCHITECT_PROMPT:
+    'You are an architect. Every {{config.architectEvery}} cycles, ' +
+    '{{scope.fileCount}} files, depth {{meta._depth}}. ' +
+    'Escaped: \\{{config.architectEvery}}.',
+  DEFAULT_CRITIC_PROMPT: 'You are a critic. Max lines: {{config.maxLines}}.',
+}));
 
 import type { MetaContext } from '../interfaces/index.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
@@ -21,8 +30,6 @@ const sampleConfig: MetaConfig = {
   maxArchive: 20,
   maxLines: 500,
   thinking: 'low',
-  defaultArchitect: 'You are an architect. Analyze the data shape.',
-  defaultCritic: 'You are a critic. Evaluate the synthesis.',
   skipUnchanged: true,
   metaProperty: { domains: ['meta'] },
   metaArchiveProperty: { domains: ['meta-archive'] },
@@ -50,7 +57,7 @@ const sampleCtx: MetaContext = {
 };
 
 describe('buildArchitectTask', () => {
-  it('includes scope, steer, previous content, previous feedback, and child metas', () => {
+  it('includes built-in prompt, scope, steer, previous content, previous feedback, and child metas', () => {
     const task = buildArchitectTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('You are an architect');
     expect(task).toContain('/test/a.md');
@@ -60,7 +67,7 @@ describe('buildArchitectTask', () => {
     expect(task).toContain('Child synthesis content');
   });
 
-  it('ignores meta._architect snapshot and uses config default', () => {
+  it('ignores meta._architect snapshot and always uses DEFAULT_ARCHITECT_PROMPT', () => {
     const meta: MetaJson = {
       ...sampleMeta,
       _architect: 'Stale snapshot prompt',
@@ -68,6 +75,18 @@ describe('buildArchitectTask', () => {
     const task = buildArchitectTask(sampleCtx, meta, sampleConfig);
     expect(task).not.toContain('Stale snapshot prompt');
     expect(task).toContain('You are an architect');
+  });
+
+  it('includes IMPORTANT sub-agent prohibition in builder task output format', () => {
+    const task = buildBuilderTask(
+      sampleCtx,
+      { ...sampleMeta, _builder: 'brief' },
+      sampleConfig,
+    );
+    expect(task).toContain('Do not call sessions_spawn or sessions_yield');
+    expect(task).toContain(
+      'Do not attempt to parallelize work by spawning sub-agents',
+    );
   });
 });
 
@@ -115,7 +134,7 @@ describe('buildBuilderTask', () => {
 });
 
 describe('buildCriticTask', () => {
-  it('includes system prompt, content to evaluate, and scope', () => {
+  it('includes built-in critic prompt, content to evaluate, and steer', () => {
     const task = buildCriticTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('You are a critic');
     expect(task).toContain('Previous synthesis');
@@ -124,51 +143,36 @@ describe('buildCriticTask', () => {
 });
 
 describe('Handlebars template compilation in prompts', () => {
-  it('resolves config values in architect prompt via {{config.*}}', () => {
-    const configWithTemplate: MetaConfig = {
-      ...sampleConfig,
-      defaultArchitect:
-        'Every {{config.architectEvery}} cycles. Max {{config.maxLines}} lines.',
-    };
-    const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
+  // Prompts are mocked at module level (vi.mock above) with template expressions.
+  // These tests verify that Handlebars compilation resolves those expressions.
+
+  it('resolves {{config.*}} values in DEFAULT_ARCHITECT_PROMPT', () => {
+    // Mock prompt: '...Every {{config.architectEvery}} cycles...'
+    const task = buildArchitectTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('Every 10 cycles');
-    expect(task).toContain('Max 500 lines');
   });
 
-  it('resolves scope values via {{scope.*}}', () => {
-    const configWithTemplate: MetaConfig = {
-      ...sampleConfig,
-      defaultArchitect:
-        'Files: {{scope.fileCount}}, delta: {{scope.deltaCount}}',
-    };
-    const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
-    expect(task).toContain('Files: 3');
-    expect(task).toContain('delta: 1');
+  it('resolves {{scope.*}} values in DEFAULT_ARCHITECT_PROMPT', () => {
+    // Mock prompt: '...{{scope.fileCount}} files...'
+    const task = buildArchitectTask(sampleCtx, sampleMeta, sampleConfig);
+    expect(task).toContain('3 files');
   });
 
-  it('resolves meta values via {{meta.*}}', () => {
-    const meta: MetaJson = { ...sampleMeta, _depth: 3, _emphasis: 2 };
-    const configWithTemplate: MetaConfig = {
-      ...sampleConfig,
-      defaultArchitect: 'Depth: {{meta._depth}}, emphasis: {{meta._emphasis}}',
-    };
-    const task = buildArchitectTask(sampleCtx, meta, configWithTemplate);
-    expect(task).toContain('Depth: 3');
-    expect(task).toContain('emphasis: 2');
+  it('resolves {{meta.*}} values in DEFAULT_ARCHITECT_PROMPT', () => {
+    // Mock prompt: '...depth {{meta._depth}}...'
+    const meta: MetaJson = { ...sampleMeta, _depth: 3 };
+    const task = buildArchitectTask(sampleCtx, meta, sampleConfig);
+    expect(task).toContain('depth 3');
   });
 
-  it('escaped \\{{...}} passes through as literal {{...}} for architect output', () => {
-    const configWithTemplate: MetaConfig = {
-      ...sampleConfig,
-      defaultArchitect: 'Use \\{{config.architectEvery}} in your brief.',
-    };
-    const task = buildArchitectTask(sampleCtx, sampleMeta, configWithTemplate);
-    // Architect sees literal {{config.architectEvery}} in its instructions
-    expect(task).toContain('Use {{config.architectEvery}} in your brief.');
+  it('escaped \\{{...}} in DEFAULT_ARCHITECT_PROMPT passes through as literal {{...}}', () => {
+    // Mock prompt: '...Escaped: \\{{config.architectEvery}}...'
+    const task = buildArchitectTask(sampleCtx, sampleMeta, sampleConfig);
+    expect(task).toContain('Escaped: {{config.architectEvery}}');
   });
 
-  it('architect-written template expressions resolve in builder prompt', () => {
-    // Architect wrote {{config.architectEvery}} into _builder
+  it('architect-written template expressions in _builder resolve in builder prompt', () => {
+    // Architect wrote {{config.architectEvery}} into _builder brief
     const meta: MetaJson = {
       ...sampleMeta,
       _builder: 'You have {{config.architectEvery}} cycles to complete.',
@@ -179,26 +183,19 @@ describe('Handlebars template compilation in prompts', () => {
     expect(task).not.toContain('{{config.architectEvery}}');
   });
 
-  it('template compilation gracefully handles invalid expressions', () => {
-    const configWithBadTemplate: MetaConfig = {
-      ...sampleConfig,
-      defaultArchitect: 'Valid text with {{#if broken',
+  it('invalid Handlebars expression in _builder does not throw (graceful fallback)', () => {
+    const meta: MetaJson = {
+      ...sampleMeta,
+      _builder: 'Valid text with {{#if broken',
     };
-    // Should not throw — returns original text on compilation failure
-    const task = buildArchitectTask(
-      sampleCtx,
-      sampleMeta,
-      configWithBadTemplate,
-    );
-    expect(task).toContain('Valid text with');
+    // Should not throw — compileTemplate returns original text on failure
+    const task = buildBuilderTask(sampleCtx, meta, sampleConfig);
+    expect(task).toContain('Valid text with {{#if broken');
   });
 
-  it('critic prompt also resolves template variables', () => {
-    const configWithTemplate: MetaConfig = {
-      ...sampleConfig,
-      defaultCritic: 'Max lines: {{config.maxLines}}',
-    };
-    const task = buildCriticTask(sampleCtx, sampleMeta, configWithTemplate);
+  it('resolves {{config.*}} in DEFAULT_CRITIC_PROMPT', () => {
+    // Mock prompt: '...Max lines: {{config.maxLines}}...'
+    const task = buildCriticTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('Max lines: 500');
   });
 });
@@ -283,32 +280,33 @@ describe('parseBuilderOutput', () => {
         topics: ['a', 'b'],
       }),
     );
-    expect(out.content).toBe('# Synthesis');
-    expect(out.fields).toEqual({ topics: ['a', 'b'] });
+    expect(out).not.toBeNull();
+    expect(out!.content).toBe('# Synthesis');
+    expect(out!.fields).toEqual({ topics: ['a', 'b'] });
   });
 
   it('handles markdown-fenced JSON', () => {
     const out = parseBuilderOutput('```json\n{"_content": "hi"}\n```');
-    expect(out.content).toBe('hi');
+    expect(out).not.toBeNull();
+    expect(out!.content).toBe('hi');
   });
 
-  it('treats non-JSON output as plain content', () => {
+  it('returns null for non-JSON output (self-talk / plain text)', () => {
     const out = parseBuilderOutput('Just a narrative');
-    expect(out.content).toBe('Just a narrative');
-    expect(out.fields).toEqual({});
+    expect(out).toBeNull();
   });
 
-  it('strips trailing ANNOUNCE_SKIP from JSON output', () => {
+  it('strips trailing ANNOUNCE_SKIP from JSON output before parsing', () => {
     const out = parseBuilderOutput(
       JSON.stringify({ _content: '# Synthesis' }) + '\nANNOUNCE_SKIP',
     );
-    expect(out.content).toBe('# Synthesis');
+    expect(out).not.toBeNull();
+    expect(out!.content).toBe('# Synthesis');
   });
 
-  it('strips trailing ANNOUNCE_SKIP from plain text output', () => {
+  it('returns null for plain text with ANNOUNCE_SKIP (no JSON content)', () => {
     const out = parseBuilderOutput('Just narrative\nANNOUNCE_SKIP');
-    expect(out.content).toBe('Just narrative');
-    expect(out.fields).toEqual({});
+    expect(out).toBeNull();
   });
 
   it('extracts _state from JSON output', () => {
@@ -319,14 +317,16 @@ describe('parseBuilderOutput', () => {
         topics: ['a'],
       }),
     );
-    expect(out.content).toBe('# Progress');
-    expect(out.state).toEqual({ step: 2, pending: ['x'] });
-    expect(out.fields).toEqual({ topics: ['a'] });
+    expect(out).not.toBeNull();
+    expect(out!.content).toBe('# Progress');
+    expect(out!.state).toEqual({ step: 2, pending: ['x'] });
+    expect(out!.fields).toEqual({ topics: ['a'] });
   });
 
   it('does not set state when _state is absent', () => {
     const out = parseBuilderOutput(JSON.stringify({ _content: 'no state' }));
-    expect(out.state).toBeUndefined();
+    expect(out).not.toBeNull();
+    expect(out!.state).toBeUndefined();
   });
 });
 

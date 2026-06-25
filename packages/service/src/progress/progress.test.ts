@@ -140,6 +140,83 @@ describe('formatProgressEvent', () => {
       '✅ Completed: x/.meta/meta.json (unknown tokens / 2s)',
     );
   });
+
+  describe('serverDriveRoots (Linux path resolution)', () => {
+    const serverDriveRoots = { content: '/opt/jeeves/content' };
+    const base = 'http://localhost:1934';
+
+    it('resolves Linux path via serverDriveRoots for synthesis_start', () => {
+      const e: ProgressEvent = {
+        type: 'synthesis_start',
+        path: '/opt/jeeves/content/slack/general',
+      };
+      const result = formatProgressEvent(e, base, serverDriveRoots);
+      expect(result).toContain(
+        'http://localhost:1934/path/content/slack/general',
+      );
+    });
+
+    it('resolves Linux path via serverDriveRoots for synthesis_complete', () => {
+      const e: ProgressEvent = {
+        type: 'synthesis_complete',
+        path: '/opt/jeeves/content/slack/general',
+        tokens: 100,
+        durationMs: 3000,
+      };
+      const result = formatProgressEvent(e, base, serverDriveRoots);
+      expect(result).toContain(
+        'http://localhost:1934/path/content/slack/general/.meta/meta.json',
+      );
+    });
+
+    it('falls back to raw path when no roots match', () => {
+      const e: ProgressEvent = {
+        type: 'synthesis_start',
+        path: '/var/data/other/path',
+      };
+      const result = formatProgressEvent(e, base, serverDriveRoots);
+      // No matching root — falls back to normalized path
+      expect(result).toContain(
+        'http://localhost:1934/path/var/data/other/path',
+      );
+    });
+
+    it('resolves exact root match (no trailing relative path)', () => {
+      const e: ProgressEvent = {
+        type: 'synthesis_start',
+        path: '/opt/jeeves/content',
+      };
+      const result = formatProgressEvent(e, base, serverDriveRoots);
+      expect(result).toContain('http://localhost:1934/path/content');
+    });
+
+    it('prefers the longest matching root when roots overlap', () => {
+      const overlappingRoots = {
+        jeeves: '/opt/jeeves',
+        content: '/opt/jeeves/content',
+      };
+      const e: ProgressEvent = {
+        type: 'synthesis_start',
+        path: '/opt/jeeves/content/slack/general',
+      };
+      const result = formatProgressEvent(e, base, overlappingRoots);
+      // Must match "content" (longer root), not "jeeves"
+      expect(result).toContain(
+        'http://localhost:1934/path/content/slack/general',
+      );
+    });
+
+    it('does not affect Windows paths (drive letter takes priority)', () => {
+      const e: ProgressEvent = {
+        type: 'synthesis_start',
+        path: 'j:/domains/github/org',
+      };
+      const result = formatProgressEvent(e, base, serverDriveRoots);
+      expect(result).toContain(
+        'http://localhost:1934/path/j/domains/github/org',
+      );
+    });
+  });
 });
 
 describe('ProgressReporter', () => {

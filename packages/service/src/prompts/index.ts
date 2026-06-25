@@ -4,9 +4,6 @@
  * Prompts ship as .md files bundled into dist/prompts/ via rollup-plugin-copy.
  * Loaded at runtime relative to the compiled module location.
  *
- * Users can override via `defaultArchitect` / `defaultCritic` in the service
- * config. Most installations should use the built-in defaults.
- *
  * @module prompts
  */
 

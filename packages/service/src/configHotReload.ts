@@ -23,8 +23,6 @@ export const RESTART_REQUIRED_FIELDS = [
   'watcherUrl',
   'gatewayUrl',
   'gatewayApiKey',
-  'defaultArchitect',
-  'defaultCritic',
 ] as const;
 
 interface ConfigHotReloadRuntime {

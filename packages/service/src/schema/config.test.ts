@@ -4,8 +4,8 @@ import { metaConfigSchema, serviceConfigSchema } from './config.js';
 
 const validConfig = {
   watcherUrl: 'http://localhost:3456',
-  defaultArchitect: 'You are the architect...',
-  defaultCritic: 'You are the critic...',
+  metaProperty: { _meta: 'current' },
+  metaArchiveProperty: { _meta: 'archive' },
 };
 
 describe('metaConfigSchema', () => {
@@ -40,17 +40,23 @@ describe('metaConfigSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('accepts missing defaultArchitect and defaultCritic (optional, built-in defaults)', () => {
-    const partial = {
+  it('requires metaProperty — rejects config missing it', () => {
+    const result = metaConfigSchema.safeParse({
       watcherUrl: validConfig.watcherUrl,
-    };
-    const result = metaConfigSchema.safeParse(partial);
-    expect(result.success).toBe(true);
-    expect(result.data?.defaultArchitect).toBeUndefined();
-    expect(result.data?.defaultCritic).toBeUndefined();
+      metaArchiveProperty: { _meta: 'archive' },
+    });
+    expect(result.success).toBe(false);
   });
 
-  it('applies default metaProperty and metaArchiveProperty', () => {
+  it('requires metaArchiveProperty — rejects config missing it', () => {
+    const result = metaConfigSchema.safeParse({
+      watcherUrl: validConfig.watcherUrl,
+      metaProperty: { _meta: 'current' },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts explicit metaProperty and metaArchiveProperty', () => {
     const result = metaConfigSchema.safeParse(validConfig);
     expect(result.success).toBe(true);
     expect(result.data?.metaProperty).toEqual({ _meta: 'current' });

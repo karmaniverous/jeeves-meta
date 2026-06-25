@@ -100,12 +100,9 @@ export async function computeInvalidation(
   // corpus-wide synthesis storm (see #163).
   const architectChanged = isPromptStale(
     meta._architect,
-    config.defaultArchitect ?? DEFAULT_ARCHITECT_PROMPT,
+    DEFAULT_ARCHITECT_PROMPT,
   );
-  const criticChanged = isPromptStale(
-    meta._critic,
-    config.defaultCritic ?? DEFAULT_CRITIC_PROMPT,
-  );
+  const criticChanged = isPromptStale(meta._critic, DEFAULT_CRITIC_PROMPT);
   const effectiveSynthesisCount = meta._synthesisCount ?? 0;
 
   // _crossRefs declaration change

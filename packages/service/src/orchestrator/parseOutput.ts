@@ -42,12 +42,13 @@ export function parseArchitectOutput(output: string): string {
 /**
  * Parse builder output. The builder returns JSON with _content and optional fields.
  *
- * Attempts JSON parse first. If that fails, treats the entire output as _content.
+ * Attempts JSON extraction via multiple strategies. Returns null if all strategies fail
+ * (e.g. the output is plain text, self-talk, or a sub-agent delegation response).
  *
  * @param output - Raw subprocess output.
- * @returns Parsed builder output with content and structured fields.
+ * @returns Parsed builder output, or null if output is not valid builder JSON.
  */
-export function parseBuilderOutput(output: string): BuilderOutput {
+export function parseBuilderOutput(output: string): BuilderOutput | null {
   const trimmed = stripSentinel(output);
 
   // Strategy 1: Try to parse the entire output as JSON directly
@@ -75,8 +76,8 @@ export function parseBuilderOutput(output: string): BuilderOutput {
     if (result) return result;
   }
 
-  // Fallback: treat entire output as content
-  return { content: trimmed, fields: {} };
+  // All JSON strategies failed — not valid builder output
+  return null;
 }
 
 /** Try to parse a string as JSON and extract builder output fields. */

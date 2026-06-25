@@ -55,6 +55,13 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   /** Optional base URL for the service, used to construct entity links in progress reports. */
   serverBaseUrl: z.string().optional(),
 
+  /**
+   * Optional mapping of server drive labels to absolute filesystem paths.
+   * Used on Linux to resolve absolute paths to jeeves-server browse paths.
+   * Example: `{ "content": "/opt/jeeves/content" }`
+   */
+  serverDriveRoots: z.record(z.string(), z.string()).optional(),
+
   /** Interval in ms for periodic watcher health check. 0 = disabled. Default: 60000. */
   watcherHealthIntervalMs: z.number().int().min(0).default(60_000),
 

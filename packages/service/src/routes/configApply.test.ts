@@ -35,6 +35,8 @@ describe('POST /config/apply', () => {
         watcherUrl: 'http://localhost:3456',
         schedule: '*/30 * * * *',
         port: 1938,
+        metaProperty: { domains: ['meta'] },
+        metaArchiveProperty: { domains: ['meta-archive'] },
       }),
     );
 
