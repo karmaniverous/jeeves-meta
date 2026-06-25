@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- Batch resolve #204, #206, #207, #208
+
+### 💼 Other
+
+- Updated core
+## [0.13.2] - 2026-06-24
+
 ### 🚀 Features
 
 - Release 0.17.0 batch (#178, #185, #187, #188, #190, #191, #192, #193, #202, #203)
@@ -19,6 +28,10 @@ All notable changes to this project will be documented in this file.
 ### 🧪 Testing
 
 - Validate coverage and documentation sync
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.13.2
 ## [0.13.1] - 2026-06-23
 
 ### 🐛 Bug Fixes
