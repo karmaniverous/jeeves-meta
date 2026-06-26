@@ -9,6 +9,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_TEMPLATE_STRINGS } from './schema/config.js';
+
 // Mock the discovery module so listMetas is controllable
 vi.mock('./discovery/index.js', () => ({
   listMetas: vi.fn(),
@@ -43,14 +45,7 @@ function makeConfig(): ServiceConfig {
     stagingRetryDelayMs: 250,
     previewDeltaFilesCap: 50,
     serverUrl: 'http://127.0.0.1:1934',
-    templates: {
-      phaseStart:
-        ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
-      phaseEnd:
-        ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
-      phaseError:
-        ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
-    },
+    templates: { ...DEFAULT_TEMPLATE_STRINGS },
   };
 }
 

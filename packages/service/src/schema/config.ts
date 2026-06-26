@@ -14,6 +14,15 @@ import { z } from 'zod';
 
 export { type MetaConfig, metaConfigSchema };
 
+/** Default Handlebars template strings for progress reporting. Single source of truth. */
+export const DEFAULT_TEMPLATE_STRINGS = {
+  phaseStart: ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
+  phaseEnd:
+    ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
+  phaseError:
+    ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
+} as const;
+
 /** Zod schema for logging configuration. */
 const loggingSchema = z.object({
   /** Log level. */
@@ -66,30 +75,11 @@ export const serviceConfigSchema = metaConfigSchema.extend({
    */
   templates: z
     .object({
-      phaseStart: z
-        .string()
-        .default(
-          ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
-        ),
-      phaseEnd: z
-        .string()
-        .default(
-          ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
-        ),
-      phaseError: z
-        .string()
-        .default(
-          ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
-        ),
+      phaseStart: z.string().default(DEFAULT_TEMPLATE_STRINGS.phaseStart),
+      phaseEnd: z.string().default(DEFAULT_TEMPLATE_STRINGS.phaseEnd),
+      phaseError: z.string().default(DEFAULT_TEMPLATE_STRINGS.phaseError),
     })
-    .default(() => ({
-      phaseStart:
-        ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
-      phaseEnd:
-        ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
-      phaseError:
-        ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
-    })),
+    .default(() => ({ ...DEFAULT_TEMPLATE_STRINGS })),
 
   /** Interval in ms for periodic watcher health check. 0 = disabled. Default: 60000. */
   watcherHealthIntervalMs: z.number().int().min(0).default(60_000),

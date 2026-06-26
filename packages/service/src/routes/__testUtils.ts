@@ -16,6 +16,7 @@ import { vi } from 'vitest';
 import { MetaCache } from '../cache.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import { SynthesisQueue } from '../queue/index.js';
+import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
 import type { RouteDeps, ServiceStats } from './index.js';
 
 /** Default service config for tests. */
@@ -40,14 +41,7 @@ const DEFAULT_TEST_CONFIG: RouteDeps['config'] = {
   stagingRetryDelayMs: 250,
   previewDeltaFilesCap: 50,
   serverUrl: 'http://127.0.0.1:1934',
-  templates: {
-    phaseStart:
-      ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
-    phaseEnd:
-      ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
-    phaseError:
-      ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
-  },
+  templates: { ...DEFAULT_TEMPLATE_STRINGS },
 };
 
 /** Default service stats for tests. */

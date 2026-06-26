@@ -8,8 +8,11 @@
  * @module progress
  */
 
+import { fetchWithTimeout } from '@karmaniverous/jeeves';
 import Handlebars from 'handlebars';
 import type { Logger } from 'pino';
+
+import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
 
 export type ProgressPhase = 'architect' | 'builder' | 'critic';
 
@@ -59,22 +62,14 @@ export type ProgressReporterConfig = {
   templates?: Partial<TemplateStrings>;
 };
 
-const DEFAULT_TEMPLATES: TemplateStrings = {
-  phaseStart: ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
-  phaseEnd:
-    ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
-  phaseError:
-    ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
-};
-
 /** Compile raw template strings into Handlebars delegates. */
 function compileTemplates(
   raw: Partial<TemplateStrings> | undefined,
 ): CompiledTemplates {
   const merged: TemplateStrings = {
-    phaseStart: raw?.phaseStart ?? DEFAULT_TEMPLATES.phaseStart,
-    phaseEnd: raw?.phaseEnd ?? DEFAULT_TEMPLATES.phaseEnd,
-    phaseError: raw?.phaseError ?? DEFAULT_TEMPLATES.phaseError,
+    phaseStart: raw?.phaseStart ?? DEFAULT_TEMPLATE_STRINGS.phaseStart,
+    phaseEnd: raw?.phaseEnd ?? DEFAULT_TEMPLATE_STRINGS.phaseEnd,
+    phaseError: raw?.phaseError ?? DEFAULT_TEMPLATE_STRINGS.phaseError,
   };
   return {
     phaseStart: Handlebars.compile(merged.phaseStart),
@@ -94,13 +89,14 @@ function formatNumber(n: number): string {
  * On HTTP 200, uses publicUrl if present, otherwise prefixes serverUrl
  * to browseUrl. On any error or non-200 response, returns fsPath as-is.
  */
+/** Timeout for resolve-path API calls (ms). */
+const RESOLVE_PATH_TIMEOUT_MS = 3000;
+
 async function resolveLink(fsPath: string, serverUrl: string): Promise<string> {
   try {
     const url = new URL('/api/resolve-path', serverUrl);
     url.searchParams.set('fsPath', fsPath);
-    const res = await fetch(url.toString(), {
-      signal: AbortSignal.timeout(3000),
-    });
+    const res = await fetchWithTimeout(url.toString(), RESOLVE_PATH_TIMEOUT_MS);
     if (!res.ok) return fsPath;
     const data = (await res.json()) as {
       browsePath?: string;
@@ -209,21 +205,16 @@ export class ProgressReporter {
   private readonly config: ProgressReporterConfig;
   private readonly logger: Logger;
   private templates: CompiledTemplates;
+  /** Snapshot of template source strings used to compile `this.templates`. */
+  private lastTemplateSource: string;
   private readonly serverUrl: string;
 
   public constructor(config: ProgressReporterConfig, logger: Logger) {
     this.config = config;
     this.logger = logger;
     this.templates = compileTemplates(config.templates);
+    this.lastTemplateSource = JSON.stringify(config.templates);
     this.serverUrl = config.serverUrl ?? 'http://127.0.0.1:1934';
-  }
-
-  /**
-   * Recompile templates from new config (supports hot-reload).
-   * Call when the template strings change at runtime.
-   */
-  public updateTemplates(templates: Partial<TemplateStrings>): void {
-    this.templates = compileTemplates(templates);
   }
 
   public async report(event: ProgressEvent): Promise<void> {
@@ -231,6 +222,15 @@ export class ProgressReporter {
     // Legacy mode: reportChannel alone acts as the target (backward compatible).
     const target = this.config.reportTarget ?? this.config.reportChannel;
     if (!target) return;
+
+    // Detect template hot-reload: config.templates may be mutated by
+    // applyHotReloadedConfig; recompile when the source strings change.
+    const currentSource = JSON.stringify(this.config.templates);
+    if (currentSource !== this.lastTemplateSource) {
+      this.templates = compileTemplates(this.config.templates);
+      this.lastTemplateSource = currentSource;
+      this.logger.info('Progress templates recompiled (hot-reload)');
+    }
 
     let message: string;
     try {

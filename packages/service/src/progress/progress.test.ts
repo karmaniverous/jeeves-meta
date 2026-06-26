@@ -1,8 +1,8 @@
-// Helpers to compile default templates for tests
 import Handlebars from 'handlebars';
 import type { Logger } from 'pino';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
 import {
   type ProgressEvent,
   ProgressReporter,
@@ -14,21 +14,15 @@ function makeCompiledTemplates(overrides?: {
   phaseEnd?: string;
   phaseError?: string;
 }) {
-  const defaults = {
-    phaseStart:
-      ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
-    phaseEnd:
-      ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
-    phaseError:
-      ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
-  };
   return {
     phaseStart: Handlebars.compile(
-      overrides?.phaseStart ?? defaults.phaseStart,
+      overrides?.phaseStart ?? DEFAULT_TEMPLATE_STRINGS.phaseStart,
     ),
-    phaseEnd: Handlebars.compile(overrides?.phaseEnd ?? defaults.phaseEnd),
+    phaseEnd: Handlebars.compile(
+      overrides?.phaseEnd ?? DEFAULT_TEMPLATE_STRINGS.phaseEnd,
+    ),
     phaseError: Handlebars.compile(
-      overrides?.phaseError ?? defaults.phaseError,
+      overrides?.phaseError ?? DEFAULT_TEMPLATE_STRINGS.phaseError,
     ),
   };
 }
