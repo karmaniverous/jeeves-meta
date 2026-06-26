@@ -40,6 +40,15 @@ function createTestConfig() {
     stagingRetries: 10,
     stagingRetryDelayMs: 250,
     previewDeltaFilesCap: 50,
+    serverUrl: 'http://127.0.0.1:1934',
+    templates: {
+      phaseStart:
+        ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
+      phaseEnd:
+        ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
+      phaseError:
+        ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
+    },
   };
 }
 

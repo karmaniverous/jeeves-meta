@@ -141,23 +141,12 @@ export async function startService(
       // Track whether synthesis_start has been emitted (deferred until
       // a phase actually begins, avoiding orphan "Started" messages
       // when the meta is skipped/locked/fresh). See #165.
-      let synthesisStartEmitted = false;
-
       const result = await orchestratePhase(
         config,
         executor,
         watcher,
         path,
         async (evt) => {
-          // Emit synthesis_start on first phase_start (deferred guard)
-          if (evt.type === 'phase_start' && !synthesisStartEmitted) {
-            synthesisStartEmitted = true;
-            await progress.report({
-              type: 'synthesis_start',
-              path: ownerPath,
-            });
-          }
-
           // Wire current-phase tracking for GET /queue and POST /synthesize/abort
           if (evt.type === 'phase_start' && evt.phase) {
             queue.setCurrentPhase(ownerPath, evt.phase);
@@ -210,19 +199,8 @@ export async function startService(
         scheduler.resetBackoff();
       }
 
-      // Emit synthesis_complete only on full-cycle completion
-      if (result.cycleComplete) {
-        const updatedMeta = result.phaseResult?.updatedMeta;
-        const tokens = updatedMeta
-          ? computeCycleTokens(updatedMeta)
-          : undefined;
-        await progress.report({
-          type: 'synthesis_complete',
-          path: ownerPath,
-          durationMs,
-          tokens,
-        });
-      }
+      // Note: synthesis_complete is no longer emitted; the phaseEnd template
+      // for the final critic phase serves as the completion signal (#129).
     } catch (err) {
       stats.totalErrors++;
       const message = err instanceof Error ? err.message : String(err);

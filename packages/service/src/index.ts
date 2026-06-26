@@ -107,11 +107,12 @@ export {
 
 // ── Progress ──
 export {
-  formatProgressEvent,
   type ProgressEvent,
   type ProgressPhase,
   ProgressReporter,
   type ProgressReporterConfig,
+  renderProgressEvent,
+  type TemplateStrings,
 } from './progress/index.js';
 
 // ── Scheduling ──

@@ -1,28 +1,40 @@
 /**
  * Progress reporting via OpenClaw gateway `/tools/invoke` → `message` tool.
  *
+ * Progress events are rendered using Handlebars templates. Owner-path links
+ * are resolved via the jeeves-server resolve-path API, with graceful
+ * fallback to raw filesystem paths when the server is unreachable.
+ *
  * @module progress
  */
 
+import Handlebars from 'handlebars';
 import type { Logger } from 'pino';
-
-import { normalizePath } from '../normalizePath.js';
 
 export type ProgressPhase = 'architect' | 'builder' | 'critic';
 
 export type ProgressEvent = {
-  type:
-    | 'synthesis_start'
-    | 'phase_start'
-    | 'phase_complete'
-    | 'synthesis_complete'
-    | 'error';
+  type: 'phase_start' | 'phase_complete' | 'error';
   /** Owner path (not .meta path) of the entity being synthesized. */
   path: string;
   phase?: ProgressPhase;
   tokens?: number;
   durationMs?: number;
   error?: string;
+};
+
+/** Compiled Handlebars templates for the three progress event types. */
+type CompiledTemplates = {
+  phaseStart: HandlebarsTemplateDelegate;
+  phaseEnd: HandlebarsTemplateDelegate;
+  phaseError: HandlebarsTemplateDelegate;
+};
+
+/** Raw (string) template config — mirrors the schema definition. */
+export type TemplateStrings = {
+  phaseStart: string;
+  phaseEnd: string;
+  phaseError: string;
 };
 
 export type ProgressReporterConfig = {
@@ -37,181 +49,149 @@ export type ProgressReporterConfig = {
   reportChannel?: string;
   /** Channel/user ID to send messages to. Takes priority over reportChannel as target. */
   reportTarget?: string;
-  /** Optional base URL for the service, used to construct entity links. */
-  serverBaseUrl?: string;
   /**
-   * Optional mapping of server drive labels to absolute filesystem paths.
-   * Used on Linux to resolve absolute paths to jeeves-server browse paths.
-   * Example: `{ "content": "/opt/jeeves/content" }`
+   * URL of the local jeeves-server instance, used to resolve filesystem paths
+   * to browse links via the resolve-path API.
+   * Default: http://127.0.0.1:1934
    */
-  serverDriveRoots?: Record<string, string>;
+  serverUrl?: string;
+  /** Handlebars template strings for each progress event type. */
+  templates?: Partial<TemplateStrings>;
 };
+
+const DEFAULT_TEMPLATES: TemplateStrings = {
+  phaseStart: ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
+  phaseEnd:
+    ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
+  phaseError:
+    ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
+};
+
+/** Compile raw template strings into Handlebars delegates. */
+function compileTemplates(
+  raw: Partial<TemplateStrings> | undefined,
+): CompiledTemplates {
+  const merged: TemplateStrings = {
+    phaseStart: raw?.phaseStart ?? DEFAULT_TEMPLATES.phaseStart,
+    phaseEnd: raw?.phaseEnd ?? DEFAULT_TEMPLATES.phaseEnd,
+    phaseError: raw?.phaseError ?? DEFAULT_TEMPLATES.phaseError,
+  };
+  return {
+    phaseStart: Handlebars.compile(merged.phaseStart),
+    phaseEnd: Handlebars.compile(merged.phaseEnd),
+    phaseError: Handlebars.compile(merged.phaseError),
+  };
+}
 
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-function formatTokens(tokens: number | undefined): string {
-  return tokens !== undefined
-    ? formatNumber(tokens) + ' tokens'
-    : 'unknown tokens';
-}
-
-function formatSeconds(durationMs: number): string {
-  const seconds = durationMs / 1000;
-  return Math.round(seconds).toString() + 's';
-}
-
-function titleCasePhase(phase: ProgressPhase): string {
-  return phase.charAt(0).toUpperCase() + phase.slice(1);
-}
-
 /**
- * URL-encode each path segment individually so that spaces and special
- * characters are safe while preserving the `/` separators.
- */
-function encodePathSegments(p: string): string {
-  return p
-    .split('/')
-    .map((seg) => encodeURIComponent(seg))
-    .join('/');
-}
-
-/**
- * Resolve a filesystem path to a jeeves-server browse path segment.
+ * Resolve a filesystem path to a browse URL via the jeeves-server
+ * resolve-path API. Returns the raw path as fallback on any failure.
  *
- * - Windows: `j:/domains/foo` → `/j/domains/foo` (drive-letter transform).
- * - Linux with serverDriveRoots: `/opt/jeeves/content/slack` + roots
- *   `{ content: "/opt/jeeves/content" }` → `/content/slack`.
- * - Linux without serverDriveRoots: returns the normalized path unchanged
- *   (browse link will be invalid, but this is the pre-existing behavior).
+ * On HTTP 200, uses publicUrl if present, otherwise prefixes serverUrl
+ * to browseUrl. On any error or non-200 response, returns fsPath as-is.
  */
-function resolveServerPath(
-  path: string,
-  serverDriveRoots?: Record<string, string>,
-): string {
-  const normalized = normalizePath(path);
-
-  // Windows: drive letter present — use existing transform
-  if (/^[A-Za-z]:/.test(normalized)) {
-    return normalized.replace(/^([A-Za-z]):/, '/$1');
-  }
-
-  // Linux: attempt serverDriveRoots resolution (longest/most-specific root wins)
-  if (serverDriveRoots) {
-    const sorted = Object.entries(serverDriveRoots)
-      .map(
-        ([label, root]) =>
-          [label, normalizePath(root).replace(/\/+$/, '')] as const,
-      )
-      .sort((a, b) => b[1].length - a[1].length);
-
-    for (const [label, normalizedRoot] of sorted) {
-      if (
-        normalized === normalizedRoot ||
-        normalized.startsWith(normalizedRoot + '/')
-      ) {
-        const relative = normalized
-          .slice(normalizedRoot.length)
-          .replace(/^\//, '');
-        return `/${label}${relative ? '/' + relative : ''}`;
-      }
+async function resolveLink(fsPath: string, serverUrl: string): Promise<string> {
+  try {
+    const url = new URL('/api/resolve-path', serverUrl);
+    url.searchParams.set('fsPath', fsPath);
+    const res = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return fsPath;
+    const data = (await res.json()) as {
+      browsePath?: string;
+      browseUrl?: string;
+      publicUrl?: string;
+    };
+    if (data.publicUrl) return data.publicUrl;
+    if (data.browseUrl) {
+      const base = serverUrl.replace(/\/+$/, '');
+      return base + data.browseUrl;
     }
+    return fsPath;
+  } catch {
+    return fsPath;
   }
-
-  // Fallback: no drive roots configured or no match — return as-is
-  return normalized;
 }
 
-/** Build a link (or plain path) to the owner directory. */
-function buildDirectoryLink(
-  path: string,
-  serverBaseUrl?: string,
-  serverDriveRoots?: Record<string, string>,
-): string {
-  const resolved = resolveServerPath(path, serverDriveRoots);
-  const encoded = encodePathSegments(resolved);
-
-  if (!serverBaseUrl) return resolved;
-
-  const base = serverBaseUrl.replace(/\/+$/, '');
-  return `${base}/path${encoded}`;
+/** Resolve browse links for both the owner directory and its meta.json. */
+async function resolveLinks(
+  ownerPath: string,
+  serverUrl: string,
+): Promise<{ dirLink: string; metaLink: string }> {
+  const dirLink = await resolveLink(ownerPath, serverUrl);
+  // Derive metaLink by appending /.meta/meta.json to the resolved dir link
+  const metaLink = dirLink.replace(/\/+$/, '') + '/.meta/meta.json';
+  return { dirLink, metaLink };
 }
 
-/** Build a link (or plain path) to the entity's meta.json output file. */
-function buildMetaJsonLink(
-  path: string,
-  serverBaseUrl?: string,
-  serverDriveRoots?: Record<string, string>,
-): string {
-  const resolved = resolveServerPath(path, serverDriveRoots);
-  const metaJsonPath = `${resolved}/.meta/meta.json`;
-  const encoded = encodePathSegments(metaJsonPath);
-
-  if (!serverBaseUrl) return metaJsonPath;
-
-  const base = serverBaseUrl.replace(/\/+$/, '');
-  return `${base}/path${encoded}`;
+/** Data bag passed to every Handlebars template. */
+interface TemplateData {
+  dirPath: string;
+  metaPath: string;
+  dirLink: string;
+  metaLink: string;
+  phase: string;
+  seconds?: string;
+  tokens?: string;
+  error?: string;
 }
 
-export function formatProgressEvent(
+/**
+ * Render the appropriate template for a progress event.
+ *
+ * @param event - The progress event to render.
+ * @param templates - Compiled Handlebars templates.
+ * @param serverUrl - jeeves-server URL for resolve-path API.
+ * @returns Rendered message string.
+ */
+export async function renderProgressEvent(
   event: ProgressEvent,
-  serverBaseUrl?: string,
-  serverDriveRoots?: Record<string, string>,
-): string {
-  switch (event.type) {
-    case 'synthesis_start': {
-      const dirLink = buildDirectoryLink(
-        event.path,
-        serverBaseUrl,
-        serverDriveRoots,
-      );
-      return `🔬 Started meta synthesis: ${dirLink}`;
-    }
+  templates: CompiledTemplates,
+  serverUrl: string,
+): Promise<string> {
+  const ownerPath = event.path;
+  const metaPath = ownerPath.replace(/\/+$/, '') + '/.meta/meta.json';
+  const phase = (event.phase ?? 'unknown').toUpperCase();
+  const { dirLink, metaLink } = await resolveLinks(ownerPath, serverUrl);
 
-    case 'phase_start': {
-      if (!event.phase) {
-        return '  ⚙️ Phase started';
-      }
-      return `  ⚙️ ${titleCasePhase(event.phase)} phase started`;
-    }
+  const base: TemplateData = {
+    dirPath: ownerPath,
+    metaPath,
+    dirLink,
+    metaLink,
+    phase,
+  };
+
+  switch (event.type) {
+    case 'phase_start':
+      return templates.phaseStart(base);
 
     case 'phase_complete': {
-      const phase = event.phase ? titleCasePhase(event.phase) : 'Phase';
-      const tokenStr = formatTokens(event.tokens);
-      const duration =
-        event.durationMs !== undefined ? formatSeconds(event.durationMs) : '0s';
-      return `  ✅ ${phase} complete (${tokenStr} / ${duration})`;
-    }
-
-    case 'synthesis_complete': {
-      const metaLink = buildMetaJsonLink(
-        event.path,
-        serverBaseUrl,
-        serverDriveRoots,
-      );
-      const tokenStr = formatTokens(event.tokens);
-      const duration =
+      const seconds =
         event.durationMs !== undefined
-          ? formatSeconds(event.durationMs)
-          : '0.0s';
-      return `✅ Completed: ${metaLink} (${tokenStr} / ${duration})`;
+          ? String(Math.round(event.durationMs / 1000))
+          : '0';
+      const tokens =
+        event.tokens !== undefined ? formatNumber(event.tokens) : 'unknown';
+      return templates.phaseEnd({ ...base, seconds, tokens });
     }
 
     case 'error': {
-      const dirLink = buildDirectoryLink(
-        event.path,
-        serverBaseUrl,
-        serverDriveRoots,
-      );
-      const phase = event.phase ? `${titleCasePhase(event.phase)} ` : '';
-      const error = event.error ?? 'Unknown error';
-      return `❌ Synthesis failed at ${phase}phase: ${dirLink}\n   Error: ${error}`;
+      const seconds =
+        event.durationMs !== undefined
+          ? String(Math.round(event.durationMs / 1000))
+          : '0';
+      const errorMsg = event.error ?? 'Unknown error';
+      return templates.phaseError({ ...base, seconds, error: errorMsg });
     }
 
-    default: {
+    default:
       return 'Unknown progress event';
-    }
   }
 }
 
@@ -228,10 +208,22 @@ type GatewayInvokeRequest = {
 export class ProgressReporter {
   private readonly config: ProgressReporterConfig;
   private readonly logger: Logger;
+  private templates: CompiledTemplates;
+  private readonly serverUrl: string;
 
   public constructor(config: ProgressReporterConfig, logger: Logger) {
     this.config = config;
     this.logger = logger;
+    this.templates = compileTemplates(config.templates);
+    this.serverUrl = config.serverUrl ?? 'http://127.0.0.1:1934';
+  }
+
+  /**
+   * Recompile templates from new config (supports hot-reload).
+   * Call when the template strings change at runtime.
+   */
+  public updateTemplates(templates: Partial<TemplateStrings>): void {
+    this.templates = compileTemplates(templates);
   }
 
   public async report(event: ProgressEvent): Promise<void> {
@@ -240,11 +232,18 @@ export class ProgressReporter {
     const target = this.config.reportTarget ?? this.config.reportChannel;
     if (!target) return;
 
-    const message = formatProgressEvent(
-      event,
-      this.config.serverBaseUrl,
-      this.config.serverDriveRoots,
-    );
+    let message: string;
+    try {
+      message = await renderProgressEvent(
+        event,
+        this.templates,
+        this.serverUrl,
+      );
+    } catch (err) {
+      this.logger.warn({ err }, 'Progress event rendering failed');
+      return;
+    }
+
     const url = new URL('/tools/invoke', this.config.gatewayUrl);
 
     const args: GatewayInvokeRequest['args'] = {

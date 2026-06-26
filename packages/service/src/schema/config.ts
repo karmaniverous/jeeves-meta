@@ -62,6 +62,45 @@ export const serviceConfigSchema = metaConfigSchema.extend({
    */
   serverDriveRoots: z.record(z.string(), z.string()).optional(),
 
+  /**
+   * URL of the local jeeves-server instance, used by the ProgressReporter
+   * to resolve filesystem paths to browse links via the resolve-path API.
+   * Default: http://127.0.0.1:1934
+   */
+  serverUrl: z.string().default('http://127.0.0.1:1934'),
+
+  /**
+   * Handlebars templates for progress reporting messages.
+   * Each template receives a standard set of data keys (dirLink, metaLink,
+   * phase, tokens, seconds, error).
+   */
+  templates: z
+    .object({
+      phaseStart: z
+        .string()
+        .default(
+          ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
+        ),
+      phaseEnd: z
+        .string()
+        .default(
+          ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
+        ),
+      phaseError: z
+        .string()
+        .default(
+          ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
+        ),
+    })
+    .default(() => ({
+      phaseStart:
+        ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
+      phaseEnd:
+        ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
+      phaseError:
+        ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
+    })),
+
   /** Interval in ms for periodic watcher health check. 0 = disabled. Default: 60000. */
   watcherHealthIntervalMs: z.number().int().min(0).default(60_000),
 
