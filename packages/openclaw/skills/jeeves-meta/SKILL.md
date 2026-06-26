@@ -213,8 +213,8 @@ Key settings:
 | `port` | 1938 | HTTP API listen port |
 
 | `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
-| `serverBaseUrl` | (optional) | Public base URL of the service (e.g. `http://myhost:1938`). When set, progress reports include clickable entity links. |
-| `serverDriveRoots` | (optional) | Drive label to absolute path mapping for Linux path resolution in progress links (e.g. `{ "content": "/opt/jeeves/content" }`). |
+| `serverUrl` | `http://127.0.0.1:1934` | jeeves-server base URL for progress report links |
+| `templates` | (see docs) | Templates for phase start, end, and error progress reports |
 | `reportChannel` | (optional) | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
 | `reportTarget` | (optional) | Channel/user ID to send progress messages to |
 | `tier2ScanLimit` | 50 | Max all-fresh candidates to scan per tick in Tier 2 invalidation |
@@ -583,6 +583,8 @@ Recommended periodic checks:
 - **Phase health:** `/status` includes `phaseStateSummary` with aggregate
   counts per phase (`fresh`, `stale`, `pending`, `running`, `failed`) and
   `nextPhase` showing the next candidate.
+- **Meta counts:** `/status` includes `health.metaCounts` with totals broken
+  down by current/archive and meta/steer/crossRefs.
 - **Service health:** `/status` endpoint (via `meta_list` summary or direct
   HTTP) includes dependency status for watcher and gateway
 
