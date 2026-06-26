@@ -26,6 +26,8 @@ import { generateMetaMenu } from './promptInjection.js';
 import { MetaServiceClient } from './serviceClient.js';
 import { registerMetaTools } from './tools.js';
 
+export { type PluginConfig, pluginConfigSchema } from './pluginConfigSchema.js';
+
 /** Register all jeeves-meta tools with the OpenClaw plugin API. */
 export default function register(api: PluginApi): void {
   const client = new MetaServiceClient({ apiUrl: getServiceUrl(api) });

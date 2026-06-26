@@ -227,9 +227,16 @@ export class ProgressReporter {
     // applyHotReloadedConfig; recompile when the source strings change.
     const currentSource = JSON.stringify(this.config.templates);
     if (currentSource !== this.lastTemplateSource) {
-      this.templates = compileTemplates(this.config.templates);
-      this.lastTemplateSource = currentSource;
-      this.logger.info('Progress templates recompiled (hot-reload)');
+      try {
+        this.templates = compileTemplates(this.config.templates);
+        this.lastTemplateSource = currentSource;
+        this.logger.info('Progress templates recompiled (hot-reload)');
+      } catch (err) {
+        this.logger.warn(
+          { err },
+          'Failed to compile hot-reloaded templates; keeping previous templates',
+        );
+      }
     }
 
     let message: string;

@@ -583,8 +583,8 @@ Recommended periodic checks:
 - **Phase health:** `/status` includes `phaseStateSummary` with aggregate
   counts per phase (`fresh`, `stale`, `pending`, `running`, `failed`) and
   `nextPhase` showing the next candidate.
-- **Meta counts:** `/status` includes `health.metaCounts` with totals broken
-  down by current/archive and meta/steer/crossRefs.
+- **Meta counts:** `/status` includes `health.metaCounts` with totals:
+  `total`, `enabled`, `disabled`, `neverSynthesized`, `stale`, `errors`, and `locked`.
 - **Service health:** `/status` endpoint (via `meta_list` summary or direct
   HTTP) includes dependency status for watcher and gateway
 
