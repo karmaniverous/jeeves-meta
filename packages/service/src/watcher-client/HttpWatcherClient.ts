@@ -7,7 +7,7 @@
  * @module watcher-client/HttpWatcherClient
  */
 
-import { sleepAsync } from '@karmaniverous/jeeves';
+import { fetchWithTimeout, sleepAsync } from '@karmaniverous/jeeves';
 
 import type {
   InferenceRuleSpec,
@@ -64,11 +64,10 @@ export class HttpWatcherClient implements WatcherClient {
     const url = this.baseUrl + endpoint;
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
-      const res = await fetch(url, {
+      const res = await fetchWithTimeout(url, this.timeoutMs, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(this.timeoutMs),
       });
 
       if (res.ok) {
