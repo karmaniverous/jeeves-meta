@@ -52,16 +52,6 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   /** Channel/user ID to send progress messages to. */
   reportTarget: z.string().optional(),
 
-  /** Optional base URL for the service, used to construct entity links in progress reports. */
-  serverBaseUrl: z.string().optional(),
-
-  /**
-   * Optional mapping of server drive labels to absolute filesystem paths.
-   * Used on Linux to resolve absolute paths to jeeves-server browse paths.
-   * Example: `{ "content": "/opt/jeeves/content" }`
-   */
-  serverDriveRoots: z.record(z.string(), z.string()).optional(),
-
   /**
    * URL of the local jeeves-server instance, used by the ProgressReporter
    * to resolve filesystem paths to browse links via the resolve-path API.
