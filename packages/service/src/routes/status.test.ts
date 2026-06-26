@@ -5,8 +5,10 @@
  */
 
 import Fastify, { type FastifyInstance } from 'fastify';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { MetaCache } from '../cache.js';
+import type { MetaEntry, MetaListResult } from '../discovery/listMetas.js';
 import { SynthesisQueue } from '../queue/index.js';
 import { makeTestDeps, makeTestLogger } from './__testUtils.js';
 import type { RouteDeps } from './index.js';
@@ -216,5 +218,82 @@ describe('GET /status', () => {
     const res = await app.inject({ method: 'GET', url: '/status' });
     const body = res.json<StatusResponse>();
     expect(body.health.serviceState).toBe('stopping');
+  });
+
+  it('includes metaCounts when watcher data is available', async () => {
+    const cache = new MetaCache();
+    const entries: MetaEntry[] = [
+      {
+        path: 'j:/domains/a',
+        depth: 0,
+        emphasis: 1,
+        stalenessSeconds: 100,
+        hasError: false,
+        locked: false,
+        disabled: false,
+        lastSynthesized: '2026-01-01T00:00:00Z',
+        node: {
+          metaPath: 'j:/domains/a/.meta',
+          ownerPath: 'j:/domains/a',
+        },
+        meta: {},
+      },
+      {
+        path: 'j:/domains/b',
+        depth: 0,
+        emphasis: 1,
+        stalenessSeconds: 0,
+        hasError: true,
+        locked: false,
+        disabled: true,
+        lastSynthesized: null,
+        node: {
+          metaPath: 'j:/domains/b/.meta',
+          ownerPath: 'j:/domains/b',
+        },
+        meta: {},
+      },
+    ] as MetaEntry[];
+
+    vi.spyOn(cache, 'get').mockResolvedValue({
+      entries,
+      summary: {
+        total: 2,
+        stale: 1,
+        errors: 1,
+        locked: 0,
+        disabled: 1,
+        neverSynthesized: 1,
+        tokens: { architect: 0, builder: 0, critic: 0 },
+        stalestPath: 'j:/domains/a',
+        lastSynthesizedPath: 'j:/domains/a',
+        lastSynthesizedAt: '2026-01-01T00:00:00Z',
+      },
+      tree: { roots: [], nodeMap: new Map() },
+    } as unknown as MetaListResult);
+
+    const deps = makeTestDeps({
+      queue: new SynthesisQueue(makeTestLogger()),
+      stats: TEST_STATS,
+      cache,
+    });
+    app = Fastify();
+    registerStatusRoute(app, deps);
+    await app.ready();
+
+    const res = await app.inject({ method: 'GET', url: '/status' });
+    const body = res.json<
+      StatusResponse & { health: { metaCounts: unknown } }
+    >();
+
+    expect(body.health.metaCounts).toEqual({
+      total: 2,
+      enabled: 1,
+      disabled: 1,
+      neverSynthesized: 1,
+      stale: 1,
+      errors: 1,
+      locked: 0,
+    });
   });
 });

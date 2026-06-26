@@ -6,6 +6,7 @@ import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
 import {
   type ProgressEvent,
   ProgressReporter,
+  type ProgressReporterConfig,
   renderProgressEvent,
 } from './index.js';
 
@@ -30,6 +31,7 @@ function makeCompiledTemplates(overrides?: {
 function createLogger() {
   return {
     warn: vi.fn(),
+    info: vi.fn(),
   } as unknown as Logger;
 }
 
@@ -270,6 +272,21 @@ describe('renderProgressEvent', () => {
     );
     expect(result).toBe('j:/domains/mydir | j:/domains/mydir/.meta/meta.json');
   });
+
+  it('renders UNKNOWN phase when event.phase is undefined', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
+      type: 'phase_start',
+      path: 'j:/domains/mydir',
+    };
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toContain('UNKNOWN');
+  });
 });
 
 describe('ProgressReporter', () => {
@@ -458,5 +475,48 @@ describe('ProgressReporter', () => {
     ).resolves.toBeUndefined();
 
     expect(logger.warn).toHaveBeenCalled();
+  });
+
+  it('recompiles templates when config.templates is mutated (hot-reload)', async () => {
+    const config: ProgressReporterConfig = {
+      gatewayUrl: 'http://127.0.0.1:18789',
+      reportChannel: 'C123',
+      serverUrl: 'http://127.0.0.1:1934',
+      templates: { ...DEFAULT_TEMPLATE_STRINGS },
+    };
+    const logger = createLogger();
+    const reporter = new ProgressReporter(config, logger);
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = getInputUrl(input);
+      if (url.includes('resolve-path')) {
+        return Promise.resolve(new Response('not found', { status: 404 }));
+      }
+      return Promise.resolve(new Response('', { status: 200 }));
+    });
+
+    // Mutate config.templates (simulates applyHotReloadedConfig)
+    config.templates!.phaseStart = 'HOT_RELOADED: {{phase}}';
+
+    await reporter.report({
+      type: 'phase_start',
+      path: 'x',
+      phase: 'architect',
+    });
+
+    // Verify the hot-reloaded template was used
+    const gatewayCall = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.find((c) => getInputUrl(c[0]).includes('tools/invoke'));
+    expect(gatewayCall).toBeDefined();
+    const body = JSON.parse(gatewayCall![1]?.body as string) as {
+      args: { message: string };
+    };
+    expect(body.args.message).toBe('HOT_RELOADED: ARCHITECT');
+
+    // Verify recompilation was logged
+    expect(logger.info).toHaveBeenCalledWith(
+      'Progress templates recompiled (hot-reload)',
+    );
   });
 });
