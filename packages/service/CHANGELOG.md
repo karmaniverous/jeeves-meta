@@ -6,11 +6,38 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
+- Address copilot review comments (#211)
+
+### 💼 Other
+
+- [META-94] refactor: use core fetchWithTimeout in HttpWatcherClient
+- [META-129] feat: templated progress reporting + status meta counts
+- [META-210] fix: use server resolve-path API for progress links
+
+### 🚜 Refactor
+
+- SOLID/DRY pass — single-source template defaults, hot-reload fix, consistent fetchWithTimeout
+
+### 📚 Documentation
+
+- Sync guides, SKILL.md, and migration instructions with #210 and PR #248 changes
+
+### 🧪 Testing
+
+- Fill coverage gaps — hot-reload detection, config defaults, metaCounts, missing phase
+## [0.16.3] - 2026-06-25
+
+### 🐛 Bug Fixes
+
 - Batch resolve #204, #206, #207, #208
 
 ### 💼 Other
 
 - Updated core
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.16.3
 ## [0.16.2] - 2026-06-24
 
 ### 🚀 Features
