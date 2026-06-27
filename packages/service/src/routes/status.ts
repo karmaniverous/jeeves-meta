@@ -19,6 +19,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
+import { computeSummary } from '../discovery/computeSummary.js';
 import {
   buildPhaseCandidates,
   derivePhaseState,
@@ -104,6 +105,15 @@ export function registerStatusRoute(
       };
 
       let nextPhase: NextPhaseCandidate | null = null;
+      let metaCounts: {
+        total: number;
+        enabled: number;
+        disabled: number;
+        neverSynthesized: number;
+        stale: number;
+        errors: number;
+        locked: number;
+      } | null = null;
 
       try {
         const metaResult = await cache.get(config, watcher);
@@ -132,6 +142,18 @@ export function registerStatusRoute(
             staleness: winner.effectiveStaleness,
           };
         }
+
+        // Meta counts summary
+        const summary = computeSummary(metaResult.entries, config.depthWeight);
+        metaCounts = {
+          total: summary.total,
+          enabled: summary.total - summary.disabled,
+          disabled: summary.disabled,
+          neverSynthesized: summary.neverSynthesized,
+          stale: summary.stale,
+          errors: summary.errors,
+          locked: summary.locked,
+        };
       } catch {
         // Watcher unreachable — phase summary unavailable
       }
@@ -160,6 +182,7 @@ export function registerStatusRoute(
         },
         phaseStateSummary,
         nextPhase,
+        metaCounts,
       };
     },
   });

@@ -30,8 +30,10 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `schedule` | string | `*/30 * * * *` | Cron expression for synthesis scheduling |
 | `reportChannel` | string | — | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
 | `reportTarget` | string | — | Channel/user ID to send progress messages to |
-| `serverBaseUrl` | string | — | Base URL for entity links in progress reports (e.g. `http://myserver:1938`) |
-| `serverDriveRoots` | object | — | Drive label to absolute path mapping for Linux path resolution in progress links (e.g. `{ "content": "/opt/jeeves/content" }`) |
+| `serverUrl` | string (URL) | `http://127.0.0.1:1934` | jeeves-server base URL for progress report links |
+| `templates.phaseStart` | string | `:gear: ...` | Template for phase start progress reports |
+| `templates.phaseEnd` | string | `:white_check_mark: ...` | Template for phase success progress reports |
+| `templates.phaseError` | string | `:x: ...` | Template for phase failure progress reports |
 | `watcherHealthIntervalMs` | integer | `60000` | Periodic watcher health check interval in ms (min 0). 0 = disabled. |
 | `tier2ScanLimit` | integer | `50` | Max all-fresh candidates to scan per tick in Tier 2 invalidation (min 1) |
 | `autoSeed` | array | `[]` | Auto-seed policy rules (see below). Rules evaluated in order; last match wins for steer/crossRefs. |

@@ -9,6 +9,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_TEMPLATE_STRINGS } from './schema/config.js';
+
 // Mock the discovery module so listMetas is controllable
 vi.mock('./discovery/index.js', () => ({
   listMetas: vi.fn(),
@@ -42,6 +44,8 @@ function makeConfig(): ServiceConfig {
     stagingRetries: 10,
     stagingRetryDelayMs: 250,
     previewDeltaFilesCap: 50,
+    serverUrl: 'http://127.0.0.1:1934',
+    templates: { ...DEFAULT_TEMPLATE_STRINGS },
   };
 }
 

@@ -14,6 +14,15 @@ import { z } from 'zod';
 
 export { type MetaConfig, metaConfigSchema };
 
+/** Default Handlebars template strings for progress reporting. Single source of truth. */
+export const DEFAULT_TEMPLATE_STRINGS = {
+  phaseStart: ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
+  phaseEnd:
+    ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
+  phaseError:
+    ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
+} as const;
+
 /** Zod schema for logging configuration. */
 const loggingSchema = z.object({
   /** Log level. */
@@ -52,15 +61,25 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   /** Channel/user ID to send progress messages to. */
   reportTarget: z.string().optional(),
 
-  /** Optional base URL for the service, used to construct entity links in progress reports. */
-  serverBaseUrl: z.string().optional(),
+  /**
+   * URL of the local jeeves-server instance, used by the ProgressReporter
+   * to resolve filesystem paths to browse links via the resolve-path API.
+   * Default: http://127.0.0.1:1934
+   */
+  serverUrl: z.string().default('http://127.0.0.1:1934'),
 
   /**
-   * Optional mapping of server drive labels to absolute filesystem paths.
-   * Used on Linux to resolve absolute paths to jeeves-server browse paths.
-   * Example: `{ "content": "/opt/jeeves/content" }`
+   * Handlebars templates for progress reporting messages.
+   * Each template receives a standard set of data keys (dirLink, metaLink,
+   * phase, tokens, seconds, error).
    */
-  serverDriveRoots: z.record(z.string(), z.string()).optional(),
+  templates: z
+    .object({
+      phaseStart: z.string().default(DEFAULT_TEMPLATE_STRINGS.phaseStart),
+      phaseEnd: z.string().default(DEFAULT_TEMPLATE_STRINGS.phaseEnd),
+      phaseError: z.string().default(DEFAULT_TEMPLATE_STRINGS.phaseError),
+    })
+    .default(() => ({ ...DEFAULT_TEMPLATE_STRINGS })),
 
   /** Interval in ms for periodic watcher health check. 0 = disabled. Default: 60000. */
   watcherHealthIntervalMs: z.number().int().min(0).default(60_000),

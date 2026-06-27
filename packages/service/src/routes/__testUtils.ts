@@ -16,6 +16,7 @@ import { vi } from 'vitest';
 import { MetaCache } from '../cache.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import { SynthesisQueue } from '../queue/index.js';
+import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
 import type { RouteDeps, ServiceStats } from './index.js';
 
 /** Default service config for tests. */
@@ -39,6 +40,8 @@ const DEFAULT_TEST_CONFIG: RouteDeps['config'] = {
   stagingRetries: 10,
   stagingRetryDelayMs: 250,
   previewDeltaFilesCap: 50,
+  serverUrl: 'http://127.0.0.1:1934',
+  templates: { ...DEFAULT_TEMPLATE_STRINGS },
 };
 
 /** Default service stats for tests. */

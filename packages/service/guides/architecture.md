@@ -13,7 +13,7 @@ title: Architecture
 | `GatewayExecutor` | Spawns LLM sessions via gateway `/tools/invoke`, polls for completion |
 | `ProgressReporter` | Sends synthesis events to a channel via gateway `/tools/invoke` → `message` tool |
 | `RuleRegistrar` | Registers 2 virtual inference rules with watcher at startup |
-| `HttpWatcherClient` | Watcher HTTP client with 3-retry exponential backoff |
+| `HttpWatcherClient` | Watcher HTTP client with 3-retry exponential backoff and connection timeout protection |
 | Fastify server | 13 HTTP endpoints across 10 route modules |
 | Config hot-reload | `fs.watchFile` monitors config; hot-reloadable fields applied immediately, restart-required fields warn on change |
 | Shutdown handlers | SIGTERM/SIGINT → stop scheduler → release lock → close server |

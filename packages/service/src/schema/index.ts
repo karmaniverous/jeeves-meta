@@ -6,6 +6,7 @@
 
 export {
   type AutoSeedRule,
+  DEFAULT_TEMPLATE_STRINGS,
   type MetaConfig,
   metaConfigSchema,
   type ServiceConfig,

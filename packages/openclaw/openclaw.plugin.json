@@ -10,15 +10,16 @@
     "type": "object",
     "properties": {
       "apiUrl": {
-        "type": "string",
+        "default": "http://127.0.0.1:1938",
         "description": "URL of the jeeves-meta HTTP service. Falls back to JEEVES_META_URL env var.",
-        "default": "http://127.0.0.1:1938"
+        "type": "string"
       },
       "configRoot": {
-        "type": "string",
-        "description": "Absolute path to the platform config root (e.g. j:/config). Used by @karmaniverous/jeeves core for config directory resolution."
+        "description": "Absolute path to the platform config root (e.g. j:/config). Used by @karmaniverous/jeeves core for config directory resolution.",
+        "type": "string"
       }
-    }
+    },
+    "additionalProperties": false
   },
   "contracts": {
     "tools": [

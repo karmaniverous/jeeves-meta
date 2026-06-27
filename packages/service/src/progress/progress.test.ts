@@ -1,226 +1,300 @@
+import Handlebars from 'handlebars';
 import type { Logger } from 'pino';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
 import {
-  formatProgressEvent,
   type ProgressEvent,
   ProgressReporter,
+  type ProgressReporterConfig,
+  renderProgressEvent,
 } from './index.js';
+
+function makeCompiledTemplates(overrides?: {
+  phaseStart?: string;
+  phaseEnd?: string;
+  phaseError?: string;
+}) {
+  return {
+    phaseStart: Handlebars.compile(
+      overrides?.phaseStart ?? DEFAULT_TEMPLATE_STRINGS.phaseStart,
+    ),
+    phaseEnd: Handlebars.compile(
+      overrides?.phaseEnd ?? DEFAULT_TEMPLATE_STRINGS.phaseEnd,
+    ),
+    phaseError: Handlebars.compile(
+      overrides?.phaseError ?? DEFAULT_TEMPLATE_STRINGS.phaseError,
+    ),
+  };
+}
 
 function createLogger() {
   return {
     warn: vi.fn(),
+    info: vi.fn(),
   } as unknown as Logger;
 }
 
-describe('formatProgressEvent', () => {
-  it('formats synthesis_start with directory path', () => {
-    const e: ProgressEvent = { type: 'synthesis_start', path: 'x' };
-    expect(formatProgressEvent(e)).toBe('🔬 Started meta synthesis: x');
+/** Extract the URL string from a fetch input argument. */
+function getInputUrl(input: string | URL | Request): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.href;
+  return input.url;
+}
+
+/** Mock fetch to return a 404 so resolveLink falls back to raw paths. */
+function mockFetchNotFound() {
+  return vi
+    .spyOn(globalThis, 'fetch')
+    .mockImplementation(() =>
+      Promise.resolve(new Response('not found', { status: 404 })),
+    );
+}
+
+describe('renderProgressEvent', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
   });
 
-  it('formats phase_start', () => {
-    const e: ProgressEvent = {
+  it('renders phase_start with ARCHITECT and dirLink fallback', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
       type: 'phase_start',
       path: 'j:/domains/github/org',
       phase: 'architect',
     };
-    expect(formatProgressEvent(e)).toBe('  ⚙️ Architect phase started');
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toBe(
+      ':gear: Started meta synthesis ARCHITECT phase of <j:/domains/github/org>',
+    );
   });
 
-  it('formats phase_complete', () => {
-    const e: ProgressEvent = {
+  it('renders phase_complete with formatted tokens and seconds', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
       type: 'phase_complete',
       path: 'j:/domains/github/org',
       phase: 'builder',
-      tokens: 1234,
-      durationMs: 1500,
+      tokens: 38200,
+      durationMs: 4500,
     };
-    expect(formatProgressEvent(e)).toBe(
-      '  ✅ Builder complete (1,234 tokens / 2s)',
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
     );
+    expect(result).toContain('BUILDER');
+    expect(result).toContain('38,200');
+    expect(result).toContain('5s');
   });
 
-  it('formats synthesis_complete', () => {
-    const e: ProgressEvent = {
-      type: 'synthesis_complete',
-      path: 'x',
-      tokens: 10,
-      durationMs: 2500,
+  it('renders phase_complete with "unknown" tokens when undefined', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
+      type: 'phase_complete',
+      path: 'j:/domains/github/org',
+      phase: 'builder',
+      durationMs: 1000,
     };
-    expect(formatProgressEvent(e)).toBe(
-      '✅ Completed: x/.meta/meta.json (10 tokens / 3s)',
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
     );
+    expect(result).toContain('unknown');
   });
 
-  it('formats error with directory path', () => {
-    const e: ProgressEvent = {
+  it('renders error with CRITIC and dirLink fallback', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
       type: 'error',
-      path: 'x',
+      path: 'j:/domains/github/org',
       phase: 'critic',
       error: 'boom',
     };
-    expect(formatProgressEvent(e)).toBe(
-      '❌ Synthesis failed at Critic phase: x\n   Error: boom',
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toBe(
+      ':x: Meta synthesis CRITIC phase failed at <j:/domains/github/org>\n   Error: boom',
     );
   });
 
-  it('constructs directory link in synthesis_start when serverBaseUrl is set', () => {
-    const e: ProgressEvent = {
-      type: 'synthesis_start',
-      path: 'D:\\domains\\github\\org',
-    };
-    const result = formatProgressEvent(e, 'http://localhost:1938');
-    expect(result).toContain('http://localhost:1938/path/D/domains/github/org');
-    expect(result).not.toContain('meta.json');
-  });
-
-  it('constructs meta.json link in synthesis_complete when serverBaseUrl is set', () => {
-    const e: ProgressEvent = {
-      type: 'synthesis_complete',
+  it('uses publicUrl from resolve-path API when available', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            browsePath: 'j/domains/github/org',
+            browseUrl: '/browse/j/domains/github/org',
+            publicUrl: 'https://jeeves.example.com/browse/j/domains/github/org',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
+      type: 'phase_start',
       path: 'j:/domains/github/org',
-      tokens: 100,
-      durationMs: 5000,
+      phase: 'architect',
     };
-    const result = formatProgressEvent(e, 'https://meta.example.com');
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
     expect(result).toContain(
-      'https://meta.example.com/path/j/domains/github/org/.meta/meta.json',
+      'https://jeeves.example.com/browse/j/domains/github/org',
     );
   });
 
-  it('uses plain directory path when serverBaseUrl is not set', () => {
-    const e: ProgressEvent = { type: 'synthesis_start', path: 'x' };
-    const result = formatProgressEvent(e);
-    expect(result).toBe('🔬 Started meta synthesis: x');
-  });
-
-  it('URL-encodes path segments with special characters', () => {
-    const e: ProgressEvent = {
-      type: 'synthesis_start',
-      path: 'j:/domains/slack/dm-Bob Louthan (D123)',
+  it('uses browseUrl + serverUrl when publicUrl is absent', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            browsePath: 'j/domains/github/org',
+            browseUrl: '/browse/j/domains/github/org',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
+      type: 'phase_start',
+      path: 'j:/domains/github/org',
+      phase: 'architect',
     };
-    const result = formatProgressEvent(e, 'http://localhost:1934');
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
     expect(result).toContain(
-      'http://localhost:1934/path/j/domains/slack/dm-Bob%20Louthan%20(D123)',
+      'http://127.0.0.1:1934/browse/j/domains/github/org',
     );
   });
 
-  it('URL-encodes meta.json link in synthesis_complete', () => {
-    const e: ProgressEvent = {
-      type: 'synthesis_complete',
-      path: 'j:/domains/slack/dm-Bob Louthan (D123)',
-      tokens: 50,
-      durationMs: 1000,
-    };
-    const result = formatProgressEvent(e, 'http://localhost:1934');
-    expect(result).toContain(
-      'http://localhost:1934/path/j/domains/slack/dm-Bob%20Louthan%20(D123)/.meta/meta.json',
+  it('falls back to raw path when resolve-path API is unreachable', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.reject(new Error('connection refused')),
     );
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
+      type: 'phase_start',
+      path: 'j:/domains/github/org',
+      phase: 'architect',
+    };
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toContain('j:/domains/github/org');
+    expect(result).not.toContain('http://127.0.0.1:1934/browse');
   });
 
-  it('renders "unknown tokens" when tokens is undefined in phase_complete', () => {
-    const e: ProgressEvent = {
+  it('metaLink appends /.meta/meta.json to the resolved dirLink', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            browsePath: 'j/domains/github/org',
+            browseUrl: '/browse/j/domains/github/org',
+            publicUrl: 'https://jeeves.example.com/browse/j/domains/github/org',
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    );
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
       type: 'phase_complete',
-      path: 'x',
-      phase: 'builder',
-      durationMs: 1000,
-    };
-    expect(formatProgressEvent(e)).toBe(
-      '  ✅ Builder complete (unknown tokens / 1s)',
-    );
-  });
-
-  it('renders "unknown tokens" when tokens is undefined in synthesis_complete', () => {
-    const e: ProgressEvent = {
-      type: 'synthesis_complete',
-      path: 'x',
+      path: 'j:/domains/github/org',
+      phase: 'critic',
+      tokens: 100,
       durationMs: 2000,
     };
-    expect(formatProgressEvent(e)).toBe(
-      '✅ Completed: x/.meta/meta.json (unknown tokens / 2s)',
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toContain(
+      'https://jeeves.example.com/browse/j/domains/github/org/.meta/meta.json',
     );
   });
 
-  describe('serverDriveRoots (Linux path resolution)', () => {
-    const serverDriveRoots = { content: '/opt/jeeves/content' };
-    const base = 'http://localhost:1934';
-
-    it('resolves Linux path via serverDriveRoots for synthesis_start', () => {
-      const e: ProgressEvent = {
-        type: 'synthesis_start',
-        path: '/opt/jeeves/content/slack/general',
-      };
-      const result = formatProgressEvent(e, base, serverDriveRoots);
-      expect(result).toContain(
-        'http://localhost:1934/path/content/slack/general',
-      );
+  it('renders phase_start with custom template', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates({
+      phaseStart: 'CUSTOM: {{phase}} → {{dirPath}}',
     });
+    const event: ProgressEvent = {
+      type: 'phase_start',
+      path: 'j:/domains/mydir',
+      phase: 'builder',
+    };
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toBe('CUSTOM: BUILDER → j:/domains/mydir');
+  });
 
-    it('resolves Linux path via serverDriveRoots for synthesis_complete', () => {
-      const e: ProgressEvent = {
-        type: 'synthesis_complete',
-        path: '/opt/jeeves/content/slack/general',
-        tokens: 100,
-        durationMs: 3000,
-      };
-      const result = formatProgressEvent(e, base, serverDriveRoots);
-      expect(result).toContain(
-        'http://localhost:1934/path/content/slack/general/.meta/meta.json',
-      );
+  it('exposes dirPath and metaPath as raw paths in template data', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates({
+      phaseStart: '{{dirPath}} | {{metaPath}}',
     });
+    const event: ProgressEvent = {
+      type: 'phase_start',
+      path: 'j:/domains/mydir',
+      phase: 'architect',
+    };
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toBe('j:/domains/mydir | j:/domains/mydir/.meta/meta.json');
+  });
 
-    it('falls back to raw path when no roots match', () => {
-      const e: ProgressEvent = {
-        type: 'synthesis_start',
-        path: '/var/data/other/path',
-      };
-      const result = formatProgressEvent(e, base, serverDriveRoots);
-      // No matching root — falls back to normalized path
-      expect(result).toContain(
-        'http://localhost:1934/path/var/data/other/path',
-      );
-    });
-
-    it('resolves exact root match (no trailing relative path)', () => {
-      const e: ProgressEvent = {
-        type: 'synthesis_start',
-        path: '/opt/jeeves/content',
-      };
-      const result = formatProgressEvent(e, base, serverDriveRoots);
-      expect(result).toContain('http://localhost:1934/path/content');
-    });
-
-    it('prefers the longest matching root when roots overlap', () => {
-      const overlappingRoots = {
-        jeeves: '/opt/jeeves',
-        content: '/opt/jeeves/content',
-      };
-      const e: ProgressEvent = {
-        type: 'synthesis_start',
-        path: '/opt/jeeves/content/slack/general',
-      };
-      const result = formatProgressEvent(e, base, overlappingRoots);
-      // Must match "content" (longer root), not "jeeves"
-      expect(result).toContain(
-        'http://localhost:1934/path/content/slack/general',
-      );
-    });
-
-    it('does not affect Windows paths (drive letter takes priority)', () => {
-      const e: ProgressEvent = {
-        type: 'synthesis_start',
-        path: 'j:/domains/github/org',
-      };
-      const result = formatProgressEvent(e, base, serverDriveRoots);
-      expect(result).toContain(
-        'http://localhost:1934/path/j/domains/github/org',
-      );
-    });
+  it('renders UNKNOWN phase when event.phase is undefined', async () => {
+    mockFetchNotFound();
+    const templates = makeCompiledTemplates();
+    const event: ProgressEvent = {
+      type: 'phase_start',
+      path: 'j:/domains/mydir',
+    };
+    const result = await renderProgressEvent(
+      event,
+      templates,
+      'http://127.0.0.1:1934',
+    );
+    expect(result).toContain('UNKNOWN');
   });
 });
 
 describe('ProgressReporter', () => {
-  it('is a no-op when reportChannel is not set', async () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('is a no-op when neither reportChannel nor reportTarget is set', async () => {
     const logger = createLogger();
     const reporter = new ProgressReporter(
       { gatewayUrl: 'http://127.0.0.1:18789' },
@@ -233,10 +307,13 @@ describe('ProgressReporter', () => {
         Promise.resolve(new Response('', { status: 200 })),
       );
 
-    await reporter.report({ type: 'synthesis_start', path: 'x' });
+    await reporter.report({
+      type: 'phase_start',
+      path: 'x',
+      phase: 'architect',
+    });
 
     expect(fetchSpy).not.toHaveBeenCalled();
-    fetchSpy.mockRestore();
   });
 
   it('posts to gateway /tools/invoke with message tool', async () => {
@@ -246,13 +323,19 @@ describe('ProgressReporter', () => {
         gatewayUrl: 'http://127.0.0.1:18789',
         gatewayApiKey: 'k',
         reportChannel: 'C123',
+        serverUrl: 'http://127.0.0.1:1934',
       },
       logger,
     );
 
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
-      .mockImplementation((_input, init) => {
+      .mockImplementation((input, init) => {
+        // First call is the resolve-path API; subsequent call is the gateway invoke
+        const url = getInputUrl(input);
+        if (url.includes('resolve-path')) {
+          return Promise.resolve(new Response('not found', { status: 404 }));
+        }
         const rawBody = init?.body;
         if (typeof rawBody !== 'string') {
           throw new Error('Expected request body to be a string');
@@ -265,15 +348,18 @@ describe('ProgressReporter', () => {
         expect(body.tool).toBe('message');
         expect(body.args.action).toBe('send');
         expect(body.args.target).toBe('C123');
-        expect(body.args.message).toContain('Started meta synthesis');
+        expect(body.args.message).toContain('ARCHITECT');
 
         return Promise.resolve(new Response('', { status: 200 }));
       });
 
-    await reporter.report({ type: 'synthesis_start', path: 'x' });
+    await reporter.report({
+      type: 'phase_start',
+      path: 'x',
+      phase: 'architect',
+    });
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    fetchSpy.mockRestore();
+    expect(fetchSpy).toHaveBeenCalledTimes(2); // resolve-path + gateway
   });
 
   it('sends channel field when both reportChannel and reportTarget are set', async () => {
@@ -283,13 +369,18 @@ describe('ProgressReporter', () => {
         gatewayUrl: 'http://127.0.0.1:18789',
         reportChannel: 'slack',
         reportTarget: 'C456',
+        serverUrl: 'http://127.0.0.1:1934',
       },
       logger,
     );
 
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
-      .mockImplementation((_input, init) => {
+      .mockImplementation((input, init) => {
+        const url = getInputUrl(input);
+        if (url.includes('resolve-path')) {
+          return Promise.resolve(new Response('not found', { status: 404 }));
+        }
         const rawBody = init?.body;
         if (typeof rawBody !== 'string') {
           throw new Error('Expected request body to be a string');
@@ -310,9 +401,9 @@ describe('ProgressReporter', () => {
         return Promise.resolve(new Response('', { status: 200 }));
       });
 
-    await reporter.report({ type: 'synthesis_start', path: 'x' });
+    await reporter.report({ type: 'phase_start', path: 'x', phase: 'builder' });
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
     fetchSpy.mockRestore();
   });
 
@@ -322,13 +413,18 @@ describe('ProgressReporter', () => {
       {
         gatewayUrl: 'http://127.0.0.1:18789',
         reportChannel: 'C123',
+        serverUrl: 'http://127.0.0.1:1934',
       },
       logger,
     );
 
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
-      .mockImplementation((_input, init) => {
+      .mockImplementation((input, init) => {
+        const url = getInputUrl(input);
+        if (url.includes('resolve-path')) {
+          return Promise.resolve(new Response('not found', { status: 404 }));
+        }
         const rawBody = init?.body;
         if (typeof rawBody !== 'string') {
           throw new Error('Expected request body to be a string');
@@ -349,30 +445,78 @@ describe('ProgressReporter', () => {
         return Promise.resolve(new Response('', { status: 200 }));
       });
 
-    await reporter.report({ type: 'synthesis_start', path: 'x' });
+    await reporter.report({ type: 'phase_start', path: 'x', phase: 'critic' });
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
     fetchSpy.mockRestore();
   });
 
   it('logs warning on gateway error and does not throw', async () => {
     const logger = createLogger();
     const reporter = new ProgressReporter(
-      { gatewayUrl: 'http://127.0.0.1:18789', reportChannel: 'C123' },
+      {
+        gatewayUrl: 'http://127.0.0.1:18789',
+        reportChannel: 'C123',
+        serverUrl: 'http://127.0.0.1:1934',
+      },
       logger,
     );
 
-    const fetchSpy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockImplementation(() =>
-        Promise.resolve(new Response('nope', { status: 500 })),
-      );
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = getInputUrl(input);
+      if (url.includes('resolve-path')) {
+        return Promise.resolve(new Response('not found', { status: 404 }));
+      }
+      return Promise.resolve(new Response('nope', { status: 500 }));
+    });
 
     await expect(
-      reporter.report({ type: 'synthesis_start', path: 'x' }),
+      reporter.report({ type: 'phase_start', path: 'x', phase: 'architect' }),
     ).resolves.toBeUndefined();
 
     expect(logger.warn).toHaveBeenCalled();
-    fetchSpy.mockRestore();
+  });
+
+  it('recompiles templates when config.templates is mutated (hot-reload)', async () => {
+    const config: ProgressReporterConfig = {
+      gatewayUrl: 'http://127.0.0.1:18789',
+      reportChannel: 'C123',
+      serverUrl: 'http://127.0.0.1:1934',
+      templates: { ...DEFAULT_TEMPLATE_STRINGS },
+    };
+    const logger = createLogger();
+    const reporter = new ProgressReporter(config, logger);
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      const url = getInputUrl(input);
+      if (url.includes('resolve-path')) {
+        return Promise.resolve(new Response('not found', { status: 404 }));
+      }
+      return Promise.resolve(new Response('', { status: 200 }));
+    });
+
+    // Mutate config.templates (simulates applyHotReloadedConfig)
+    config.templates!.phaseStart = 'HOT_RELOADED: {{phase}}';
+
+    await reporter.report({
+      type: 'phase_start',
+      path: 'x',
+      phase: 'architect',
+    });
+
+    // Verify the hot-reloaded template was used
+    const gatewayCall = vi
+      .mocked(globalThis.fetch)
+      .mock.calls.find((c) => getInputUrl(c[0]).includes('tools/invoke'));
+    expect(gatewayCall).toBeDefined();
+    const body = JSON.parse(gatewayCall![1]?.body as string) as {
+      args: { message: string };
+    };
+    expect(body.args.message).toBe('HOT_RELOADED: ARCHITECT');
+
+    // Verify recompilation was logged
+    expect(logger.info).toHaveBeenCalledWith(
+      'Progress templates recompiled (hot-reload)',
+    );
   });
 });

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { metaConfigSchema, serviceConfigSchema } from './config.js';
+import {
+  DEFAULT_TEMPLATE_STRINGS,
+  metaConfigSchema,
+  serviceConfigSchema,
+} from './config.js';
 
 const validConfig = {
   watcherUrl: 'http://localhost:3456',
@@ -83,12 +87,49 @@ describe('metaConfigSchema', () => {
   });
 });
 
-describe('serviceConfigSchema autoSeed', () => {
+describe('serviceConfigSchema new fields', () => {
   const validServiceConfig = {
     ...validConfig,
     port: 1938,
     schedule: '*/30 * * * *',
   };
+
+  it('defaults serverUrl to http://127.0.0.1:1934', () => {
+    const result = serviceConfigSchema.safeParse(validServiceConfig);
+    expect(result.success).toBe(true);
+    expect(result.data?.serverUrl).toBe('http://127.0.0.1:1934');
+  });
+
+  it('defaults templates to DEFAULT_TEMPLATE_STRINGS', () => {
+    const result = serviceConfigSchema.safeParse(validServiceConfig);
+    expect(result.success).toBe(true);
+    expect(result.data?.templates).toEqual(DEFAULT_TEMPLATE_STRINGS);
+  });
+
+  it('accepts custom template overrides', () => {
+    const result = serviceConfigSchema.safeParse({
+      ...validServiceConfig,
+      templates: { phaseStart: 'CUSTOM {{phase}}' },
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.templates.phaseStart).toBe('CUSTOM {{phase}}');
+    // Other templates should still get defaults
+    expect(result.data?.templates.phaseEnd).toBe(
+      DEFAULT_TEMPLATE_STRINGS.phaseEnd,
+    );
+    expect(result.data?.templates.phaseError).toBe(
+      DEFAULT_TEMPLATE_STRINGS.phaseError,
+    );
+  });
+
+  it('accepts custom serverUrl', () => {
+    const result = serviceConfigSchema.safeParse({
+      ...validServiceConfig,
+      serverUrl: 'http://custom:9999',
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.serverUrl).toBe('http://custom:9999');
+  });
 
   it('defaults autoSeed to empty array', () => {
     const result = serviceConfigSchema.safeParse(validServiceConfig);
