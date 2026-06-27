@@ -6,11 +6,28 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
+- Address copilot review comments (#211)
+
+### 💼 Other
+
+- [META-93] refactor: generate plugin configSchema from Zod
+
+### 📚 Documentation
+
+- Sync guides, SKILL.md, and migration instructions with #210 and PR #248 changes
+## [0.13.3] - 2026-06-25
+
+### 🐛 Bug Fixes
+
 - Batch resolve #204, #206, #207, #208
 
 ### 💼 Other
 
 - Updated core
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.13.3
 ## [0.13.2] - 2026-06-24
 
 ### 🚀 Features
