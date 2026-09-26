@@ -1,14 +1,12 @@
 {
   "author": "Jason Williscroft",
-  "bin": {
-    "jeeves-meta-openclaw": "./dist/cli.js"
-  },
   "bugs": {
     "url": "https://github.com/karmaniverous/jeeves-meta/issues"
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "^0.5.12",
-    "@karmaniverous/jeeves-meta-core": "^0.2.2"
+    "@karmaniverous/jeeves": "0.6.0-3",
+    "@karmaniverous/jeeves-meta-core": "^0.2.2",
+    "zod": "^4.6.5"
   },
   "description": "OpenClaw plugin for jeeves-meta — synthesis tools and virtual rule registration",
   "devDependencies": {
@@ -35,7 +33,6 @@
   },
   "files": [
     "dist",
-    "content",
     "openclaw.plugin.json"
   ],
   "homepage": "https://github.com/karmaniverous/jeeves-meta#readme",
@@ -96,8 +93,7 @@
     "url": "git+https://github.com/karmaniverous/jeeves-meta.git"
   },
   "scripts": {
-    "build": "npm run build:plugin && npm run generate-schema && npm run build:skills && npm run build:content",
-    "build:content": "node scripts/copy-content.mjs",
+    "build": "npm run build:plugin && npm run generate-schema && npm run build:skills",
     "build:plugin": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
     "build:skills": "node scripts/build-skills.mjs",
     "generate-schema": "node scripts/generate-plugin-schema.mjs",

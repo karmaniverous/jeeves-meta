@@ -20,7 +20,7 @@ Metas can declare explicit cross-references (`_crossRefs`) to other metas, formi
 |---------|-------------|
 | [`@karmaniverous/jeeves-meta-core`](packages/core/README.md) | Shared types, schemas, endpoint descriptors, and utilities |
 | [`@karmaniverous/jeeves-meta`](packages/service/README.md) | HTTP service — Fastify API, built-in scheduler, synthesis queue, CLI |
-| [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw/README.md) | OpenClaw plugin — thin HTTP client, interactive tools, TOOLS.md injection |
+| [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw/README.md) | Standard OpenClaw plugin — thin HTTP client, interactive tools, lazy `configRoot` |
 
 ## Architecture
 
@@ -129,7 +129,7 @@ npm run docs        # generate TypeDoc documentation
 
 - **[Service Guides](packages/service/guides/index.md)** — concepts, configuration, orchestration, scheduling, architecture
 - **[CLI Reference](packages/service/guides/cli.md)** — all CLI commands with usage
-- **[Plugin Guides](packages/openclaw/guides/index.md)** — setup, tools reference, virtual rules, TOOLS.md injection
+- **[Plugin Guides](packages/openclaw/guides/index.md)** — setup, tools reference, virtual rules
 
 ## License
 

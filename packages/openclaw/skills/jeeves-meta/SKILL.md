@@ -1,3 +1,11 @@
+---
+name: jeeves-meta
+description: >
+  Knowledge synthesis with jeeves-meta. Use when checking synthesis status,
+  listing or inspecting .meta/ entities, triggering or seeding synthesis,
+  managing the meta service, or troubleshooting stale, failed, or locked metas.
+---
+
 # jeeves-meta — OpenClaw Skill
 
 ## Overview
@@ -420,17 +428,14 @@ phase started/completed (architect, builder, critic), synthesis completed,
 and errors. This uses
 `/tools/invoke` → `message` tool — zero LLM token cost.
 
-### TOOLS.md Bootstrapping Prompts
+### Bootstrapping Signals
 
-The plugin's TOOLS.md injection automatically prompts bootstrapping:
-- **Service unreachable:** Shows "ACTION REQUIRED: jeeves-meta service is
-  unreachable" with troubleshooting steps and directs to this skill's
+The plugin writes nothing into workspace files or the system prompt. Check
+live state with the tools:
+- **Service unreachable:** any `meta_*` tool returns a connection error with
+  troubleshooting guidance; see this skill's Bootstrapping section
+- **No entities found:** `meta_list` returns an empty list; see this skill's
   Bootstrapping section
-- **No entities found:** Shows "ACTION REQUIRED: No synthesis entities found"
-  and directs to this skill's Bootstrapping section
-
-These messages appear in the agent's system prompt, ensuring proactive
-discovery of configuration issues.
 
 ## Bootstrapping
 
@@ -466,19 +471,25 @@ npm install -g @karmaniverous/jeeves-meta
 jeeves-meta start --config J:\config\jeeves-meta\config.json
 ```
 
-2. Install the OpenClaw plugin:
+2. Install the OpenClaw plugin with the Jeeves CLI, which also writes the
+   plugin config (`configRoot`, `apiUrl`):
 
 ```bash
-npx @karmaniverous/jeeves-meta-openclaw install
+jeeves install meta --config-root J:\config
 ```
 
-For non-default OpenClaw installations, set `OPENCLAW_CONFIG` (path to
-`openclaw.json`) or `OPENCLAW_HOME` (path to `.openclaw` directory).
+Or install it directly with OpenClaw and configure it yourself:
 
-To uninstall: `npx @karmaniverous/jeeves-meta-openclaw uninstall`
+```bash
+openclaw plugins install npm:@karmaniverous/jeeves-meta-openclaw@<version> --pin --accept-capabilities
+```
 
-3. (Optional) Configure the plugin with the service URL — only needed if the
-   service runs on a non-default port or host:
+To uninstall: `jeeves uninstall` or `openclaw plugins uninstall jeeves-meta-openclaw`.
+
+3. Configure the plugin. `configRoot` (the platform config root) is needed by
+   `meta_service`; set it in plugin config or via the `JEEVES_CONFIG_ROOT` env
+   var. The plugin loads without it and logs one warning. `apiUrl` is only
+   needed if the service runs on a non-default port or host:
 
 ```json
 {
@@ -487,7 +498,8 @@ To uninstall: `npx @karmaniverous/jeeves-meta-openclaw uninstall`
       "jeeves-meta-openclaw": {
         "enabled": true,
         "config": {
-          "apiUrl": "http://127.0.0.1:1938"
+          "apiUrl": "http://127.0.0.1:1938",
+          "configRoot": "J:/config"
         }
       }
     }
@@ -497,8 +509,8 @@ To uninstall: `npx @karmaniverous/jeeves-meta-openclaw uninstall`
 
 4. Restart the OpenClaw gateway to load the plugin.
 
-5. Verify: check that `## Meta` appears in TOOLS.md injection and
-   `jeeves-meta` appears in available skills.
+5. Verify: `meta_status` reports the service healthy and `jeeves-meta`
+   appears in available skills.
 
 ### First Synthesis
 
@@ -573,8 +585,8 @@ The `start` command uses `--config`/`-c` instead (port is read from the config f
 Recommended periodic checks:
 - **Errors:** `meta_list` with `filter: { hasError: true }` — investigate
   and retry with `meta_trigger`
-- **Failed phases:** The TOOLS.md injection shows a "Failed:" alert listing
-  metas with failed phases. Failed phases auto-retry on the next scheduler
+- **Failed phases:** `/status` (`meta_status`) reports failed phases in
+  `phaseStateSummary`. Failed phases auto-retry on the next scheduler
   tick. Use `meta_detail` to inspect the `_phaseState` and `_error` fields.
 - **Stuck locks:** `meta_list` with `filter: { locked: true }` — locks
   older than 30 minutes indicate a crashed synthesis; use `jeeves-meta unlock`
@@ -588,24 +600,33 @@ Recommended periodic checks:
 - **Service health:** `/status` endpoint (via `meta_list` summary or direct
   HTTP) includes dependency status for watcher and gateway
 
-The TOOLS.md injection surfaces the most critical stats (entity count, errors,
-stalest entity, phase summary, failed-phase alerts, next-phase indicator) in
-the agent's system prompt automatically.
+The plugin no longer injects these stats into the system prompt; call
+`meta_status` and `meta_list` when you need them.
 
 ## Troubleshooting
 
 ### Service unreachable
 
-**Symptom:** TOOLS.md shows "ACTION REQUIRED: jeeves-meta service is unreachable"
+**Symptom:** `meta_*` tools return a connection error for the meta service
 **Cause:** Meta service not running or wrong `apiUrl` in plugin config
 **Fix:**
 1. Check if the service is running: `jeeves-meta service status` or `curl http://localhost:1938/status`
 2. If down, start it: `jeeves-meta service start` or `jeeves-meta start --config <path>`
 3. If running on a different port, update `apiUrl` in plugin config
 
+### configRoot not configured
+
+**Symptom:** `meta_service` returns "configRoot not configured", or the gateway
+log shows "[jeeves-meta] configRoot not configured yet"
+**Cause:** The plugin was loaded before its config was written (normal right
+after `openclaw plugins install`), or no config root is set
+**Fix:** Set `plugins.entries.jeeves-meta-openclaw.config.configRoot` (e.g. via
+`jeeves install --config-root <path>`) or the `JEEVES_CONFIG_ROOT` env var. The
+other `meta_*` tools only need the service URL and keep working.
+
 ### Watcher unreachable
 
-**Symptom:** TOOLS.md shows a ⚠️ **Watcher** dependency warning in the entity summary
+**Symptom:** `meta_status` reports the watcher dependency as unreachable
 **Cause:** Watcher service not running or wrong URL in meta service config
 **Fix:**
 1. Check watcher status: `watcher_status` tool or `curl http://localhost:1936/status`
@@ -614,7 +635,7 @@ the agent's system prompt automatically.
 
 ### No entities discovered
 
-**Symptom:** `meta_list` returns empty, TOOLS.md shows "No synthesis entities found"
+**Symptom:** `meta_list` returns empty
 **Cause:** No `.meta/meta.json` files indexed, or `metaProperty` mismatch
 **Fix:**
 1. Verify `.meta/meta.json` files exist on disk

@@ -8,41 +8,33 @@ title jeeves-meta-openclaw — Plugin Lifecycle
 
 participant "OpenClaw Gateway" as GW
 participant "Plugin\nregister()" as Plugin
-participant "@karmaniverous/jeeves\nComponentWriter" as Core
+participant "@karmaniverous/jeeves\ncore" as Core
 participant "jeeves-meta\nservice" as Service
 
-== Startup ==
+== Startup (no config required) ==
 
 GW -> Plugin: register(api)
 activate Plugin
-
-Plugin -> Plugin: init({ workspacePath, configRoot })
-Plugin -> Plugin: registerMetaTools(api, client)
-note right: meta_list\nmeta_detail\nmeta_trigger\nmeta_preview
-
-Plugin -> Core: createComponentWriter(component)
-Plugin -> Core: writer.start()
+Plugin -> Plugin: warn once if configRoot unset
+Plugin -> GW: registerTool(meta_* x 12)
 deactivate Plugin
 
-== Periodic Cycle (every 73s) ==
-
-Core -> Service: GET /status
-Service --> Core: StatusResponse
-
-Core -> Service: GET /metas
-Service --> Core: MetasResponse
-
-Core -> Core: generateMetaMenu()\n→ TOOLS.md section
-
-Core -> Core: updateManagedSection()\n→ write TOOLS.md
-
-Core -> Core: refreshPlatformContent()\n→ SOUL.md / AGENTS.md
-
-== Tool Invocation ==
+== HTTP Tool Invocation ==
 
 GW -> Plugin: meta_trigger({ path })
 Plugin -> Service: POST /synthesize
 Service --> Plugin: { status: "accepted" }
 Plugin --> GW: ToolResult
+
+== meta_service Invocation ==
+
+GW -> Plugin: meta_service({ action })
+alt configRoot resolved (plugin config or JEEVES_CONFIG_ROOT)
+  Plugin -> Core: init({ workspacePath, configRoot }) (first use only)
+  Plugin -> Core: service manager action
+  Plugin --> GW: ToolResult
+else configRoot unset
+  Plugin --> GW: error: "configRoot not configured — set it in plugin config ... or via JEEVES_CONFIG_ROOT"
+end
 
 @enduml

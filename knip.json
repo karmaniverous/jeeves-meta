@@ -1,7 +1,8 @@
 {
   "workspaces": {
     "packages/service": {
-      "includeEntryExports": true
+      "includeEntryExports": true,
+      "ignoreDependencies": ["@rollup/plugin-typescript={outputToFilesystem:true}"]
     },
     "packages/openclaw": {
       "ignoreBinaries": ["plantuml"]

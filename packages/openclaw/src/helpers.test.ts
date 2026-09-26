@@ -7,7 +7,11 @@
 import { type PluginApi, resolvePluginSetting } from '@karmaniverous/jeeves';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { getConfigRoot, getServiceUrl } from './helpers.js';
+import {
+  CONFIG_ROOT_MISSING_MESSAGE,
+  getServiceUrl,
+  resolveConfigRoot,
+} from './helpers.js';
 
 const PLUGIN_ID = 'jeeves-meta-openclaw';
 
@@ -91,7 +95,7 @@ describe('resolvePluginSetting', () => {
   });
 });
 
-describe('getConfigRoot', () => {
+describe('resolveConfigRoot', () => {
   const originalEnv = process.env['JEEVES_CONFIG_ROOT'];
 
   afterEach(() => {
@@ -102,21 +106,46 @@ describe('getConfigRoot', () => {
     }
   });
 
-  it('returns plugin config value when set', () => {
+  it('returns plugin entry config value when set', () => {
     const api = makeApi({ configRoot: '/custom/config' });
-    expect(getConfigRoot(api)).toBe('/custom/config');
+    expect(resolveConfigRoot(api)).toBe('/custom/config');
+  });
+
+  it('prefers api.pluginConfig over plugin entry config and env', () => {
+    process.env['JEEVES_CONFIG_ROOT'] = '/env/config';
+    const api: PluginApi = {
+      ...makeApi({ configRoot: '/entry/config' }),
+      pluginConfig: { configRoot: '/own/config' },
+    };
+    expect(resolveConfigRoot(api)).toBe('/own/config');
   });
 
   it('returns env var when plugin config absent', () => {
     const api = makeApi({});
     process.env['JEEVES_CONFIG_ROOT'] = '/env/config';
-    expect(getConfigRoot(api)).toBe('/env/config');
+    expect(resolveConfigRoot(api)).toBe('/env/config');
   });
 
-  it('throws when neither plugin config nor env var is set', () => {
+  it('returns undefined (does not throw) when neither is set', () => {
     const api = makeApi({});
     delete process.env['JEEVES_CONFIG_ROOT'];
-    expect(() => getConfigRoot(api)).toThrow('configRoot not configured');
+    expect(resolveConfigRoot(api)).toBeUndefined();
+  });
+
+  it('ignores an empty pluginConfig value', () => {
+    delete process.env['JEEVES_CONFIG_ROOT'];
+    const api: PluginApi = { ...makeApi({}), pluginConfig: { configRoot: '' } };
+    expect(resolveConfigRoot(api)).toBeUndefined();
+  });
+});
+
+describe('CONFIG_ROOT_MISSING_MESSAGE', () => {
+  it('names both ways to set configRoot', () => {
+    expect(CONFIG_ROOT_MISSING_MESSAGE).toContain('configRoot not configured');
+    expect(CONFIG_ROOT_MISSING_MESSAGE).toContain(
+      `plugins.entries.${PLUGIN_ID}.config.configRoot`,
+    );
+    expect(CONFIG_ROOT_MISSING_MESSAGE).toContain('JEEVES_CONFIG_ROOT');
   });
 });
 

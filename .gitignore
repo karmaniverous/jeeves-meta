@@ -20,6 +20,3 @@ context/
 
 docs/
 *.tgz
-
-# Build artifact: content/ copied from @karmaniverous/jeeves
-packages/openclaw/content/

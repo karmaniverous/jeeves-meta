@@ -1,10 +1,9 @@
 /**
  * Rollup configuration for the OpenClaw plugin package.
- * Two entry points: plugin (ESM + declarations) and CLI (ESM executable).
+ * Single entry point: the plugin (ESM + declarations).
  *
  * Runtime dependencies (`@karmaniverous/jeeves`, `@karmaniverous/jeeves-meta`)
- * are externalized — the OpenClaw host environment provides them.
- * CLI bundles everything for standalone execution.
+ * are externalized and resolved from the plugin's installed dependencies.
  */
 
 import commonjs from '@rollup/plugin-commonjs';
@@ -42,27 +41,4 @@ const pluginConfig: RollupOptions = {
   ],
 };
 
-const cliConfig: RollupOptions = {
-  input: 'src/cli.ts',
-  external: [/^node:/],
-  onwarn,
-  output: {
-    file: 'dist/cli.js',
-    format: 'esm',
-    banner: '#!/usr/bin/env node',
-  },
-  plugins: [
-    resolve({ preferBuiltins: true }),
-    commonjs(),
-    typescriptPlugin({
-      tsconfig: './tsconfig.json',
-      outputToFilesystem: false,
-      outDir: 'dist',
-      noEmit: false,
-      declaration: false,
-      incremental: false,
-    }),
-  ],
-};
-
-export default [pluginConfig, cliConfig];
+export default [pluginConfig];
