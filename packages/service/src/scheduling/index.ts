@@ -4,15 +4,4 @@
  * @module scheduling
  */
 
-export {
-  actualStaleness,
-  computeStalenessScore,
-  hasSteerChanged,
-  isArchitectTriggered,
-  isStale,
-  MAX_STALENESS_SECONDS,
-} from './staleness.js';
-export {
-  computeEffectiveStaleness,
-  type StalenessCandidate,
-} from './weightedFormula.js';
+export { computeStalenessScore } from './staleness.js';

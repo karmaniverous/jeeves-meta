@@ -2,7 +2,7 @@
  * Rollup configuration for the OpenClaw plugin package.
  * Single entry point: the plugin (ESM + declarations).
  *
- * Runtime dependencies (`@karmaniverous/jeeves`, `@karmaniverous/jeeves-meta`)
+ * Runtime dependencies (`@karmaniverous/jeeves`, `@karmaniverous/jeeves-meta-core`)
  * are externalized and resolved from the plugin's installed dependencies.
  */
 
@@ -21,7 +21,6 @@ const pluginConfig: RollupOptions = {
   output: { dir: 'dist', format: 'esm' },
   external: [
     '@karmaniverous/jeeves',
-    '@karmaniverous/jeeves-meta',
     '@karmaniverous/jeeves-meta-core',
     /^node:/,
   ],

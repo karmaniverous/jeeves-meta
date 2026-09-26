@@ -23,9 +23,6 @@ import { SERVICE_VERSION } from './constants.js';
 import { registerCustomCliCommands } from './customCliCommands.js';
 import { serviceConfigSchema } from './schema/config.js';
 
-// Re-export for consumers that import from descriptor
-export { RESTART_REQUIRED_FIELDS };
-
 /**
  * Parsed jeeves-meta component descriptor.
  */
