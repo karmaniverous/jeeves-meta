@@ -16,7 +16,7 @@ import { PLUGIN_ID } from './constants.js';
 export const CONFIG_ROOT_ENV = 'JEEVES_CONFIG_ROOT';
 
 /** Error returned by tools that need `configRoot` when it is not set. */
-export const CONFIG_ROOT_MISSING_MESSAGE = `configRoot not configured — set it in plugin config (plugins.entries.${PLUGIN_ID}.config.configRoot) or via the ${CONFIG_ROOT_ENV} env var`;
+export const CONFIG_ROOT_MISSING_MESSAGE = `configRoot not configured — set it in plugin config (plugins.entries.${PLUGIN_ID}.config.configRoot) or via ${CONFIG_ROOT_ENV}`;
 
 /** Resolve the meta service URL. */
 export function getServiceUrl(api: PluginApi): string {

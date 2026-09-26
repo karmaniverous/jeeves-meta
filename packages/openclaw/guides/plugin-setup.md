@@ -54,10 +54,10 @@ The `configRoot` setting tells `@karmaniverous/jeeves` core where to find the pl
 `configRoot` is resolved **lazily**. Registration always succeeds without it (with a running gateway, `openclaw plugins install` activates the plugin before `jeeves install` writes its config), logging one warning:
 
 ```text
-[jeeves-meta] configRoot not configured yet — meta_service will be unavailable until it is set in plugin config or JEEVES_CONFIG_ROOT
+[jeeves-meta] configRoot not configured yet — meta_service install will be unavailable until it is set in plugin config or JEEVES_CONFIG_ROOT
 ```
 
-Only `meta_service` needs it (it resolves the service config path); invoked without it, the tool returns an error naming both ways to set it. Core `init()` runs the first time `configRoot` resolves. Every other tool only talks HTTP to the service and works without it.
+Only `meta_service` with `action: "install"` reads it (core resolves the service config path from it); invoked without it, that call returns an error naming both ways to set it. Core `init()` runs the first time `configRoot` resolves. The other `meta_service` actions (`status`, `start`, `stop`, `restart`, `uninstall`) address the OS service by name, and every other tool only talks HTTP to the service at `apiUrl`, so all of them work without it.
 
 ## Lifecycle
 
@@ -65,7 +65,7 @@ On gateway startup, `register(api)`:
 
 1. Resolves the service URL (`apiUrl`) and creates a `MetaServiceClient`
 2. Logs one warning if `configRoot` is not set yet (it never throws)
-3. Registers 12 tools: 4 standard (`meta_status`, `meta_config`, `meta_config_apply`, `meta_service`) via `createPluginToolset()`, plus 8 custom (`meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_queue`, `meta_update`). `meta_service` is wrapped so it resolves `configRoot` and calls core `init({ workspacePath, configRoot })` on first use.
+3. Registers 12 tools: 4 standard (`meta_status`, `meta_config`, `meta_config_apply`, `meta_service`) via `createPluginToolset()`, plus 8 custom (`meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_queue`, `meta_update`). `meta_service` is wrapped so that `install` resolves `configRoot` and calls core `init({ workspacePath, configRoot })` on first use; its other actions and all other tools are not gated.
 
 The plugin starts no timers, registers no hooks, and writes no workspace files (no TOOLS.md, SOUL.md, AGENTS.md or HEARTBEAT.md content). Use `meta_status` and `meta_list` for live synthesis state.
 

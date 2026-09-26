@@ -35,7 +35,7 @@ export interface ConfigRootGate {
 }
 
 /** Warning logged once at registration when `configRoot` is unset. */
-export const CONFIG_ROOT_WARNING = `[jeeves-meta] configRoot not configured yet — meta_service will be unavailable until it is set in plugin config or ${CONFIG_ROOT_ENV}`;
+export const CONFIG_ROOT_WARNING = `[jeeves-meta] configRoot not configured yet — meta_service install will be unavailable until it is set in plugin config or ${CONFIG_ROOT_ENV}`;
 
 /**
  * Create a gate over the plugin API.
@@ -79,14 +79,23 @@ export function warnIfConfigRootMissing(api: PluginApi): void {
   warn(CONFIG_ROOT_WARNING);
 }
 
-/** Wrap a tool so it returns a clear error until `configRoot` resolves. */
+/** Decides, per call, whether a tool invocation reads `configRoot`. */
+export type NeedsConfigRoot = (params: Record<string, unknown>) => boolean;
+
+/**
+ * Wrap a tool so calls that read `configRoot` return a clear error until
+ * it resolves. Calls for which `needsConfigRoot` is false pass straight
+ * through without touching the gate.
+ */
 export function requireConfigRoot(
   tool: ToolDescriptor,
   gate: ConfigRootGate,
+  needsConfigRoot: NeedsConfigRoot = () => true,
 ): ToolDescriptor {
   return {
     ...tool,
     execute: (id, params) => {
+      if (!needsConfigRoot(params)) return tool.execute(id, params);
       const check = gate.ensure();
       if (!check.ok) return Promise.resolve(fail(check.error));
       return tool.execute(id, params);

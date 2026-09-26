@@ -14,17 +14,26 @@ import {
   type PluginApi,
 } from '@karmaniverous/jeeves';
 
-import { type ConfigRootGate, requireConfigRoot } from './configRoot.js';
+import {
+  type ConfigRootGate,
+  type NeedsConfigRoot,
+  requireConfigRoot,
+} from './configRoot.js';
 import { buildCustomTools } from './customTools.js';
 import type { MetaServiceClient } from './serviceClient.js';
 
 /**
- * Tools that need core `init()` (and therefore `configRoot`).
+ * Tool calls that read `configRoot`, keyed by tool name.
  *
- * `meta_service` resolves the component config path for `install`.
- * Every other tool only talks HTTP to the meta service.
+ * Only `meta_service` with `action: 'install'` reads it: core's service
+ * manager resolves the component config path via `getComponentConfigDir()`.
+ * The other `meta_service` actions drive the OS service manager by name,
+ * and every other tool only talks HTTP to the meta service at `apiUrl`,
+ * so none of them are gated.
  */
-const CONFIG_ROOT_TOOLS = new Set(['meta_service']);
+const CONFIG_ROOT_TOOLS = new Map<string, NeedsConfigRoot>([
+  ['meta_service', (params) => params.action === 'install'],
+]);
 
 /** Register all meta_* tools (standard + custom). */
 export function registerMetaTools(
@@ -37,8 +46,9 @@ export function registerMetaTools(
 
   // Standard tools from factory: meta_status, meta_config, meta_config_apply, meta_service
   for (const tool of createPluginToolset(descriptor)) {
+    const needsConfigRoot = CONFIG_ROOT_TOOLS.get(tool.name);
     api.registerTool(
-      CONFIG_ROOT_TOOLS.has(tool.name) ? requireConfigRoot(tool, gate) : tool,
+      needsConfigRoot ? requireConfigRoot(tool, gate, needsConfigRoot) : tool,
     );
   }
 

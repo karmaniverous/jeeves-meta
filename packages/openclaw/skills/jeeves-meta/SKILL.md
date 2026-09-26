@@ -355,7 +355,7 @@ openclaw plugins install npm:@karmaniverous/jeeves-meta-openclaw@<version> --pin
 
 To uninstall: `jeeves uninstall` or `openclaw plugins uninstall jeeves-meta-openclaw`.
 
-3. Configure the plugin. `configRoot` (the platform config root) is needed by `meta_service`; set it in plugin config or via the `JEEVES_CONFIG_ROOT` env var. The plugin loads without it and logs one warning. `apiUrl` is only needed if the service runs on a non-default port or host:
+3. Configure the plugin. `configRoot` (the platform config root) is needed by `meta_service` `install`; set it in plugin config or via the `JEEVES_CONFIG_ROOT` env var. The plugin loads without it and logs one warning. `apiUrl` is only needed if the service runs on a non-default port or host:
 
 ```json
 {
@@ -468,7 +468,7 @@ The plugin no longer injects these stats into the system prompt; call `meta_stat
 
 ### configRoot not configured
 
-**Symptom:** `meta_service` returns "configRoot not configured", or the gateway log shows "[jeeves-meta] configRoot not configured yet" **Cause:** The plugin was loaded before its config was written (normal right after `openclaw plugins install`), or no config root is set **Fix:** Set `plugins.entries.jeeves-meta-openclaw.config.configRoot` (e.g. via `jeeves install --config-root <path>`) or the `JEEVES_CONFIG_ROOT` env var. The other `meta_*` tools only need the service URL and keep working.
+**Symptom:** `meta_service` `install` returns "configRoot not configured", or the gateway log shows "[jeeves-meta] configRoot not configured yet" **Cause:** The plugin was loaded before its config was written (normal right after `openclaw plugins install`), or no config root is set **Fix:** Set `plugins.entries.jeeves-meta-openclaw.config.configRoot` (e.g. via `jeeves install --config-root <path>`) or the `JEEVES_CONFIG_ROOT` env var. The other `meta_service` actions and all other `meta_*` tools do not read `configRoot` and keep working.
 
 ### Watcher unreachable
 

@@ -162,6 +162,20 @@ describe('requireConfigRoot', () => {
     expect(tool.execute).not.toHaveBeenCalled();
   });
 
+  it('passes calls that do not read configRoot straight through', async () => {
+    const tool = fakeTool();
+    const wrapped = requireConfigRoot(
+      tool,
+      createConfigRootGate(makeApi({})),
+      (params) => params.action === 'install',
+    );
+    const result = await wrapped.execute('id', { action: 'status' });
+    expect(JSON.stringify(result)).toContain('ran');
+    const gated = await wrapped.execute('id', { action: 'install' });
+    expect(JSON.stringify(gated)).toContain('configRoot not configured');
+    expect(tool.execute).toHaveBeenCalledTimes(1);
+  });
+
   it('delegates to the tool once configRoot resolves', async () => {
     const tool = fakeTool();
     const wrapped = requireConfigRoot(

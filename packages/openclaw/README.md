@@ -60,10 +60,10 @@ The `configRoot` setting tells `@karmaniverous/jeeves` core where to find the pl
 `configRoot` is resolved **lazily**. Registration always succeeds without it (with a running gateway, `openclaw plugins install` activates the plugin before `jeeves install` writes its config), logging one warning:
 
 ```text
-[jeeves-meta] configRoot not configured yet — meta_service will be unavailable until it is set in plugin config or JEEVES_CONFIG_ROOT
+[jeeves-meta] configRoot not configured yet — meta_service install will be unavailable until it is set in plugin config or JEEVES_CONFIG_ROOT
 ```
 
-Only `meta_service` needs it (it resolves the service config path); invoked without it, the tool returns an error naming both ways to set it. Core `init()` runs the first time `configRoot` resolves. Every other tool only talks HTTP to the service and works without it.
+Only `meta_service` with `action: "install"` reads it (core resolves the service config path from it); invoked without it, that call returns an error naming both ways to set it. Core `init()` runs the first time `configRoot` resolves. The other `meta_service` actions (`status`, `start`, `stop`, `restart`, `uninstall`) address the OS service by name, and every other tool only talks HTTP to the service at `apiUrl`, so all of them work without it.
 
 ## Documentation
 

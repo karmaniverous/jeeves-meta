@@ -64,12 +64,12 @@ describe('register', () => {
     expect(warn).toHaveBeenCalledExactlyOnceWith(CONFIG_ROOT_WARNING);
   });
 
-  it('meta_service without configRoot returns a clear error', async () => {
+  it('meta_service install without configRoot returns a clear error', async () => {
     const { api, tools } = setup();
     register(api);
     const result = await tools
       .get('meta_service')!
-      .execute('id', { action: 'status' });
+      .execute('id', { action: 'install' });
     const text = JSON.stringify(result);
     expect(text).toContain('configRoot not configured');
     expect(text).toContain(`plugins.entries.${PLUGIN_ID}.config.configRoot`);
@@ -95,6 +95,44 @@ describe('register', () => {
       .get('meta_service')!
       .execute('id', { action: 'bogus' });
     expect(JSON.stringify(result)).toContain('Invalid action: bogus');
+  });
+
+  it('meta_service actions that do not read configRoot are not gated', async () => {
+    const { api, tools } = setup();
+    register(api);
+    const result = await tools
+      .get('meta_service')!
+      .execute('id', { action: 'bogus' });
+    expect(JSON.stringify(result)).toContain('Invalid action: bogus');
+  });
+
+  it('every HTTP-only tool works with no configRoot', async () => {
+    const fetchStub = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ marker: 'from-service' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
+    vi.stubGlobal('fetch', fetchStub);
+    try {
+      const { api, tools } = setup();
+      register(api);
+      const params = { action: 'list', path: 'x', config: {}, updates: {} };
+      for (const [name, tool] of tools) {
+        if (name === 'meta_service') continue;
+        const text = JSON.stringify(await tool.execute('id', params));
+        expect({
+          name,
+          gated: text.includes('configRoot not configured'),
+          reachedService: text.includes('from-service'),
+        }).toEqual({ name, gated: false, reachedService: true });
+      }
+      expect(fetchStub).toHaveBeenCalledTimes(tools.size - 1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('declares exactly the conversation hooks it registers (none)', async () => {
