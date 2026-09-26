@@ -11,6 +11,5 @@
     },
     "packages/core": {}
   },
-  "ignoreDependencies": ["@commander-js/extra-typings"],
   "ignoreExportsUsedInFile": true
 }
