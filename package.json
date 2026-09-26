@@ -38,6 +38,7 @@
     "node": ">=22"
   },
   "allowScripts": {
+    "fsevents": true,
     "lefthook": true
   }
 }
