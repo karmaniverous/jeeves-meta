@@ -1,6 +1,6 @@
 # @karmaniverous/jeeves-meta-openclaw
 
-OpenClaw plugin for [jeeves-meta](../service/). A standard OpenClaw plugin and thin HTTP client that registers interactive tools on top of the [`@karmaniverous/jeeves`](https://github.com/karmaniverous/jeeves) core SDK. It writes no workspace files: static platform content is rendered by `jeeves install`, and live state is served by the tools.
+OpenClaw plugin for [jeeves-meta](https://github.com/karmaniverous/jeeves-meta/tree/main/packages/service). A standard OpenClaw plugin and thin HTTP client that registers interactive tools on top of the [`@karmaniverous/jeeves`](https://github.com/karmaniverous/jeeves) core SDK. It writes no workspace files: static platform content is rendered by `jeeves install`, and live state is served by the tools.
 
 ## Features
 

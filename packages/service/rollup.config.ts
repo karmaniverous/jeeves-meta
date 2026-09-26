@@ -10,20 +10,6 @@ const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
   warn(warning);
 };
 
-const typescript = typescriptPlugin({
-  tsconfig: './tsconfig.json',
-  outputToFilesystem: true,
-  exclude: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**', '**/*.d.ts'],
-  noEmit: false,
-  declaration: true,
-  declarationDir: 'dist',
-  declarationMap: false,
-  incremental: false,
-  allowJs: false,
-  checkJs: false,
-  rootDir: './src',
-});
-
 const external = [
   '@karmaniverous/jeeves',
   '@karmaniverous/jeeves-meta-core',
@@ -37,32 +23,6 @@ const external = [
   'tslib',
   /^node:/,
 ];
-
-/**
- * The package entry intentionally exports nothing (the service has no public
- * library API); this build exists to emit `dist/prompts`, so its empty chunk
- * is expected.
- */
-const onwarnLibrary: RollupOptions['onwarn'] = (warning, warn) => {
-  if (warning.code === 'EMPTY_BUNDLE') return;
-  onwarn(warning, warn);
-};
-
-const buildLibrary: RollupOptions = {
-  input: 'src/index.ts',
-  external,
-  onwarn: onwarnLibrary,
-  output: [{ dir: 'dist', extend: true, format: 'esm' }],
-  plugins: [
-    commonjsPlugin(),
-    jsonPlugin(),
-    nodeResolve(),
-    typescript,
-    copyPlugin({
-      targets: [{ src: 'src/prompts/*.md', dest: 'dist/prompts' }],
-    }),
-  ],
-};
 
 const buildCli: RollupOptions = {
   input: 'src/cli.ts',
@@ -89,10 +49,11 @@ const buildCli: RollupOptions = {
       incremental: false,
       rootDir: './src',
     }),
+    // The prompt loader (src/prompts/index.ts) reads `<package root>/dist/prompts`.
     copyPlugin({
-      targets: [{ src: 'src/prompts/*.md', dest: 'dist/cli/jeeves-meta' }],
+      targets: [{ src: 'src/prompts/*.md', dest: 'dist/prompts' }],
     }),
   ],
 };
 
-export default [buildLibrary, buildCli];
+export default [buildCli];

@@ -36,12 +36,6 @@
   "engines": {
     "node": ">=22"
   },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
-  },
   "files": [
     "dist"
   ],
@@ -56,7 +50,6 @@
     "typescript"
   ],
   "license": "BSD-3-Clause",
-  "module": "dist/index.js",
   "name": "@karmaniverous/jeeves-meta",
   "publishConfig": {
     "access": "public"
@@ -109,6 +102,5 @@
     "typecheck": "tsc"
   },
   "type": "module",
-  "types": "dist/index.d.ts",
   "version": "0.17.0"
 }
