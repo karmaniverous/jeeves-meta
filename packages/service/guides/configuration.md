@@ -9,7 +9,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 ## Core Fields (MetaConfig)
 
 | Field | Type | Default | Description |
-|-------|------|---------|-------------|
+| --- | --- | --- | --- |
 | `watcherUrl` | string (URL) | — | Watcher service base URL (required) |
 | `gatewayUrl` | string (URL) | `http://127.0.0.1:18789` | OpenClaw gateway URL |
 | `gatewayApiKey` | string | — | Gateway authentication key |
@@ -25,7 +25,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 ## Service Fields (extends MetaConfig)
 
 | Field | Type | Default | Description |
-|-------|------|---------|-------------|
+| --- | --- | --- | --- |
 | `port` | integer | `1938` | HTTP listen port (min 1, max 65535) |
 | `schedule` | string | `*/30 * * * *` | Cron expression for synthesis scheduling |
 | `reportChannel` | string | — | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
@@ -49,12 +49,11 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 Each rule in the `autoSeed` array has the shape:
 
 | Field | Type | Default | Description |
-|-------|------|---------|-------------|
+| --- | --- | --- | --- |
 | `match` | string | — | Glob pattern matched against `watcher.walk()` results (required) |
 | `steer` | string | — | Steering prompt written as `_steer` in seeded `meta.json` |
 | `crossRefs` | string[] | — | Cross-ref owner paths written as `_crossRefs` |
 | `parentDepth` | integer | `0` | Walk up this many extra parent levels from the matched file's directory |
-
 
 ## Hot-Reload
 

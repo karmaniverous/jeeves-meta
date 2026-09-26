@@ -26,8 +26,7 @@ import {
 
 /** Result of a gate check: the resolved root, or an error message. */
 export type ConfigRootCheck =
-  | { ok: true; configRoot: string }
-  | { ok: false; error: string };
+  { ok: true; configRoot: string } | { ok: false; error: string };
 
 /** Lazily resolves `configRoot` and initializes core on first success. */
 export interface ConfigRootGate {

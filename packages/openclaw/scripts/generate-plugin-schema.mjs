@@ -34,4 +34,6 @@ const plugin = JSON.parse(readFileSync(PLUGIN_JSON, 'utf8'));
 plugin.configSchema = jsonSchema;
 writeFileSync(PLUGIN_JSON, JSON.stringify(plugin, null, 2) + '\n');
 
-console.log('Generated configSchema in openclaw.plugin.json from src/pluginConfigSchema.ts');
+console.log(
+  'Generated configSchema in openclaw.plugin.json from src/pluginConfigSchema.ts',
+);

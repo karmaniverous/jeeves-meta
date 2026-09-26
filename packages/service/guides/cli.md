@@ -74,4 +74,3 @@ Query the active service config (or validate a candidate config file locally). S
 ## `jeeves-meta service install|start|stop|status|remove`
 
 Print OS-specific instructions for managing the service as a system daemon (NSSM on Windows, launchd on macOS, systemd on Linux).
-

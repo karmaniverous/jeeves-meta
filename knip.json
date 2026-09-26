@@ -1,7 +1,9 @@
 {
   "workspaces": {
     "packages/service": {
-      "ignoreDependencies": ["@rollup/plugin-typescript={outputToFilesystem:true}"]
+      "ignoreDependencies": [
+        "@rollup/plugin-typescript={outputToFilesystem:true}"
+      ]
     },
     "packages/openclaw": {
       "ignoreBinaries": ["plantuml"]

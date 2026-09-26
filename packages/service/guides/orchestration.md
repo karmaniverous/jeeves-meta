@@ -22,6 +22,7 @@ Each meta carries `_phaseState: { architect, builder, critic }` where each value
 **Invariant:** At most one phase is `pending` or `running`, and it is the first non-fresh phase in pipeline order. When `enforceInvariant()` runs after every transition, stale phases that become the first non-fresh phase are promoted to `pending`; non-first `pending` phases are demoted to `stale`.
 
 **Key transitions:**
+
 - Architect invalidated → `architect: pending` (downstream `fresh` phases become `stale`; already non-fresh phases keep their state). Triggers: structure hash change, steer change, cross-refs declaration change, `_synthesisCount` ≥ `architectEvery`, or first run (no `_builder`).
 - **Progressive metas** (`_state` present): structure changes invalidate builder instead of architect, since the cursor handles incremental processing.
 - Builder invalidated (cross-ref content change, when architect is fresh and not first run) → `builder: pending`; `critic` → `stale` if was `fresh`. When architect is not fresh, builder stays `stale` (not promoted to `pending`).
@@ -35,7 +36,7 @@ Each meta carries `_phaseState: { architect, builder, critic }` where each value
 ### Module Structure
 
 | Module | Responsibility |
-|--------|---------------|
+| --- | --- |
 | `orchestratePhase.ts` | Per-tick driver: discover → derive → select → execute one phase |
 | `runPhase.ts` | Per-phase executors: `runArchitect`, `runBuilder`, `runCritic`; lock-staged persistence via `persistPhaseState()` |
 
@@ -50,7 +51,7 @@ Each meta carries `_phaseState: { architect, builder, critic }` where each value
 ### Lock Staging ("Never Write Worse")
 
 Results are staged in `.lock` before being committed to `meta.json`. If the process crashes:
+
 - Before staging: `meta.json` is untouched
 - After staging, before commit: `meta.json` is untouched; stale `.lock` cleaned at next startup
 - After commit: synthesis is preserved
-

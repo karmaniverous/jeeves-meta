@@ -29,7 +29,7 @@ The plugin requires the **jeeves-meta service** to be running. The plugin itself
 The plugin resolves settings via a fallback chain: plugin config → environment variable → default.
 
 | Setting | Plugin Config Key | Env Var | Default |
-|---------|-------------------|---------|---------|
+| --- | --- | --- | --- |
 | Service URL | `apiUrl` | `JEEVES_META_URL` | `http://127.0.0.1:1938` |
 | Config Root | `configRoot` | `JEEVES_CONFIG_ROOT` | _none_ |
 

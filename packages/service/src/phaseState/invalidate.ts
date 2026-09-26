@@ -32,11 +32,7 @@ function isPromptStale(
 
 /** Architect-level invalidation reasons. */
 export type ArchitectInvalidator =
-  | 'structureHash'
-  | 'steer'
-  | '_crossRefs'
-  | 'firstRun'
-  | 'architectEvery';
+  'structureHash' | 'steer' | '_crossRefs' | 'firstRun' | 'architectEvery';
 
 /** Informational input status for a meta (exposed in /preview). */
 export interface InputStatus {

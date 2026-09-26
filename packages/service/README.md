@@ -55,7 +55,7 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 ## HTTP API
 
 | Method | Path | Description |
-|--------|------|-------------|
+| --- | --- | --- |
 | GET | `/status` | Service health, queue state, dependency checks, phase-state summary |
 | GET | `/metas` | List metas with summary stats and per-meta projection. Response includes `_phaseState` and `owedPhase` per meta. |
 | GET | `/metas/:path` | Full detail for a single meta, with optional archive history. Response includes `_phaseState` and `owedPhase`. |
@@ -82,4 +82,3 @@ See the [Configuration Guide](guides/configuration.md) for all fields, defaults,
 ## License
 
 BSD-3-Clause
-

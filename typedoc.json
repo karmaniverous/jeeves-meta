@@ -26,10 +26,7 @@
     "GitHub": "https://github.com/karmaniverous/jeeves-meta"
   },
   "out": "./docs/",
-  "plugin": [
-    "typedoc-plugin-mdn-links",
-    "typedoc-plugin-replace-text"
-  ],
+  "plugin": ["typedoc-plugin-mdn-links", "typedoc-plugin-replace-text"],
   "projectDocuments": [
     "./packages/service/guides/index.md",
     "./packages/openclaw/guides/index.md"
