@@ -20,6 +20,7 @@ import {
   requireConfigRoot,
 } from './configRoot.js';
 import { buildCustomTools } from './customTools.js';
+import { getServiceUrl } from './helpers.js';
 import type { MetaServiceClient } from './serviceClient.js';
 
 /**
@@ -44,8 +45,13 @@ export function registerMetaTools(
 ): void {
   const baseUrl = client.getBaseUrl();
 
-  // Standard tools from factory: meta_status, meta_config, meta_config_apply, meta_service
-  for (const tool of createPluginToolset(descriptor)) {
+  // Standard tools from factory: meta_status, meta_config, meta_config_apply, meta_service.
+  // `apiUrl` is resolved on every call with the same resolution as the
+  // custom tools, so the standard HTTP tools hit the configured service.
+  const toolset = createPluginToolset(descriptor, {
+    apiUrl: () => getServiceUrl(api),
+  });
+  for (const tool of toolset) {
     const needsConfigRoot = CONFIG_ROOT_TOOLS.get(tool.name);
     api.registerTool(
       needsConfigRoot ? requireConfigRoot(tool, gate, needsConfigRoot) : tool,

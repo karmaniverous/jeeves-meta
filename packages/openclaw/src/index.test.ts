@@ -135,6 +135,50 @@ describe('register', () => {
     }
   });
 
+  describe('standard meta_status tool', () => {
+    const originalUrl = process.env['JEEVES_META_URL'];
+
+    async function statusUrl(config?: Record<string, unknown>) {
+      const fetchStub = vi.fn((_url: string | URL | Request) =>
+        Promise.resolve(
+          new Response(JSON.stringify({ status: 'ok' }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          }),
+        ),
+      );
+      vi.stubGlobal('fetch', fetchStub);
+      try {
+        const { api, tools } = setup(config);
+        register(api);
+        await tools.get('meta_status')!.execute('id', {});
+        expect(fetchStub).toHaveBeenCalled();
+        return String(fetchStub.mock.calls[0][0]);
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    }
+
+    beforeEach(() => {
+      delete process.env['JEEVES_META_URL'];
+    });
+
+    afterEach(() => {
+      if (originalUrl === undefined) delete process.env['JEEVES_META_URL'];
+      else process.env['JEEVES_META_URL'] = originalUrl;
+    });
+
+    it('calls the configured apiUrl', async () => {
+      const url = await statusUrl({ apiUrl: 'http://meta.example:4321' });
+      expect(url.startsWith('http://meta.example:4321/')).toBe(true);
+    });
+
+    it('calls the default port when apiUrl is unset', async () => {
+      const url = await statusUrl();
+      expect(url.startsWith('http://127.0.0.1:1938/')).toBe(true);
+    });
+  });
+
   it('declares exactly the conversation hooks it registers (none)', async () => {
     const hooks = await recordRegisteredHooks(register, {
       logger: { warn: () => {} },
