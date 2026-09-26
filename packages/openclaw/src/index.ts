@@ -15,6 +15,7 @@ import {
   type PluginApi,
 } from '@karmaniverous/jeeves';
 import { META_COMPONENT } from '@karmaniverous/jeeves-meta-core';
+import { z } from 'zod';
 
 import { createConfigRootGate, warnIfConfigRootMissing } from './configRoot.js';
 import { getServiceUrl } from './helpers.js';
@@ -31,9 +32,8 @@ function buildDescriptor(): JeevesComponentDescriptor {
     servicePackage: META_COMPONENT.servicePackage,
     pluginPackage: META_COMPONENT.pluginPackage,
     defaultPort: META_COMPONENT.defaultPort,
-    // The runtime Zod custom validator only checks for a .parse() method.
-    // Use unknown cast to bridge the Zod v4 (service) ↔ v3 (core SDK) type gap.
-    configSchema: { parse: (v: unknown) => v } as unknown,
+    // The plugin never validates service config; the service descriptor does.
+    configSchema: z.unknown(),
     configFileName: 'config.json',
     initTemplate: () => ({}),
     startCommand: (configPath: string) => [

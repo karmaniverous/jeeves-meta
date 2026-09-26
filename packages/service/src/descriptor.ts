@@ -1,8 +1,8 @@
 /**
  * Jeeves component descriptor for jeeves-meta.
  *
- * Single source of truth consumed by the service CLI, plugin writer, and
- * config-apply pipeline.
+ * Single source of truth consumed by the service CLI and the config-apply
+ * pipeline.
  *
  * @module descriptor
  */
@@ -14,10 +14,7 @@ import {
 import { META_COMPONENT } from '@karmaniverous/jeeves-meta-core';
 
 import { startService } from './bootstrap.js';
-import {
-  applyHotReloadedConfig,
-  RESTART_REQUIRED_FIELDS,
-} from './configHotReload.js';
+import { applyHotReloadedConfig } from './configHotReload.js';
 import { loadServiceConfig } from './configLoader.js';
 import { SERVICE_VERSION } from './constants.js';
 import { registerCustomCliCommands } from './customCliCommands.js';
@@ -33,9 +30,7 @@ export const metaDescriptor: JeevesComponentDescriptor =
     servicePackage: META_COMPONENT.servicePackage,
     pluginPackage: META_COMPONENT.pluginPackage,
     defaultPort: META_COMPONENT.defaultPort,
-    // The runtime Zod custom validator only checks for a .parse() method.
-    // Use unknown cast to bridge the Zod v4 (service) → v3 (core SDK) type gap.
-    configSchema: serviceConfigSchema as unknown,
+    configSchema: serviceConfigSchema,
     configFileName: 'config.json',
     initTemplate: () =>
       serviceConfigSchema.parse({
@@ -57,10 +52,6 @@ export const metaDescriptor: JeevesComponentDescriptor =
       '-c',
       configPath,
     ],
-    sectionId: 'Meta',
-    refreshIntervalSeconds: 73,
-    generateToolsContent: () => '',
-    dependencies: { hard: ['watcher'], soft: [] },
     customCliCommands: registerCustomCliCommands,
   });
 

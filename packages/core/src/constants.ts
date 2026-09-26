@@ -11,7 +11,5 @@ export const META_COMPONENT = {
   servicePackage: '@karmaniverous/jeeves-meta',
   pluginPackage: '@karmaniverous/jeeves-meta-openclaw',
   defaultPort: 1938,
-  sectionId: 'Meta',
   configFileName: 'config.json',
-  dependencies: { hard: ['watcher'] as const, soft: [] as const },
 } as const;

@@ -139,7 +139,7 @@ describe('register', () => {
     const originalUrl = process.env['JEEVES_META_URL'];
 
     async function statusUrl(config?: Record<string, unknown>) {
-      const fetchStub = vi.fn((_url: string | URL | Request) =>
+      const fetchStub = vi.fn<typeof fetch>(() =>
         Promise.resolve(
           new Response(JSON.stringify({ status: 'ok' }), {
             status: 200,
@@ -153,7 +153,8 @@ describe('register', () => {
         register(api);
         await tools.get('meta_status')!.execute('id', {});
         expect(fetchStub).toHaveBeenCalled();
-        return String(fetchStub.mock.calls[0][0]);
+        const input = fetchStub.mock.calls[0][0];
+        return input instanceof Request ? input.url : input.toString();
       } finally {
         vi.unstubAllGlobals();
       }

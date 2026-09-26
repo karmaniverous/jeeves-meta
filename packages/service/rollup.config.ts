@@ -38,10 +38,20 @@ const external = [
   /^node:/,
 ];
 
+/**
+ * The package entry intentionally exports nothing (the service has no public
+ * library API); this build exists to emit `dist/prompts`, so its empty chunk
+ * is expected.
+ */
+const onwarnLibrary: RollupOptions['onwarn'] = (warning, warn) => {
+  if (warning.code === 'EMPTY_BUNDLE') return;
+  onwarn(warning, warn);
+};
+
 const buildLibrary: RollupOptions = {
   input: 'src/index.ts',
   external,
-  onwarn,
+  onwarn: onwarnLibrary,
   output: [{ dir: 'dist', extend: true, format: 'esm' }],
   plugins: [
     commonjsPlugin(),
