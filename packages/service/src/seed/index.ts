@@ -4,10 +4,5 @@
  * @module seed
  */
 
-export { autoSeedPass, type AutoSeedResult } from './autoSeed.js';
-export {
-  createMeta,
-  type CreateMetaOptions,
-  type CreateMetaResult,
-  metaExists,
-} from './createMeta.js';
+export { autoSeedPass } from './autoSeed.js';
+export { createMeta, metaExists } from './createMeta.js';

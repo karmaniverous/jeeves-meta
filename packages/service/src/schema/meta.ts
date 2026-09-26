@@ -9,25 +9,15 @@
 
 import {
   type PhaseName,
-  phaseNames,
   type PhaseState,
   phaseStateSchema,
-  type PhaseStatus,
-  phaseStatuses,
 } from '@karmaniverous/jeeves-meta-core';
 import { z } from 'zod';
 
 import { metaErrorSchema } from './error.js';
 
 // Re-export phase vocabulary so existing consumers are unaffected.
-export {
-  type PhaseName,
-  phaseNames,
-  type PhaseState,
-  phaseStateSchema,
-  type PhaseStatus,
-  phaseStatuses,
-};
+export { type PhaseName, type PhaseState, phaseStateSchema };
 
 /** Zod schema for the reserved (underscore-prefixed) meta.json properties. */
 export const metaJsonSchema = z

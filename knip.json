@@ -1,7 +1,6 @@
 {
   "workspaces": {
     "packages/service": {
-      "includeEntryExports": true,
       "ignoreDependencies": ["@rollup/plugin-typescript={outputToFilesystem:true}"]
     },
     "packages/openclaw": {

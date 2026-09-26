@@ -66,9 +66,6 @@ async function checkWatcher(url: string): Promise<WatcherHealth> {
   }
 }
 
-// Re-export for consumers that import from this module.
-export type { ServiceState };
-
 /** Derive service-specific state from current activity and lifecycle. */
 function deriveServiceState(deps: RouteDeps): ServiceState {
   if (deps.shuttingDown) return 'stopping';

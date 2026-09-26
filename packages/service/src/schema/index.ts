@@ -5,8 +5,6 @@
  */
 
 export {
-  type AutoSeedRule,
-  DEFAULT_TEMPLATE_STRINGS,
   type MetaConfig,
   metaConfigSchema,
   type ServiceConfig,
@@ -17,9 +15,5 @@ export {
   type MetaJson,
   metaJsonSchema,
   type PhaseName,
-  phaseNames,
   type PhaseState,
-  phaseStateSchema,
-  type PhaseStatus,
-  phaseStatuses,
 } from './meta.js';

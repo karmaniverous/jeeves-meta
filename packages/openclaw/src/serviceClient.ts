@@ -9,12 +9,9 @@
 
 import { fetchJson, postJson } from '@karmaniverous/jeeves';
 import {
-  type DepHealth,
   type EndpointName,
   type GatewayDepHealth,
   getEndpoint,
-  type MetaListSummary,
-  type MetasItem,
   type MetasResponse,
   type NextPhaseCandidate,
   type PhaseStateSummary,
@@ -24,10 +21,7 @@ import {
 
 // Re-export core types for consumers that import from this module.
 export type {
-  DepHealth,
   GatewayDepHealth,
-  MetaListSummary,
-  MetasItem,
   MetasResponse,
   NextPhaseCandidate,
   PhaseStateSummary,

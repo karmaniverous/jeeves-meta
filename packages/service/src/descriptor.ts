@@ -21,7 +21,7 @@ import {
 import { loadServiceConfig } from './configLoader.js';
 import { SERVICE_VERSION } from './constants.js';
 import { registerCustomCliCommands } from './customCliCommands.js';
-import { type ServiceConfig, serviceConfigSchema } from './schema/config.js';
+import { serviceConfigSchema } from './schema/config.js';
 
 // Re-export for consumers that import from descriptor
 export { RESTART_REQUIRED_FIELDS };
@@ -68,5 +68,4 @@ export const metaDescriptor: JeevesComponentDescriptor =
   });
 
 // Re-export for convenience
-export type { ServiceConfig };
 export { loadServiceConfig };

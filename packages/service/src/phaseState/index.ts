@@ -4,37 +4,24 @@
  * @module phaseState
  */
 
-export { type DerivationInputs, derivePhaseState } from './derivePhaseState.js';
-export {
-  type ArchitectInvalidator,
-  computeInvalidation,
-  type InputStatus,
-  type InvalidationResult,
-} from './invalidate.js';
+export { derivePhaseState } from './derivePhaseState.js';
+export { computeInvalidation } from './invalidate.js';
 export {
   buildPhaseCandidates,
-  type PhaseCandidate,
   type PhaseCandidateInput,
   rankPhaseCandidates,
   selectAllTier2Candidates,
   selectPhaseCandidate,
-  selectTier2Candidate,
-  type Tier2Candidate,
 } from './phaseScheduler.js';
 export {
   architectSuccess,
   builderSuccess,
   criticSuccess,
-  enforceInvariant,
   freshPhaseState,
   getOwedPhase,
   getPriorityBand,
-  initialPhaseState,
-  invalidateArchitect,
-  invalidateBuilder,
   isFullyFresh,
   phaseFailed,
   phaseRunning,
   retryAllFailed,
-  retryPhase,
 } from './phaseTransitions.js';
