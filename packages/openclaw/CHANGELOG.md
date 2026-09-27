@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.15.0-1] - 2026-09-27
 
 ### 🐛 Bug Fixes
 
@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
 ### 💼 Other
 
 - Update root package-lock in release-it after:bump hook
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.15.0-1
 ## [0.15.0-0] - 2026-09-27
 
 ### 🚀 Features
