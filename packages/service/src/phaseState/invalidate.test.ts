@@ -27,10 +27,10 @@ vi.mock('../archive/index.js', () => ({
   readLatestArchive: vi.fn(() => mockArchive),
 }));
 
-// ── Mock DEFAULT prompts to stable strings ──────────────────────────
+// ── Mock default prompts to stable strings ──────────────────────────
 vi.mock('../prompts/index.js', () => ({
-  DEFAULT_ARCHITECT_PROMPT: 'default-architect-prompt',
-  DEFAULT_CRITIC_PROMPT: 'default-critic-prompt',
+  getDefaultArchitectPrompt: () => 'default-architect-prompt',
+  getDefaultCriticPrompt: () => 'default-critic-prompt',
 }));
 
 // ── Shared fixtures ─────────────────────────────────────────────────
@@ -488,8 +488,8 @@ describe('computeInvalidation', () => {
       _phaseState: { ...freshPhaseState },
       _structureHash: HASH_A,
       _builder: 'brief',
-      _architect: 'default-architect-prompt', // matches DEFAULT_ARCHITECT_PROMPT mock
-      _critic: 'default-critic-prompt', // matches DEFAULT_CRITIC_PROMPT mock
+      _architect: 'default-architect-prompt', // matches getDefaultArchitectPrompt mock
+      _critic: 'default-critic-prompt', // matches getDefaultCriticPrompt mock
       _synthesisCount: 3,
     };
 

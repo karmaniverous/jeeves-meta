@@ -3,7 +3,7 @@
     "packages/service": {
       "includeEntryExports": true,
       "ignoreDependencies": [
-        "@rollup/plugin-typescript={outputToFilesystem:true}"
+        "@rollup/plugin-typescript={outputToFilesystem:true,paths:{}}"
       ]
     },
     "packages/openclaw": {

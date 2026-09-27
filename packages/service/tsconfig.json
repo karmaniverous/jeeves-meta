@@ -4,6 +4,9 @@
     "allowJs": true,
     "checkJs": true,
     "incremental": true,
+    "paths": {
+      "@karmaniverous/jeeves-meta-core": ["../core/src/index.ts"]
+    },
     "tsBuildInfoFile": "./.tsbuildinfo",
     "types": ["node", "vitest/globals"]
   },

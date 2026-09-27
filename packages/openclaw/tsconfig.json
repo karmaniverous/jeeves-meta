@@ -1,6 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "paths": {
+      "@karmaniverous/jeeves-meta-core": ["../core/src/index.ts"]
+    },
     "types": ["node"]
   },
   "include": [
