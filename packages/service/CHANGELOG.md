@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- *(service)* [**breaking**] Remove unused public library API
+- [**breaking**] Move service to @karmaniverous/jeeves 0.6.0-4; approve lefthook scripts
+
+### 🐛 Bug Fixes
+
+- *(release)* Use --github.preRelease for release-it 21
+- *(service)* Tests read prompts and core from source, not dist
+
+### 🚜 Refactor
+
+- *(service)* [**breaking**] Drop library entry; package is CLI/service only
+
+### ⚙️ Miscellaneous Tasks
+
+- *(knip)* Remove dead barrel/convenience re-exports; treat service entry as public API
+- Apply prettier; ignore generated/templated files
+## [0.17.0] - 2026-06-27
+
 ### 🐛 Bug Fixes
 
 - Address copilot review comments (#211)
@@ -25,6 +45,10 @@ All notable changes to this project will be documented in this file.
 ### 🧪 Testing
 
 - Fill coverage gaps — hot-reload detection, config defaults, metaCounts, missing phase
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.17.0
 ## [0.16.3] - 2026-06-25
 
 ### 🐛 Bug Fixes
@@ -481,8 +505,13 @@ All notable changes to this project will be documented in this file.
 - Release @karmaniverous/jeeves-meta v0.12.4
 ## [0.12.3] - 2026-03-31
 
+### 🚀 Features
+
+- Integrate core 0.4.5 — add descriptor.run, fix start recursion
+
 ### ⚙️ Miscellaneous Tasks
 
+- Integrate core 0.4.6 — remove init() workaround from descriptor.run
 - Resolve merge conflicts with main, bump core to ^0.4.6
 - Release @karmaniverous/jeeves-meta v0.12.3
 ## [0.12.2] - 2026-03-30
@@ -496,6 +525,10 @@ All notable changes to this project will be documented in this file.
 - Release @karmaniverous/jeeves-meta v0.12.2
 ## [0.12.1] - 2026-03-30
 
+### 🐛 Bug Fixes
+
+- Correct startCommand path in descriptor (dist/cli.js → dist/cli/jeeves-meta/index.js)
+
 ### ⚙️ Miscellaneous Tasks
 
 - Release @karmaniverous/jeeves-meta v0.12.1
@@ -506,11 +539,6 @@ All notable changes to this project will be documented in this file.
 - Phase 1 — config migration, descriptor, bind address (M1, M2, M6)
 - Phase 2 — config apply, status handler, queue management, archive watcher scan (M5, M5b, M7c)
 - Phase 3 — service CLI + plugin toolset + plugin CLI (M3, M4, M7, M7b)
-- Integrate core 0.4.5 — add descriptor.run, fix start recursion
-
-### 🐛 Bug Fixes
-
-- Correct startCommand path in descriptor (dist/cli.js → dist/cli/jeeves-meta/index.js)
 
 ### 🚜 Refactor
 
@@ -528,7 +556,6 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6, typedoc 0.28.18, typescript-eslint 8.57.2
-- Integrate core 0.4.6 — remove init() workaround from descriptor.run
 - Release @karmaniverous/jeeves-meta v0.12.0
 ## [0.11.3] - 2026-03-28
 
