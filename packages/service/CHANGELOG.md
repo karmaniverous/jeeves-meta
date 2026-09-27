@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 💼 Other
+
+- Update root package-lock in release-it after:bump hook
+## [0.18.0-0] - 2026-09-27
+
 ### 🚀 Features
 
 - *(service)* [**breaking**] Remove unused public library API
@@ -22,6 +27,7 @@ All notable changes to this project will be documented in this file.
 
 - *(knip)* Remove dead barrel/convenience re-exports; treat service entry as public API
 - Apply prettier; ignore generated/templated files
+- Release @karmaniverous/jeeves-meta v0.18.0-0
 ## [0.17.0] - 2026-06-27
 
 ### 🐛 Bug Fixes
