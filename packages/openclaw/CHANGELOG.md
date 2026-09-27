@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🐛 Bug Fixes
+
+- *(service)* Tests read prompts and core from source, not dist
+
+### 💼 Other
+
+- Update root package-lock in release-it after:bump hook
+## [0.15.0-0] - 2026-09-27
+
 ### 🚀 Features
 
 - *(openclaw)* [**breaking**] Standard OpenClaw plugin on jeeves core 0.6.0 with lazy configRoot
@@ -24,6 +33,7 @@ All notable changes to this project will be documented in this file.
 
 - *(knip)* Remove dead barrel/convenience re-exports; treat service entry as public API
 - Apply prettier; ignore generated/templated files
+- Release @karmaniverous/jeeves-meta-openclaw v0.15.0-0
 ## [0.14.0] - 2026-06-27
 
 ### 🐛 Bug Fixes
