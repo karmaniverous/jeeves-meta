@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- *(openclaw)* [**breaking**] Standard OpenClaw plugin on jeeves core 0.6.0 with lazy configRoot
+- *(openclaw)* Pass lazy apiUrl to createPluginToolset (core 0.6.0-4)
+- *(service)* [**breaking**] Remove unused public library API
+- [**breaking**] Move service to @karmaniverous/jeeves 0.6.0-4; approve lefthook scripts
+
+### 🐛 Bug Fixes
+
+- *(openclaw)* Gate only tools that read configRoot
+- *(release)* Use --github.preRelease for release-it 21
+
+### 🚜 Refactor
+
+- *(service)* [**breaking**] Drop library entry; package is CLI/service only
+
+### ⚙️ Miscellaneous Tasks
+
+- *(knip)* Remove dead barrel/convenience re-exports; treat service entry as public API
+- Apply prettier; ignore generated/templated files
+## [0.14.0] - 2026-06-27
+
 ### 🐛 Bug Fixes
 
 - Address copilot review comments (#211)
@@ -15,6 +37,10 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Sync guides, SKILL.md, and migration instructions with #210 and PR #248 changes
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.14.0
 ## [0.13.3] - 2026-06-25
 
 ### 🐛 Bug Fixes
@@ -294,8 +320,13 @@ All notable changes to this project will be documented in this file.
 - Release @karmaniverous/jeeves-meta-openclaw v0.9.3
 ## [0.9.2] - 2026-03-31
 
+### 🚀 Features
+
+- Integrate core 0.4.5 — add descriptor.run, fix start recursion
+
 ### ⚙️ Miscellaneous Tasks
 
+- Integrate core 0.4.6 — remove init() workaround from descriptor.run
 - Resolve merge conflicts with main, bump core to ^0.4.6
 - Release @karmaniverous/jeeves-meta-openclaw v0.9.2
 ## [0.9.1] - 2026-03-30
@@ -314,7 +345,6 @@ All notable changes to this project will be documented in this file.
 - Phase 1 — config migration, descriptor, bind address (M1, M2, M6)
 - Phase 2 — config apply, status handler, queue management, archive watcher scan (M5, M5b, M7c)
 - Phase 3 — service CLI + plugin toolset + plugin CLI (M3, M4, M7, M7b)
-- Integrate core 0.4.5 — add descriptor.run, fix start recursion
 
 ### 🐛 Bug Fixes
 
@@ -328,7 +358,6 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update dependencies — core ^0.4.4 (Zod 4), ESLint 10, knip 6, typedoc 0.28.18, typescript-eslint 8.57.2
-- Integrate core 0.4.6 — remove init() workaround from descriptor.run
 - Release @karmaniverous/jeeves-meta-openclaw v0.9.0
 ## [0.8.3] - 2026-03-28
 
