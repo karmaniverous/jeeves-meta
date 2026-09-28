@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0-2] - 2026-09-27
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.15.0-2
 ## [0.15.0-1] - 2026-09-27
 
 ### 🐛 Bug Fixes
