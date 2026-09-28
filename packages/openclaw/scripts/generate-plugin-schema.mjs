@@ -13,6 +13,8 @@ import { fileURLToPath } from 'node:url';
 
 import { toJSONSchema } from 'zod';
 
+import { formatPluginManifest } from './format-plugin-manifest.mjs';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLUGIN_JSON = path.join(ROOT, 'openclaw.plugin.json');
 
@@ -32,7 +34,8 @@ delete jsonSchema.required;
 // Patch plugin.json in place
 const plugin = JSON.parse(readFileSync(PLUGIN_JSON, 'utf8'));
 plugin.configSchema = jsonSchema;
-writeFileSync(PLUGIN_JSON, JSON.stringify(plugin, null, 2) + '\n');
+// Emit Prettier-formatted output so a build is a no-op on a clean tree (#222).
+writeFileSync(PLUGIN_JSON, await formatPluginManifest(plugin, PLUGIN_JSON));
 
 console.log(
   'Generated configSchema in openclaw.plugin.json from src/pluginConfigSchema.ts',
