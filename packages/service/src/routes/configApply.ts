@@ -1,39 +1,72 @@
 /**
- * POST /config/apply — apply a config patch using the runtime config path.
+ * POST /config/apply — apply a config patch to the runtime config file.
  *
- * The core SDK's `createConfigApplyHandler` derives the config path from
- * `getComponentConfigDir()` which uses the npm global config root. This
- * local implementation uses the actual runtime config path instead, so
- * temp files are written alongside the active config file.
+ * Delegates the read/merge/validate/write cycle to the core SDK's
+ * `createConfigApplyHandler` (bound to the runtime config path), which
+ * merges into the raw file, validates without writing the schema's parsed
+ * output, and keeps the file mode (0600 for a new file). This route adds
+ * request validation, `restartRequired` reporting, and keeps the resolved
+ * config (which may hold secrets) out of the response.
  *
  * @module routes/configApply
  */
 
 import { readFileSync } from 'node:fs';
 
-import { atomicWrite } from '@karmaniverous/jeeves';
+import type { ConfigApplyHandler } from '@karmaniverous/jeeves';
 import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 
-import {
-  applyHotReloadedConfig,
-  RESTART_REQUIRED_FIELDS,
-} from '../configHotReload.js';
+import { RESTART_REQUIRED_FIELDS } from '../configHotReload.js';
 import { serviceConfigSchema } from '../schema/config.js';
 
-/** Register the POST /config/apply route. */
+/** Core handler success/warning body shape. */
+interface AppliedBody {
+  applied?: boolean;
+  warning?: string;
+  config?: Record<string, unknown>;
+}
+
+/**
+ * Snapshot the effective (schema-resolved) config currently on disk.
+ *
+ * @param configPath - Runtime config file path.
+ * @returns The resolved config, the raw object when it does not validate,
+ *   or `{}` when the file is missing or unreadable.
+ */
+function readEffectiveConfig(configPath: string): Record<string, unknown> {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(readFileSync(configPath, 'utf8'));
+  } catch {
+    return {};
+  }
+  const parsed = serviceConfigSchema.safeParse(raw);
+  if (parsed.success) return parsed.data;
+  return typeof raw === 'object' && raw !== null && !Array.isArray(raw)
+    ? (raw as Record<string, unknown>)
+    : {};
+}
+
+/**
+ * Register the POST /config/apply route.
+ *
+ * @param app - Fastify instance.
+ * @param applyConfig - Core config apply handler bound to the runtime path.
+ * @param configPath - Runtime config file path (for restart detection).
+ */
 export function registerConfigApplyRoute(
   app: FastifyInstance,
+  applyConfig?: ConfigApplyHandler,
   configPath?: string,
 ): void {
   app.post(getEndpoint('configApply').path, async (request, reply) => {
-    if (!configPath) {
+    if (!applyConfig || !configPath) {
       return reply
         .status(500)
         .send({ error: 'No runtime config path available' });
     }
 
-    // Validate request body
     const body = request.body as Record<string, unknown> | null | undefined;
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       return reply
@@ -41,10 +74,7 @@ export function registerConfigApplyRoute(
         .send({ error: 'Request body must be a JSON object' });
     }
 
-    const { patch, replace } = body as {
-      patch: unknown;
-      replace?: unknown;
-    };
+    const { patch, replace } = body as { patch: unknown; replace?: unknown };
 
     if (
       patch === null ||
@@ -63,76 +93,28 @@ export function registerConfigApplyRoute(
         .send({ error: '`replace` must be a boolean if provided' });
     }
 
-    // Read existing config from the runtime config path
-    let existing: Record<string, unknown> = {};
-    try {
-      existing = JSON.parse(readFileSync(configPath, 'utf8')) as Record<
-        string,
-        unknown
-      >;
-    } catch (err) {
-      if (
-        err instanceof SyntaxError ||
-        (err instanceof Error && err.message.includes('JSON'))
-      ) {
-        return reply.status(400).send({
-          error: `Existing config file contains invalid JSON: ${err.message}`,
-        });
-      }
-      // File missing — start from empty
+    const previous = readEffectiveConfig(configPath);
+
+    const result = await applyConfig({
+      patch: patch as Record<string, unknown>,
+      replace,
+    });
+
+    if (result.status !== 200) {
+      return reply.status(result.status).send(result.body);
     }
 
-    // Merge or replace
-    const merged = replace
-      ? { ...(patch as Record<string, unknown>) }
-      : { ...existing, ...(patch as Record<string, unknown>) };
+    // Never echo the resolved config: it may hold secrets (gatewayApiKey).
+    const { config: next = {}, warning } = result.body as AppliedBody;
 
-    // Validate against schema
-    const parseResult = serviceConfigSchema.safeParse(merged);
-    if (!parseResult.success) {
-      return reply.status(400).send({
-        error: 'Config validation failed',
-        issues: parseResult.error.issues,
-      });
-    }
-
-    const validatedConfig = parseResult.data;
-
-    // Write atomically — temp file lands next to the runtime config file
-    try {
-      const json = JSON.stringify(validatedConfig, null, 2) + '\n';
-      atomicWrite(configPath, json);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return reply
-        .status(500)
-        .send({ error: `Failed to write config: ${message}` });
-    }
-
-    // Compute whether any restart-required fields actually changed
-    // (compares validated output against previous config, catching both
-    // explicit patch keys and implicit changes via replace + schema defaults)
-    const validatedRecord = validatedConfig as Record<string, unknown>;
     const restartRequired = RESTART_REQUIRED_FIELDS.some(
       (field) =>
-        JSON.stringify(existing[field]) !==
-        JSON.stringify(validatedRecord[field]),
+        JSON.stringify(previous[field]) !== JSON.stringify(next[field]),
     );
-
-    // Apply hot-reload callback
-    try {
-      applyHotReloadedConfig(validatedConfig);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      return reply.status(200).send({
-        applied: true,
-        warning: `Config written but callback failed: ${message}`,
-        restartRequired,
-      });
-    }
 
     return reply.status(200).send({
       applied: true,
+      ...(warning ? { warning } : {}),
       restartRequired,
     });
   });

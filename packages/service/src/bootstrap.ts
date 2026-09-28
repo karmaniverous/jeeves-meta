@@ -6,7 +6,7 @@
 
 import { watchFile } from 'node:fs';
 
-import { getBindAddress } from '@karmaniverous/jeeves';
+import { type ConfigApplyHandler, getBindAddress } from '@karmaniverous/jeeves';
 
 import { MetaCache } from './cache.js';
 import {
@@ -59,10 +59,13 @@ export function computeCycleTokens(meta: Record<string, unknown>): number {
  *
  * @param config - Validated service configuration.
  * @param configPath - Optional path to config file for hot-reload.
+ * @param configApply - Core config apply handler bound to `configPath`,
+ *   backing POST /config/apply.
  */
 export async function startService(
   config: ServiceConfig,
   configPath?: string,
+  configApply?: ConfigApplyHandler,
 ): Promise<void> {
   const logger = createLogger({
     level: config.logging.level,
@@ -105,6 +108,7 @@ export async function startService(
     ready: false,
     executor,
     configPath,
+    configApply,
   };
 
   registerConfigHotReloadRuntime({

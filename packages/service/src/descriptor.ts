@@ -8,6 +8,7 @@
  */
 
 import {
+  createConfigApplyHandler,
   type JeevesComponentDescriptor,
   jeevesComponentDescriptorSchema,
 } from '@karmaniverous/jeeves';
@@ -43,7 +44,13 @@ export const metaDescriptor: JeevesComponentDescriptor =
     },
     run: async (configPath: string) => {
       const config = loadServiceConfig(configPath);
-      await startService(config, configPath);
+      // Route POST /config/apply through core's handler so the raw file is
+      // merged (unknown keys kept, no defaults written, mode preserved).
+      await startService(
+        config,
+        configPath,
+        createConfigApplyHandler(metaDescriptor, configPath),
+      );
     },
     startCommand: (configPath: string) => [
       'node',

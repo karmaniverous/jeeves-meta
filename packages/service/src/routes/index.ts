@@ -4,6 +4,7 @@
  * @module routes
  */
 
+import type { ConfigApplyHandler } from '@karmaniverous/jeeves';
 import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
@@ -66,6 +67,8 @@ export interface RouteDeps {
   shuttingDown?: boolean;
   /** Runtime config file path for config-apply. */
   configPath?: string;
+  /** Core config apply handler bound to {@link RouteDeps.configPath}. */
+  configApply?: ConfigApplyHandler;
 }
 
 /** Register all HTTP routes on the Fastify instance. */
@@ -102,6 +105,6 @@ export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
   registerSeedRoute(app, deps);
   registerUnlockRoute(app, deps);
   registerConfigRoute(app, deps);
-  registerConfigApplyRoute(app, deps.configPath);
+  registerConfigApplyRoute(app, deps.configApply, deps.configPath);
   registerQueueRoutes(app, deps);
 }
