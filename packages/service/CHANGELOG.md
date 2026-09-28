@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- *(service)* Route config apply through core handler
+## [0.18.0-2] - 2026-09-28
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.18.0-2
 ## [0.18.0-1] - 2026-09-27
 
 ### 💼 Other
