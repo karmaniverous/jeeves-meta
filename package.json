@@ -39,10 +39,5 @@
   "allowScripts": {
     "fsevents": true,
     "lefthook": true
-  },
-  "overrides": {
-    "release-it": {
-      "undici": "^7.30.0"
-    }
   }
 }
