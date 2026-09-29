@@ -7,7 +7,7 @@
     "url": "https://github.com/karmaniverous/jeeves-meta/issues"
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "0.6.0-9",
+    "@karmaniverous/jeeves": "0.6.0",
     "@karmaniverous/jeeves-meta-core": "^0.2.2",
     "commander": "^15",
     "croner": "^10",
