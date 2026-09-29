@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🐛 Bug Fixes
+
+- *(openclaw)* Emit prettier-formatted openclaw.plugin.json from generate-schema
+
+### 💼 Other
+
+- Updated jeeves
+## [0.15.0-3] - 2026-09-28
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.15.0-3
 ## [0.15.0-2] - 2026-09-27
 
 ### ⚙️ Miscellaneous Tasks
