@@ -12,6 +12,12 @@ import {
 
 import { PLUGIN_ID } from './constants.js';
 
+/** Environment variable consulted when plugin config has no `configRoot`. */
+export const CONFIG_ROOT_ENV = 'JEEVES_CONFIG_ROOT';
+
+/** Error returned by tools that need `configRoot` when it is not set. */
+export const CONFIG_ROOT_MISSING_MESSAGE = `configRoot not configured — set it in plugin config (plugins.entries.${PLUGIN_ID}.config.configRoot) or via ${CONFIG_ROOT_ENV}`;
+
 /** Resolve the meta service URL. */
 export function getServiceUrl(api: PluginApi): string {
   return resolvePluginSetting(
@@ -23,18 +29,24 @@ export function getServiceUrl(api: PluginApi): string {
   );
 }
 
-/** Resolve the platform config root. */
-export function getConfigRoot(api: PluginApi): string {
-  const value = resolveOptionalPluginSetting(
-    api,
-    PLUGIN_ID,
-    'configRoot',
-    'JEEVES_CONFIG_ROOT',
+/**
+ * Resolve the platform config root without throwing.
+ *
+ * Order: the plugin's own config (`api.pluginConfig`), then
+ * `plugins.entries.<id>.config`, then the `JEEVES_CONFIG_ROOT` env var.
+ *
+ * @returns The config root, or `undefined` when none is set.
+ */
+export function resolveConfigRoot(api: PluginApi): string | undefined {
+  const own = api.pluginConfig?.['configRoot'];
+  if (typeof own === 'string' && own) return own;
+
+  return (
+    resolveOptionalPluginSetting(
+      api,
+      PLUGIN_ID,
+      'configRoot',
+      CONFIG_ROOT_ENV,
+    ) || undefined
   );
-  if (!value) {
-    throw new Error(
-      'configRoot not configured — set it in plugin config or via JEEVES_CONFIG_ROOT env var',
-    );
-  }
-  return value;
 }

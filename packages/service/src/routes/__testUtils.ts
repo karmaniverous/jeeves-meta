@@ -99,7 +99,9 @@ export function makeTestDeps(overrides: TestDepsOverrides = {}): RouteDeps {
  */
 export function makeTestWatcher(
   metaJsonPaths: string[] = [],
-  scan = vi.fn().mockResolvedValue({ points: [], cursor: null }),
+  scan: WatcherClient['scan'] = vi
+    .fn()
+    .mockResolvedValue({ points: [], cursor: null }),
 ): WatcherClient {
   return {
     walk: vi.fn().mockResolvedValue(metaJsonPaths),

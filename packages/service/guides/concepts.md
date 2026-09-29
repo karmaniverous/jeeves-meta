@@ -7,6 +7,7 @@ title: Concepts
 ## Meta Entities
 
 A `.meta/` directory co-located with source content. Contains:
+
 - `meta.json` — current synthesis state (content, prompts, tokens, errors)
 - `archive/` — timestamped snapshots of previous syntheses
 - `.lock` — transient lock file during active synthesis
@@ -18,6 +19,7 @@ Meta entities form a hierarchy based on filesystem nesting. A `.meta/` directory
 ## Synthesis Phases
 
 A three-phase LLM pipeline managed by a per-meta phase-state machine:
+
 1. **Architect** — analyzes scope structure, crafts a task brief (conditional: runs on structure change, steer change, or periodic refresh)
 2. **Builder** — executes the brief, produces `_content` + structured fields
 3. **Critic** — evaluates the synthesis, provides `_feedback` for the next cycle
@@ -69,4 +71,3 @@ SHA-256 hash of the parent meta's `_builder` text at the time of last synthesis.
 ## Lock Staging
 
 Synthesis results are staged in a `.lock` file before being committed to `meta.json`. If the process crashes between staging and commit, `meta.json` is untouched — "never write worse."
-

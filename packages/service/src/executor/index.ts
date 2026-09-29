@@ -4,9 +4,5 @@
  * @module executor
  */
 
-export {
-  GatewayExecutor,
-  type GatewayExecutorOptions,
-} from './GatewayExecutor.js';
-export { SpawnAbortedError } from './SpawnAbortedError.js';
+export { GatewayExecutor } from './GatewayExecutor.js';
 export { SpawnTimeoutError } from './SpawnTimeoutError.js';

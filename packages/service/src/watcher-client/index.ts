@@ -4,7 +4,4 @@
  * @module watcher-client
  */
 
-export {
-  HttpWatcherClient,
-  type HttpWatcherClientOptions,
-} from './HttpWatcherClient.js';
+export { HttpWatcherClient } from './HttpWatcherClient.js';

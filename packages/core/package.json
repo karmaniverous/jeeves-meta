@@ -1,17 +1,17 @@
 {
   "dependencies": {
-    "zod": "^4.4"
+    "zod": "^4.6"
   },
   "devDependencies": {
-    "@dotenvx/dotenvx": "^1.69.1",
-    "@rollup/plugin-commonjs": "^29.0.2",
+    "@dotenvx/dotenvx": "^2.30.0",
+    "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
     "cross-env": "^10.1.0",
-    "release-it": "^20.0.1",
-    "rollup": "^4.60.4",
+    "release-it": "^21.1.0",
+    "rollup": "^4.63.5",
     "tslib": "^2.8.1",
-    "vitest": "^4.1.7"
+    "vitest": "^5.0.2"
   },
   "engines": {
     "node": ">=22"
@@ -42,6 +42,10 @@
       "release": true
     },
     "hooks": {
+      "after:bump": [
+        "npm install --package-lock-only --ignore-scripts",
+        "git -C ../.. add package-lock.json"
+      ],
       "after:init": [
         "npm run lint",
         "npm run typecheck",
@@ -69,7 +73,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "release": "dotenvx run -f .env.local -- release-it",
-    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.prerelease --preRelease",
+    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.preRelease --preRelease",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc"
   },

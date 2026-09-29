@@ -14,20 +14,48 @@ import {
   type PluginApi,
 } from '@karmaniverous/jeeves';
 
+import {
+  type ConfigRootGate,
+  type NeedsConfigRoot,
+  requireConfigRoot,
+} from './configRoot.js';
 import { buildCustomTools } from './customTools.js';
+import { getServiceUrl } from './helpers.js';
 import type { MetaServiceClient } from './serviceClient.js';
+
+/**
+ * Tool calls that read `configRoot`, keyed by tool name.
+ *
+ * Only `meta_service` with `action: 'install'` reads it: core's service
+ * manager resolves the component config path via `getComponentConfigDir()`.
+ * The other `meta_service` actions drive the OS service manager by name,
+ * and every other tool only talks HTTP to the meta service at `apiUrl`,
+ * so none of them are gated.
+ */
+const CONFIG_ROOT_TOOLS = new Map<string, NeedsConfigRoot>([
+  ['meta_service', (params) => params.action === 'install'],
+]);
 
 /** Register all meta_* tools (standard + custom). */
 export function registerMetaTools(
   api: PluginApi,
   client: MetaServiceClient,
   descriptor: JeevesComponentDescriptor,
+  gate: ConfigRootGate,
 ): void {
   const baseUrl = client.getBaseUrl();
 
-  // Standard tools from factory: meta_status, meta_config, meta_config_apply, meta_service
-  for (const tool of createPluginToolset(descriptor)) {
-    api.registerTool(tool);
+  // Standard tools from factory: meta_status, meta_config, meta_config_apply, meta_service.
+  // `apiUrl` is resolved on every call with the same resolution as the
+  // custom tools, so the standard HTTP tools hit the configured service.
+  const toolset = createPluginToolset(descriptor, {
+    apiUrl: () => getServiceUrl(api),
+  });
+  for (const tool of toolset) {
+    const needsConfigRoot = CONFIG_ROOT_TOOLS.get(tool.name);
+    api.registerTool(
+      needsConfigRoot ? requireConfigRoot(tool, gate, needsConfigRoot) : tool,
+    );
   }
 
   // Custom domain-specific tools

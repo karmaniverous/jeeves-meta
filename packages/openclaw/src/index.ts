@@ -2,115 +2,66 @@
  * OpenClaw plugin for jeeves-meta.
  *
  * Thin HTTP client — all operations delegate to the jeeves-meta service.
- * Uses `@karmaniverous/jeeves` core for TOOLS.md and platform content.
+ * A standard OpenClaw plugin: it writes no workspace files and is installed
+ * by `jeeves install` (or `openclaw plugins install`).
  *
  * @packageDocumentation
  */
 
 import {
-  createAsyncContentCache,
-  createComponentWriter,
   getPackageVersion,
-  init,
   type JeevesComponentDescriptor,
   jeevesComponentDescriptorSchema,
-  loadWorkspaceConfig,
   type PluginApi,
-  resolveWorkspacePath,
-  WORKSPACE_CONFIG_DEFAULTS,
 } from '@karmaniverous/jeeves';
 import { META_COMPONENT } from '@karmaniverous/jeeves-meta-core';
+import { z } from 'zod';
 
-import { getConfigRoot, getServiceUrl } from './helpers.js';
-import { generateMetaMenu } from './promptInjection.js';
+import { createConfigRootGate, warnIfConfigRootMissing } from './configRoot.js';
+import { getServiceUrl } from './helpers.js';
 import { MetaServiceClient } from './serviceClient.js';
 import { registerMetaTools } from './tools.js';
 
 export { type PluginConfig, pluginConfigSchema } from './pluginConfigSchema.js';
 
-/** Register all jeeves-meta tools with the OpenClaw plugin API. */
+/** Build the plugin-side component descriptor used by the standard toolset. */
+function buildDescriptor(): JeevesComponentDescriptor {
+  return jeevesComponentDescriptorSchema.parse({
+    name: META_COMPONENT.name,
+    version: getPackageVersion(import.meta.url),
+    servicePackage: META_COMPONENT.servicePackage,
+    pluginPackage: META_COMPONENT.pluginPackage,
+    defaultPort: META_COMPONENT.defaultPort,
+    // The plugin never validates service config; the service descriptor does.
+    configSchema: z.unknown(),
+    configFileName: 'config.json',
+    initTemplate: () => ({}),
+    startCommand: (configPath: string) => [
+      'node',
+      'dist/cli.js',
+      'start',
+      '-c',
+      configPath,
+    ],
+    // The real run callback lives in the service descriptor.
+    run: () => {
+      return Promise.reject(
+        new Error('run() is not available on the plugin-side descriptor'),
+      );
+    },
+  });
+}
+
+/**
+ * Register all jeeves-meta tools with the OpenClaw plugin API.
+ *
+ * Always succeeds, even with no plugin config: `configRoot` is resolved
+ * lazily when a tool that needs it runs.
+ */
 export default function register(api: PluginApi): void {
   const client = new MetaServiceClient({ apiUrl: getServiceUrl(api) });
 
-  const workspacePath = resolveWorkspacePath(api);
+  warnIfConfigRootMissing(api);
 
-  init({
-    workspacePath,
-    configRoot: getConfigRoot(api),
-  });
-
-  const gatewayUrl =
-    loadWorkspaceConfig(workspacePath)?.core?.gatewayUrl ??
-    WORKSPACE_CONFIG_DEFAULTS.core.gatewayUrl;
-
-  const placeholder =
-    'The jeeves-meta synthesis engine is initializing...\n\n' +
-    'Read the `jeeves-meta` skill for usage guidance, configuration, and troubleshooting.';
-
-  let consecutive503s = 0;
-
-  const getContent = createAsyncContentCache({
-    fetch: async () => {
-      const content = await generateMetaMenu(client);
-      consecutive503s = 0;
-      return content;
-    },
-    placeholder,
-    onError: (error: unknown) => {
-      const msg = error instanceof Error ? error.message : String(error);
-      if (/HTTP 503\b/i.test(msg) || /scan.in.progress/i.test(msg)) {
-        consecutive503s++;
-        if (consecutive503s === 1) {
-          console.warn(
-            '[jeeves-meta] Watcher scan still in progress — will retry on next refresh cycle.',
-          );
-        } else {
-          console.debug(
-            `[jeeves-meta] Watcher scan still in progress (attempt ${String(consecutive503s)}) — suppressing repeated warnings.`,
-          );
-        }
-        return;
-      }
-      consecutive503s = 0;
-      console.warn('[jeeves-meta] Content fetch failed:', msg);
-    },
-  });
-
-  const descriptor: JeevesComponentDescriptor =
-    jeevesComponentDescriptorSchema.parse({
-      name: META_COMPONENT.name,
-      version: getPackageVersion(import.meta.url),
-      servicePackage: META_COMPONENT.servicePackage,
-      pluginPackage: META_COMPONENT.pluginPackage,
-      defaultPort: META_COMPONENT.defaultPort,
-      // The runtime Zod custom validator only checks for a .parse() method.
-      // Use unknown cast to bridge the Zod v4 (service) → v3 (core SDK) type gap.
-      configSchema: { parse: (v: unknown) => v } as unknown,
-      configFileName: 'config.json',
-      initTemplate: () => ({}),
-      startCommand: (configPath: string) => [
-        'node',
-        'dist/cli.js',
-        'start',
-        '-c',
-        configPath,
-      ],
-      // Plugin-side descriptor is only used by ComponentWriter for managed
-      // content. The real run callback lives in the service descriptor.
-      run: () => {
-        return Promise.reject(
-          new Error('run() is not available on the plugin-side descriptor'),
-        );
-      },
-      sectionId: 'Meta',
-      refreshIntervalSeconds: 73,
-      generateToolsContent: getContent,
-      dependencies: { hard: ['watcher'], soft: [] },
-    });
-
-  registerMetaTools(api, client, descriptor);
-
-  const writer = createComponentWriter(descriptor, { gatewayUrl });
-
-  writer.start();
+  registerMetaTools(api, client, buildDescriptor(), createConfigRootGate(api));
 }

@@ -14,8 +14,8 @@ Handlebars.registerHelper('gt', (a: number, b: number) => a > b);
 
 import type { MetaContext } from '../interfaces/index.js';
 import {
-  DEFAULT_ARCHITECT_PROMPT,
-  DEFAULT_CRITIC_PROMPT,
+  getDefaultArchitectPrompt,
+  getDefaultCriticPrompt,
 } from '../prompts/index.js';
 import type { MetaConfig, MetaJson } from '../schema/index.js';
 import { condenseScopeFiles } from './contextPackage.js';
@@ -197,7 +197,7 @@ export function buildArchitectTask(
   const sections = [
     `# jeeves-meta · ARCHITECT · ${ctx.path}`,
     '',
-    DEFAULT_ARCHITECT_PROMPT,
+    getDefaultArchitectPrompt(),
     '',
     '## SCOPE',
     `Path: ${ctx.path}`,
@@ -329,7 +329,7 @@ export function buildCriticTask(
   const sections = [
     `# jeeves-meta · CRITIC · ${ctx.path}`,
     '',
-    DEFAULT_CRITIC_PROMPT,
+    getDefaultCriticPrompt(),
     '',
     '## SYNTHESIS TO EVALUATE',
     meta._content ?? '(No content produced)',

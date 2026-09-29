@@ -10,8 +10,8 @@
 import { readLatestArchive } from '../archive/index.js';
 import type { MetaNode } from '../discovery/types.js';
 import {
-  DEFAULT_ARCHITECT_PROMPT,
-  DEFAULT_CRITIC_PROMPT,
+  getDefaultArchitectPrompt,
+  getDefaultCriticPrompt,
 } from '../prompts/index.js';
 import { hasSteerChanged } from '../scheduling/staleness.js';
 import type { MetaConfig, MetaJson, PhaseState } from '../schema/index.js';
@@ -32,11 +32,7 @@ function isPromptStale(
 
 /** Architect-level invalidation reasons. */
 export type ArchitectInvalidator =
-  | 'structureHash'
-  | 'steer'
-  | '_crossRefs'
-  | 'firstRun'
-  | 'architectEvery';
+  'structureHash' | 'steer' | '_crossRefs' | 'firstRun' | 'architectEvery';
 
 /** Informational input status for a meta (exposed in /preview). */
 export interface InputStatus {
@@ -100,9 +96,9 @@ export async function computeInvalidation(
   // corpus-wide synthesis storm (see #163).
   const architectChanged = isPromptStale(
     meta._architect,
-    DEFAULT_ARCHITECT_PROMPT,
+    getDefaultArchitectPrompt(),
   );
-  const criticChanged = isPromptStale(meta._critic, DEFAULT_CRITIC_PROMPT);
+  const criticChanged = isPromptStale(meta._critic, getDefaultCriticPrompt());
   const effectiveSynthesisCount = meta._synthesisCount ?? 0;
 
   // _crossRefs declaration change

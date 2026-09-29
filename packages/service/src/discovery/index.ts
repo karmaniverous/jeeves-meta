@@ -4,20 +4,8 @@
  * @module discovery
  */
 
-export { computeSummary } from './computeSummary.js';
-export { discoverMetas } from './discoverMetas.js';
 export { getAncestorMeta } from './getAncestorMeta.js';
-export {
-  listMetas,
-  type MetaEntry,
-  type MetaListResult,
-  type MetaListSummary,
-} from './listMetas.js';
-export { buildOwnershipTree, findNode } from './ownershipTree.js';
-export {
-  filterInScope,
-  getDeltaFiles,
-  getScopeFiles,
-  getScopePrefix,
-} from './scope.js';
-export type { MetaNode, OwnershipTree } from './types.js';
+export { listMetas, type MetaListResult } from './listMetas.js';
+export { findNode } from './ownershipTree.js';
+export { getDeltaFiles, getScopeFiles } from './scope.js';
+export type { MetaNode } from './types.js';

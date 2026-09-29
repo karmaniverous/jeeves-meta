@@ -11,6 +11,7 @@ The jeeves-meta **service** registers two virtual inference rules with jeeves-wa
 Matches: `**/.meta/meta.json`
 
 Indexes live synthesis files with configurable domain tags and extracted fields:
+
 - `meta_id`, `meta_steer`, `meta_depth`, `meta_emphasis`
 - `meta_synthesis_count`, `meta_structure_hash`
 - `meta_architect_tokens`, `meta_builder_tokens`, `meta_critic_tokens`
@@ -27,4 +28,3 @@ Indexes archived snapshots with `archived` and `archived_at` flags. Renders the 
 ## Re-registration
 
 Rules are registered at startup with 10-retry exponential backoff. A periodic health check (configurable via `watcherHealthIntervalMs`, default 60s) monitors watcher uptime independently of the synthesis scheduler. If the watcher restarts (uptime decreases), rules are automatically re-registered. The `/status` endpoint reports `rulesRegistered` in the watcher dependency block.
-

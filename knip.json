@@ -1,13 +1,15 @@
 {
   "workspaces": {
     "packages/service": {
-      "includeEntryExports": true
+      "includeEntryExports": true,
+      "ignoreDependencies": [
+        "@rollup/plugin-typescript={outputToFilesystem:true,paths:{}}"
+      ]
     },
     "packages/openclaw": {
       "ignoreBinaries": ["plantuml"]
     },
     "packages/core": {}
   },
-  "ignoreDependencies": ["@commander-js/extra-typings"],
   "ignoreExportsUsedInFile": true
 }

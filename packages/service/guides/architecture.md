@@ -7,7 +7,7 @@ title: Architecture
 ## Components
 
 | Component | Responsibility |
-|-----------|---------------|
+| --- | --- |
 | `Scheduler` | Croner-based cron, discovers stalest candidate, enqueues work |
 | `SynthesisQueue` | Three-layer queue (current + overrides + automatic) with deduplication |
 | `GatewayExecutor` | Spawns LLM sessions via gateway `/tools/invoke`, polls for completion |
@@ -59,7 +59,7 @@ The `autoSeedPass()` function is executed at the start of each scheduler tick (b
 Two inference rules are registered with jeeves-watcher:
 
 | Rule | Matches | Purpose |
-|------|---------|---------|
+| --- | --- | --- |
 | `meta-current` | `**/.meta/meta.json` | Index live synthesis with domain tags + extracted fields |
 | `meta-archive` | `**/.meta/archive/*.json` | Index archived snapshots |
 
@@ -76,7 +76,7 @@ The service monitors its config file via `fs.watchFile`. Fields are divided into
 The `src/phaseState/` module implements the per-meta phase-state machine:
 
 | Module | Responsibility |
-|--------|---------------|
+| --- | --- |
 | `derivePhaseState.ts` | Reconstruct `_phaseState` from legacy fields for backward compatibility |
 | `invalidate.ts` | Detect structural/steer/cross-ref changes and mark phases as stale |
 | `phaseTransitions.ts` | Pure functions for all state transitions (invalidation, success, failure, retry) |
@@ -87,16 +87,16 @@ The `src/phaseState/` module implements the per-meta phase-state machine:
 The `src/scheduler/` module provides the croner-based tick driver. The `src/scheduling/` module provides staleness computation:
 
 | Module | Responsibility |
-|--------|---------------|
+| --- | --- |
 | `scheduler/index.ts` | Croner cron, adaptive backoff, per-tick orchestration entry point |
 | `scheduling/staleness.ts` | `getStalenessSeconds()` with `MAX_STALENESS_SECONDS` cap (365 days) |
 | `scheduling/weightedFormula.ts` | `effectiveStaleness` formula: `actualStaleness × (normalizedDepth + 1) ^ (depthWeight × emphasis)` |
 
 ## Port Allocation
 
-| Service | Port |
-|---------|------|
-| jeeves-server | 1934 |
-| jeeves-watcher | 1936 |
-| jeeves-runner | 1937 |
+| Service         | Port     |
+| --------------- | -------- |
+| jeeves-server   | 1934     |
+| jeeves-watcher  | 1936     |
+| jeeves-runner   | 1937     |
 | **jeeves-meta** | **1938** |

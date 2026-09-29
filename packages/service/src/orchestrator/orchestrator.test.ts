@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 // Mock prompts so tests use stable, known template expressions.
 vi.mock('../prompts/index.js', () => ({
-  DEFAULT_ARCHITECT_PROMPT:
+  getDefaultArchitectPrompt: () =>
     'You are an architect. Every {{config.architectEvery}} cycles, ' +
     '{{scope.fileCount}} files, depth {{meta._depth}}. ' +
     'Escaped: \\{{config.architectEvery}}.',
-  DEFAULT_CRITIC_PROMPT: 'You are a critic. Max lines: {{config.maxLines}}.',
+  getDefaultCriticPrompt: () =>
+    'You are a critic. Max lines: {{config.maxLines}}.',
 }));
 
 import type { MetaContext } from '../interfaces/index.js';
@@ -67,7 +68,7 @@ describe('buildArchitectTask', () => {
     expect(task).toContain('Child synthesis content');
   });
 
-  it('ignores meta._architect snapshot and always uses DEFAULT_ARCHITECT_PROMPT', () => {
+  it('ignores meta._architect snapshot and always uses the default architect prompt', () => {
     const meta: MetaJson = {
       ...sampleMeta,
       _architect: 'Stale snapshot prompt',
@@ -146,26 +147,26 @@ describe('Handlebars template compilation in prompts', () => {
   // Prompts are mocked at module level (vi.mock above) with template expressions.
   // These tests verify that Handlebars compilation resolves those expressions.
 
-  it('resolves {{config.*}} values in DEFAULT_ARCHITECT_PROMPT', () => {
+  it('resolves {{config.*}} values in the default architect prompt', () => {
     // Mock prompt: '...Every {{config.architectEvery}} cycles...'
     const task = buildArchitectTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('Every 10 cycles');
   });
 
-  it('resolves {{scope.*}} values in DEFAULT_ARCHITECT_PROMPT', () => {
+  it('resolves {{scope.*}} values in the default architect prompt', () => {
     // Mock prompt: '...{{scope.fileCount}} files...'
     const task = buildArchitectTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('3 files');
   });
 
-  it('resolves {{meta.*}} values in DEFAULT_ARCHITECT_PROMPT', () => {
+  it('resolves {{meta.*}} values in the default architect prompt', () => {
     // Mock prompt: '...depth {{meta._depth}}...'
     const meta: MetaJson = { ...sampleMeta, _depth: 3 };
     const task = buildArchitectTask(sampleCtx, meta, sampleConfig);
     expect(task).toContain('depth 3');
   });
 
-  it('escaped \\{{...}} in DEFAULT_ARCHITECT_PROMPT passes through as literal {{...}}', () => {
+  it('escaped \\{{...}} in the default architect prompt passes through as literal {{...}}', () => {
     // Mock prompt: '...Escaped: \\{{config.architectEvery}}...'
     const task = buildArchitectTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('Escaped: {{config.architectEvery}}');
@@ -193,7 +194,7 @@ describe('Handlebars template compilation in prompts', () => {
     expect(task).toContain('Valid text with {{#if broken');
   });
 
-  it('resolves {{config.*}} in DEFAULT_CRITIC_PROMPT', () => {
+  it('resolves {{config.*}} in the default critic prompt', () => {
     // Mock prompt: '...Max lines: {{config.maxLines}}...'
     const task = buildCriticTask(sampleCtx, sampleMeta, sampleConfig);
     expect(task).toContain('Max lines: 500');
