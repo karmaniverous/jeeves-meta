@@ -2,11 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.16.0] - 2026-10-14
+
+### 🚀 Features
+
+- *(service)* Send a jeeves-server machine key to resolve-path (#226)
+
+### 🐛 Bug Fixes
+
+- *(release)* GitHub release notes and changelog use the new version tag
+
+### 💼 Other
+
+- Updated core
 
 ### ⚙️ Miscellaneous Tasks
 
 - Update @karmaniverous/jeeves to 0.7.0 and dependencies
+- Tag-aware changelog and release notes, <package>@<version> release names (#224, #225)
 ## [0.15.0] - 2026-09-29
 
 ### 🐛 Bug Fixes
