@@ -2,11 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.19.0] - 2026-10-14
+
+### 🚀 Features
+
+- *(service)* Send a jeeves-server machine key to resolve-path (#226)
+
+### 🐛 Bug Fixes
+
+- *(release)* GitHub release notes and changelog use the new version tag
+- *(service)* Address Copilot review on #228
+
+### 💼 Other
+
+- Updated core
+
+### 🧪 Testing
+
+- *(service)* Config/apply missing-file test supplies the required fields
 
 ### ⚙️ Miscellaneous Tasks
 
 - Update @karmaniverous/jeeves to 0.7.0 and dependencies
+- Tag-aware changelog and release notes, <package>@<version> release names (#224, #225)
 ## [0.18.0] - 2026-09-29
 
 ### 💼 Other
