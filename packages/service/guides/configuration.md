@@ -31,6 +31,7 @@ The service reads a JSON config file specified via `--config` flag or `JEEVES_ME
 | `reportChannel` | string | — | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
 | `reportTarget` | string | — | Channel/user ID to send progress messages to |
 | `serverUrl` | string (URL) | `http://127.0.0.1:1934` | jeeves-server base URL for progress report links |
+| `serverKey` | string | — | jeeves-server machine key seed for the resolve-path API (required from jeeves-server 3.15.0; see [Progress Links](#progress-links)). Redacted in `GET /config`. |
 | `templates.phaseStart` | string | `:gear: ...` | Template for phase start progress reports |
 | `templates.phaseEnd` | string | `:white_check_mark: ...` | Template for phase success progress reports |
 | `templates.phaseError` | string | `:x: ...` | Template for phase failure progress reports |
@@ -71,8 +72,20 @@ When a restart-required field changes, the service logs a warning but the change
 Config values support `${VAR}` substitution from environment variables. Example:
 
 ```json
-{ "gatewayApiKey": "${OPENCLAW_API_KEY}" }
+{
+  "gatewayApiKey": "${OPENCLAW_API_KEY}",
+  "serverKey": "${JEEVES_META_SERVER_KEY}"
+}
 ```
+
+## Progress Links
+
+Progress reports link each entity through jeeves-server's `GET /api/resolve-path`. From jeeves-server 3.15.0 that endpoint requires a key, so set `serverKey` to the **seed** of a machine key defined under `keys` in jeeves-server's config (e.g. `keys.meta`). The service derives the URL key from the seed and sends it as the `k` query parameter; the seed itself is never sent. Older servers ignore the parameter.
+
+- **401/403** (key missing or rejected): the service logs one warning naming the cause and renders reports **without links**. It never substitutes the raw filesystem path: `dirLink`, `metaLink`, `dirPath` and `metaPath` are all empty in that case. The default templates guard each link with `{{#if dirLink}}` / `{{#if metaLink}}`; custom templates should do the same.
+- **Network error or other HTTP error** (e.g. 404, path outside every server root): the link falls back to the raw path, as before.
+
+`serverKey` hot-reloads.
 
 ## Prompt System
 

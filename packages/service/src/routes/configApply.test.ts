@@ -129,7 +129,15 @@ describe('POST /config/apply', () => {
     async () => {
       rmSync(configPath);
 
-      const res = await apply({ patch: { watcherUrl: 'http://x:1936' } });
+      // A new file must validate on its own, so the patch carries every
+      // required field (metaProperty and metaArchiveProperty have no default).
+      const res = await apply({
+        patch: {
+          watcherUrl: 'http://x:1936',
+          metaProperty: { domains: ['meta'] },
+          metaArchiveProperty: { domains: ['meta-archive'] },
+        },
+      });
 
       expect(res.statusCode).toBe(200);
       expect(existsSync(configPath)).toBe(true);

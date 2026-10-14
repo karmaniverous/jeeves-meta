@@ -4,9 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- [**breaking**] Move service to @karmaniverous/jeeves 0.6.0-4; approve lefthook scripts
+
+### 🐛 Bug Fixes
+
+- *(release)* Use --github.preRelease for release-it 21
+
+### 💼 Other
+
+- Update root package-lock in release-it after:bump hook
+
+### ⚙️ Miscellaneous Tasks
+
+- Update @karmaniverous/jeeves to 0.7.0 and dependencies
+## [0.2.2] - 2026-06-25
+
 ### 🐛 Bug Fixes
 
 - Batch resolve #204, #206, #207, #208
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-core v0.2.2
 ## [0.2.1] - 2026-06-24
 
 ### 🚀 Features

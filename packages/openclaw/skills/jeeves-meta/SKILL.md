@@ -74,7 +74,7 @@ Remove a stale `.lock` file from a meta entity. Locks are created during synthes
 
 ### meta_config
 
-Query the running service configuration. Supports optional JSONPath filtering to extract specific settings. Sensitive fields (e.g. `gatewayApiKey`) are redacted.
+Query the running service configuration. Supports optional JSONPath filtering to extract specific settings. Sensitive fields (`gatewayApiKey`, `serverKey`) are redacted.
 
 **Parameters:**
 
@@ -154,8 +154,19 @@ Key settings:
 | `skipUnchanged` | true | Skip candidates with no changes since last synthesis |
 | `thinking` | `low` | Thinking level for spawned LLM sessions |
 | `port` | 1938 | HTTP API listen port |
-
-| `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling | | `serverUrl` | `http://127.0.0.1:1934` | jeeves-server base URL for progress report links | | `templates` | (see docs) | Templates for phase start, end, and error progress reports | | `reportChannel` | (optional) | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. | | `reportTarget` | (optional) | Channel/user ID to send progress messages to | | `tier2ScanLimit` | 50 | Max all-fresh candidates to scan per tick in Tier 2 invalidation | | `workspaceDir` | OS tmpdir + `/jeeves-meta` | Directory for sub-agent output staging files | | `stagingRetries` | 10 | Max retries when staging file not yet visible after session completion (min 0) | | `stagingRetryDelayMs` | 250 | Delay between staging file retry attempts in ms (min 0) | | `previewDeltaFilesCap` | 50 | Max delta files included in `/preview` response; excess sets `deltaFilesTruncated: true` (min 1) | | `logging.level` | `info` | Log level (trace/debug/info/warn/error) | | `logging.file` | (optional) | Log file path |
+| `schedule` | `*/30 * * * *` | Cron expression for automatic synthesis scheduling |
+| `serverUrl` | `http://127.0.0.1:1934` | jeeves-server base URL for progress report links |
+| `serverKey` | (optional) | jeeves-server machine key seed for progress-report links (required from jeeves-server 3.15.0). The service sends the derived key as `k`; on 401/403 it logs one warning and reports without links. Redacted in `meta_config`. |
+| `templates` | (see docs) | Templates for phase start, end, and error progress reports |
+| `reportChannel` | (optional) | Gateway channel name (e.g. `slack`). Legacy: also used as target if `reportTarget` is unset. |
+| `reportTarget` | (optional) | Channel/user ID to send progress messages to |
+| `tier2ScanLimit` | 50 | Max all-fresh candidates to scan per tick in Tier 2 invalidation |
+| `workspaceDir` | OS tmpdir + `/jeeves-meta` | Directory for sub-agent output staging files |
+| `stagingRetries` | 10 | Max retries when staging file not yet visible after session completion (min 0) |
+| `stagingRetryDelayMs` | 250 | Delay between staging file retry attempts in ms (min 0) |
+| `previewDeltaFilesCap` | 50 | Max delta files included in `/preview` response; excess sets `deltaFilesTruncated: true` (min 1) |
+| `logging.level` | `info` | Log level (trace/debug/info/warn/error) |
+| `logging.file` | (optional) | Log file path |
 
 ### Meta Discovery
 

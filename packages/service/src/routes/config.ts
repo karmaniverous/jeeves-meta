@@ -14,11 +14,12 @@ import type { FastifyInstance } from 'fastify';
 import type { ServiceConfig } from '../schema/config.js';
 import type { RouteDeps } from './index.js';
 
-/** Return a sanitized copy of the config (redact gatewayApiKey). */
+/** Return a sanitized copy of the config (redact gatewayApiKey and serverKey). */
 function sanitizeConfig(config: ServiceConfig): unknown {
   return {
     ...config,
     gatewayApiKey: config.gatewayApiKey ? '[REDACTED]' : undefined,
+    serverKey: config.serverKey ? '[REDACTED]' : undefined,
   };
 }
 
