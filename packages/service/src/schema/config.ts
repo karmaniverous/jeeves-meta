@@ -14,13 +14,17 @@ import { z } from 'zod';
 
 export { type MetaConfig, metaConfigSchema };
 
-/** Default Handlebars template strings for progress reporting. Single source of truth. */
+/**
+ * Default Handlebars template strings for progress reporting. Single source of truth.
+ * Links are empty when jeeves-server refuses `serverKey`, so each is guarded.
+ */
 export const DEFAULT_TEMPLATE_STRINGS = {
-  phaseStart: ':gear: Started meta synthesis {{phase}} phase of <{{dirLink}}>',
+  phaseStart:
+    ':gear: Started meta synthesis {{phase}} phase{{#if dirLink}} of <{{dirLink}}>{{/if}}',
   phaseEnd:
-    ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s) at <{{metaLink}}>',
+    ':white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s){{#if metaLink}} at <{{metaLink}}>{{/if}}',
   phaseError:
-    ':x: Meta synthesis {{phase}} phase failed at <{{dirLink}}>\n   Error: {{error}}',
+    ':x: Meta synthesis {{phase}} phase failed{{#if dirLink}} at <{{dirLink}}>{{/if}}\n   Error: {{error}}',
 } as const;
 
 /** Zod schema for logging configuration. */
@@ -67,6 +71,13 @@ export const serviceConfigSchema = metaConfigSchema.extend({
    * Default: http://127.0.0.1:1934
    */
   serverUrl: z.string().default('http://127.0.0.1:1934'),
+
+  /**
+   * jeeves-server machine key seed (a `keys` entry in jeeves-server config),
+   * sent to the resolve-path API. Required from jeeves-server 3.15.0.
+   * Supports `${ENV}` substitution. Redacted in `GET /config`.
+   */
+  serverKey: z.string().optional(),
 
   /**
    * Handlebars templates for progress reporting messages.

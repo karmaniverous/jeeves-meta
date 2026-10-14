@@ -15,7 +15,9 @@ describe('GET /config', () => {
     app = Fastify();
     registerConfigRoute(
       app,
-      makeTestDeps({ config: { gatewayApiKey: 'secret-key' } }),
+      makeTestDeps({
+        config: { gatewayApiKey: 'secret-key', serverKey: 'server-seed' },
+      }),
     );
     await app.ready();
   });
@@ -47,6 +49,20 @@ describe('GET /config', () => {
     const res = await app.inject({ method: 'GET', url: '/config' });
     const body = res.json<Record<string, unknown>>();
     expect(body.gatewayApiKey).toBe('[REDACTED]');
+  });
+
+  it('redacts serverKey in sanitized config', async () => {
+    const res = await app.inject({ method: 'GET', url: '/config' });
+    expect(res.json<Record<string, unknown>>().serverKey).toBe('[REDACTED]');
+    expect(res.body).not.toContain('server-seed');
+  });
+
+  it('redacts serverKey in JSONPath query results', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: '/config?path=$.serverKey',
+    });
+    expect(res.body).not.toContain('server-seed');
   });
 
   it('returns 400 for invalid JSONPath expression', async () => {

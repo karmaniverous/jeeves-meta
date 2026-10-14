@@ -1,44 +1,30 @@
 /**
  * Progress reporting via OpenClaw gateway `/tools/invoke` → `message` tool.
  *
- * Progress events are rendered using Handlebars templates. Owner-path links
- * are resolved via the jeeves-server resolve-path API, with graceful
- * fallback to raw filesystem paths when the server is unreachable.
+ * Progress events are rendered using Handlebars templates (see
+ * `progress/render`). Owner-path links are resolved via the jeeves-server
+ * resolve-path API (authenticated with `serverKey`), falling back to raw
+ * filesystem paths when the server is unreachable and omitting links when
+ * the server refuses the key.
  *
  * @module progress
  */
 
-import { fetchWithTimeout } from '@karmaniverous/jeeves';
-import Handlebars from 'handlebars';
 import type { Logger } from 'pino';
 
-import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
+import {
+  type CompiledTemplates,
+  compileTemplates,
+  type ProgressEvent,
+  renderProgressEvent,
+  type TemplateStrings,
+} from './render.js';
 
-export type ProgressPhase = 'architect' | 'builder' | 'critic';
-
-export type ProgressEvent = {
-  type: 'phase_start' | 'phase_complete' | 'error';
-  /** Owner path (not .meta path) of the entity being synthesized. */
-  path: string;
-  phase?: ProgressPhase;
-  tokens?: number;
-  durationMs?: number;
-  error?: string;
-};
-
-/** Compiled Handlebars templates for the three progress event types. */
-type CompiledTemplates = {
-  phaseStart: HandlebarsTemplateDelegate;
-  phaseEnd: HandlebarsTemplateDelegate;
-  phaseError: HandlebarsTemplateDelegate;
-};
-
-/** Raw (string) template config — mirrors the schema definition. */
-export type TemplateStrings = {
-  phaseStart: string;
-  phaseEnd: string;
-  phaseError: string;
-};
+export {
+  type ProgressEvent,
+  renderProgressEvent,
+  type TemplateStrings,
+} from './render.js';
 
 export type ProgressReporterConfig = {
   gatewayUrl: string;
@@ -58,138 +44,14 @@ export type ProgressReporterConfig = {
    * Default: http://127.0.0.1:1934
    */
   serverUrl?: string;
+  /**
+   * jeeves-server machine key seed sent to the resolve-path API. Read on
+   * every report, so hot-reloaded changes apply immediately.
+   */
+  serverKey?: string;
   /** Handlebars template strings for each progress event type. */
   templates?: Partial<TemplateStrings>;
 };
-
-/** Compile raw template strings into Handlebars delegates. */
-function compileTemplates(
-  raw: Partial<TemplateStrings> | undefined,
-): CompiledTemplates {
-  const merged: TemplateStrings = {
-    phaseStart: raw?.phaseStart ?? DEFAULT_TEMPLATE_STRINGS.phaseStart,
-    phaseEnd: raw?.phaseEnd ?? DEFAULT_TEMPLATE_STRINGS.phaseEnd,
-    phaseError: raw?.phaseError ?? DEFAULT_TEMPLATE_STRINGS.phaseError,
-  };
-  return {
-    phaseStart: Handlebars.compile(merged.phaseStart),
-    phaseEnd: Handlebars.compile(merged.phaseEnd),
-    phaseError: Handlebars.compile(merged.phaseError),
-  };
-}
-
-function formatNumber(n: number): string {
-  return n.toLocaleString('en-US');
-}
-
-/**
- * Resolve a filesystem path to a browse URL via the jeeves-server
- * resolve-path API. Returns the raw path as fallback on any failure.
- *
- * On HTTP 200, uses publicUrl if present, otherwise prefixes serverUrl
- * to browseUrl. On any error or non-200 response, returns fsPath as-is.
- */
-/** Timeout for resolve-path API calls (ms). */
-const RESOLVE_PATH_TIMEOUT_MS = 3000;
-
-async function resolveLink(fsPath: string, serverUrl: string): Promise<string> {
-  try {
-    const url = new URL('/api/resolve-path', serverUrl);
-    url.searchParams.set('fsPath', fsPath);
-    const res = await fetchWithTimeout(url.toString(), RESOLVE_PATH_TIMEOUT_MS);
-    if (!res.ok) return fsPath;
-    const data = (await res.json()) as {
-      browsePath?: string;
-      browseUrl?: string;
-      publicUrl?: string;
-    };
-    if (data.publicUrl) return data.publicUrl;
-    if (data.browseUrl) {
-      const base = serverUrl.replace(/\/+$/, '');
-      return base + data.browseUrl;
-    }
-    return fsPath;
-  } catch {
-    return fsPath;
-  }
-}
-
-/** Resolve browse links for both the owner directory and its meta.json. */
-async function resolveLinks(
-  ownerPath: string,
-  serverUrl: string,
-): Promise<{ dirLink: string; metaLink: string }> {
-  const dirLink = await resolveLink(ownerPath, serverUrl);
-  // Derive metaLink by appending /.meta/meta.json to the resolved dir link
-  const metaLink = dirLink.replace(/\/+$/, '') + '/.meta/meta.json';
-  return { dirLink, metaLink };
-}
-
-/** Data bag passed to every Handlebars template. */
-interface TemplateData {
-  dirPath: string;
-  metaPath: string;
-  dirLink: string;
-  metaLink: string;
-  phase: string;
-  seconds?: string;
-  tokens?: string;
-  error?: string;
-}
-
-/**
- * Render the appropriate template for a progress event.
- *
- * @param event - The progress event to render.
- * @param templates - Compiled Handlebars templates.
- * @param serverUrl - jeeves-server URL for resolve-path API.
- * @returns Rendered message string.
- */
-export async function renderProgressEvent(
-  event: ProgressEvent,
-  templates: CompiledTemplates,
-  serverUrl: string,
-): Promise<string> {
-  const ownerPath = event.path;
-  const metaPath = ownerPath.replace(/\/+$/, '') + '/.meta/meta.json';
-  const phase = (event.phase ?? 'unknown').toUpperCase();
-  const { dirLink, metaLink } = await resolveLinks(ownerPath, serverUrl);
-
-  const base: TemplateData = {
-    dirPath: ownerPath,
-    metaPath,
-    dirLink,
-    metaLink,
-    phase,
-  };
-
-  switch (event.type) {
-    case 'phase_start':
-      return templates.phaseStart(base);
-
-    case 'phase_complete': {
-      const seconds =
-        event.durationMs !== undefined
-          ? String(Math.round(event.durationMs / 1000))
-          : '0';
-      const tokens =
-        event.tokens !== undefined ? formatNumber(event.tokens) : 'unknown';
-      return templates.phaseEnd({ ...base, seconds, tokens });
-    }
-
-    case 'error': {
-      const seconds =
-        event.durationMs !== undefined
-          ? String(Math.round(event.durationMs / 1000))
-          : '0';
-      const errorMsg = event.error ?? 'Unknown error';
-      return templates.phaseError({ ...base, seconds, error: errorMsg });
-    }
-
-    default:
-      return 'Unknown progress event';
-  }
-}
 
 type GatewayInvokeRequest = {
   tool: 'message';
@@ -208,6 +70,8 @@ export class ProgressReporter {
   /** Snapshot of template source strings used to compile `this.templates`. */
   private lastTemplateSource: string;
   private readonly serverUrl: string;
+  /** Last unauthorized warning logged (`missing`/`rejected` + status), to log once. */
+  private lastAuthWarning: string | undefined;
 
   public constructor(config: ProgressReporterConfig, logger: Logger) {
     this.config = config;
@@ -245,6 +109,12 @@ export class ProgressReporter {
         event,
         this.templates,
         this.serverUrl,
+        {
+          serverKey: this.config.serverKey,
+          onUnauthorized: (status) => {
+            this.warnUnauthorized(status);
+          },
+        },
       );
     } catch (err) {
       this.logger.warn({ err }, 'Progress event rendering failed');
@@ -288,5 +158,19 @@ export class ProgressReporter {
     } catch (err) {
       this.logger.warn({ err }, 'Progress reporting threw');
     }
+  }
+
+  /** Warn once per distinct cause when jeeves-server refuses resolve-path. */
+  private warnUnauthorized(status: number): void {
+    const reason = this.config.serverKey ? 'rejected' : 'missing';
+    const signature = `${reason}:${String(status)}`;
+    if (signature === this.lastAuthWarning) return;
+    this.lastAuthWarning = signature;
+    this.logger.warn(
+      { status, serverUrl: this.serverUrl },
+      reason === 'missing'
+        ? 'jeeves-server requires a machine key for resolve-path; set serverKey in meta config. Progress reports omit links until then.'
+        : 'jeeves-server rejected serverKey for resolve-path; check the machine key. Progress reports omit links until then.',
+    );
   }
 }
