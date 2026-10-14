@@ -5,7 +5,7 @@
   },
   "dependencies": {
     "@karmaniverous/jeeves": "0.7.0",
-    "@karmaniverous/jeeves-meta-core": "^0.2.2",
+    "@karmaniverous/jeeves-meta-core": "^0.3.0",
     "zod": "^4.6.7"
   },
   "description": "OpenClaw plugin for jeeves-meta — synthesis tools and virtual rule registration",
