@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.3.0] - 2026-10-14
 
 ### 🚀 Features
 
@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - *(release)* Use --github.preRelease for release-it 21
+- *(release)* GitHub release notes and changelog use the new version tag
 
 ### 💼 Other
 
@@ -19,6 +20,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Update @karmaniverous/jeeves to 0.7.0 and dependencies
+- Tag-aware changelog and release notes, <package>@<version> release names (#224, #225)
 ## [0.2.2] - 2026-06-25
 
 ### 🐛 Bug Fixes
