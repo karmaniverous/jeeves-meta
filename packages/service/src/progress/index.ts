@@ -45,8 +45,9 @@ export type ProgressReporterConfig = {
    */
   serverUrl?: string;
   /**
-   * jeeves-server machine key seed sent to the resolve-path API. Read on
-   * every report, so hot-reloaded changes apply immediately.
+   * jeeves-server machine key seed. Only the key derived from it is sent to
+   * the resolve-path API. Read on every report, so hot-reloaded changes
+   * apply immediately.
    */
   serverKey?: string;
   /** Handlebars template strings for each progress event type. */
@@ -70,8 +71,8 @@ export class ProgressReporter {
   /** Snapshot of template source strings used to compile `this.templates`. */
   private lastTemplateSource: string;
   private readonly serverUrl: string;
-  /** Last unauthorized warning logged (`missing`/`rejected` + status), to log once. */
-  private lastAuthWarning: string | undefined;
+  /** Unauthorized causes already warned about; each is logged once. */
+  private readonly reportedAuthCauses = new Set<'missing' | 'rejected'>();
 
   public constructor(config: ProgressReporterConfig, logger: Logger) {
     this.config = config;
@@ -163,9 +164,8 @@ export class ProgressReporter {
   /** Warn once per distinct cause when jeeves-server refuses resolve-path. */
   private warnUnauthorized(status: number): void {
     const reason = this.config.serverKey ? 'rejected' : 'missing';
-    const signature = `${reason}:${String(status)}`;
-    if (signature === this.lastAuthWarning) return;
-    this.lastAuthWarning = signature;
+    if (this.reportedAuthCauses.has(reason)) return;
+    this.reportedAuthCauses.add(reason);
     this.logger.warn(
       { status, serverUrl: this.serverUrl },
       reason === 'missing'

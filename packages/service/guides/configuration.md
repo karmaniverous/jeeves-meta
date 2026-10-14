@@ -82,7 +82,7 @@ Config values support `${VAR}` substitution from environment variables. Example:
 
 Progress reports link each entity through jeeves-server's `GET /api/resolve-path`. From jeeves-server 3.15.0 that endpoint requires a key, so set `serverKey` to the **seed** of a machine key defined under `keys` in jeeves-server's config (e.g. `keys.meta`). The service derives the URL key from the seed and sends it as the `k` query parameter; the seed itself is never sent. Older servers ignore the parameter.
 
-- **401/403** (key missing or rejected): the service logs one warning naming the cause and renders reports **without links**. It never substitutes the raw filesystem path. The default templates guard each link with `{{#if dirLink}}` / `{{#if metaLink}}`; custom templates should do the same.
+- **401/403** (key missing or rejected): the service logs one warning naming the cause and renders reports **without links**. It never substitutes the raw filesystem path: `dirLink`, `metaLink`, `dirPath` and `metaPath` are all empty in that case. The default templates guard each link with `{{#if dirLink}}` / `{{#if metaLink}}`; custom templates should do the same.
 - **Network error or other HTTP error** (e.g. 404, path outside every server root): the link falls back to the raw path, as before.
 
 `serverKey` hot-reloads.

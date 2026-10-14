@@ -97,6 +97,28 @@ describe('resolveLink', () => {
     });
   });
 
+  it.each([
+    ['a non-string publicUrl', { publicUrl: 42 }],
+    ['a non-string browseUrl', { browseUrl: ['x'] }],
+    ['a non-object body', 'oops'],
+  ])('falls back to the raw path on %s', async (_label, body) => {
+    mockFetch(okJson(body));
+
+    expect(await resolveLink(FS_PATH, SERVER, 'test-seed')).toEqual({
+      kind: 'fallback',
+      link: FS_PATH,
+    });
+  });
+
+  it('falls back to the raw path on a non-JSON 200 body', async () => {
+    mockFetch(() => Promise.resolve(new Response('<html>', { status: 200 })));
+
+    expect(await resolveLink(FS_PATH, SERVER, 'test-seed')).toEqual({
+      kind: 'fallback',
+      link: FS_PATH,
+    });
+  });
+
   it('falls back to the raw path on a network error', async () => {
     mockFetch(() => Promise.reject(new Error('connection refused')));
 

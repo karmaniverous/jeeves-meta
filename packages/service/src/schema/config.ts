@@ -73,8 +73,9 @@ export const serviceConfigSchema = metaConfigSchema.extend({
   serverUrl: z.string().default('http://127.0.0.1:1934'),
 
   /**
-   * jeeves-server machine key seed (a `keys` entry in jeeves-server config),
-   * sent to the resolve-path API. Required from jeeves-server 3.15.0.
+   * jeeves-server machine key seed (a `keys` entry in jeeves-server config).
+   * The seed is never sent: the resolve-path API receives only the key
+   * derived from it, as the `k` parameter. Required from jeeves-server 3.15.0.
    * Supports `${ENV}` substitution. Redacted in `GET /config`.
    */
   serverKey: z.string().optional(),

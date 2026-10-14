@@ -64,24 +64,35 @@ export type RenderLinkOptions = {
   onUnauthorized?: (status: number) => void;
 };
 
+/** Path and link fields of the template data bag. */
+type PathFields = Pick<
+  TemplateData,
+  'dirPath' | 'metaPath' | 'dirLink' | 'metaLink'
+>;
+
 /**
- * Resolve browse links for both the owner directory and its meta.json.
- * Both links are empty when the server refuses the key.
+ * Resolve the path and link fields for an owner directory and its meta.json.
+ * When the server refuses the key, every field is empty: no raw filesystem
+ * path reaches any template, default or custom.
  */
-async function resolveLinks(
+async function resolvePathFields(
   ownerPath: string,
   serverUrl: string,
   options: RenderLinkOptions,
-): Promise<{ dirLink: string; metaLink: string }> {
+): Promise<PathFields> {
   const result = await resolveLink(ownerPath, serverUrl, options.serverKey);
   if (result.kind === 'unauthorized') {
     options.onUnauthorized?.(result.status);
-    return { dirLink: '', metaLink: '' };
+    return { dirPath: '', metaPath: '', dirLink: '', metaLink: '' };
   }
   const dirLink = result.link;
-  // Derive metaLink by appending /.meta/meta.json to the resolved dir link
-  const metaLink = dirLink.replace(/\/+$/, '') + '/.meta/meta.json';
-  return { dirLink, metaLink };
+  return {
+    dirPath: ownerPath,
+    metaPath: ownerPath.replace(/\/+$/, '') + '/.meta/meta.json',
+    dirLink,
+    // Derive metaLink by appending /.meta/meta.json to the resolved dir link
+    metaLink: dirLink.replace(/\/+$/, '') + '/.meta/meta.json',
+  };
 }
 
 /** Data bag passed to every Handlebars template. */
@@ -111,20 +122,9 @@ export async function renderProgressEvent(
   serverUrl: string,
   options: RenderLinkOptions = {},
 ): Promise<string> {
-  const ownerPath = event.path;
-  const metaPath = ownerPath.replace(/\/+$/, '') + '/.meta/meta.json';
   const phase = (event.phase ?? 'unknown').toUpperCase();
-  const { dirLink, metaLink } = await resolveLinks(
-    ownerPath,
-    serverUrl,
-    options,
-  );
-
   const base: TemplateData = {
-    dirPath: ownerPath,
-    metaPath,
-    dirLink,
-    metaLink,
+    ...(await resolvePathFields(event.path, serverUrl, options)),
     phase,
   };
 

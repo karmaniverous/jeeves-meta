@@ -9,9 +9,16 @@
 import { createHmac } from 'node:crypto';
 
 import { fetchWithTimeout } from '@karmaniverous/jeeves';
+import { z } from 'zod';
 
 /** Timeout for resolve-path API calls (ms). */
 const RESOLVE_PATH_TIMEOUT_MS = 3000;
+
+/** The fields of a resolve-path 200 response this module uses. */
+const resolvePathResponseSchema = z.object({
+  browseUrl: z.string().optional(),
+  publicUrl: z.string().optional(),
+});
 
 /**
  * Outcome of a resolve-path lookup.
@@ -49,7 +56,7 @@ export function deriveServerUrlKey(seed: string): string {
  *
  * Sends the derived machine key as the `k` query parameter when `serverKey`
  * is set. On HTTP 200 uses `publicUrl` if present, otherwise prefixes
- * `serverUrl` to `browseUrl`.
+ * `serverUrl` to `browseUrl`. A malformed 200 response falls back.
  *
  * @param fsPath - Absolute filesystem path to resolve.
  * @param serverUrl - jeeves-server base URL.
@@ -70,10 +77,9 @@ export async function resolveLink(
     if (res.status === 401 || res.status === 403)
       return { kind: 'unauthorized', status: res.status };
     if (!res.ok) return fallback;
-    const data = (await res.json()) as {
-      browseUrl?: string;
-      publicUrl?: string;
-    };
+    const parsed = resolvePathResponseSchema.safeParse(await res.json());
+    if (!parsed.success) return fallback;
+    const data = parsed.data;
     if (data.publicUrl) return { kind: 'resolved', link: data.publicUrl };
     if (data.browseUrl)
       return {
