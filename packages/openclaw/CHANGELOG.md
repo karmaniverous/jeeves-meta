@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### ⚙️ Miscellaneous Tasks
+
+- Update @karmaniverous/jeeves to 0.7.0 and dependencies
+## [0.15.0] - 2026-09-29
+
 ### 🐛 Bug Fixes
 
 - *(openclaw)* Emit prettier-formatted openclaw.plugin.json from generate-schema
@@ -11,6 +16,10 @@ All notable changes to this project will be documented in this file.
 ### 💼 Other
 
 - Updated jeeves
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.15.0
 ## [0.15.0-3] - 2026-09-28
 
 ### ⚙️ Miscellaneous Tasks
@@ -63,9 +72,9 @@ All notable changes to this project will be documented in this file.
 
 - Address copilot review comments (#211)
 
-### 💼 Other
+### 🚜 Refactor
 
-- [META-93] refactor: generate plugin configSchema from Zod
+- Generate plugin configSchema from Zod
 
 ### 📚 Documentation
 

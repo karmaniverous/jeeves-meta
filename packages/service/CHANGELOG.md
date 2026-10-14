@@ -4,9 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### ⚙️ Miscellaneous Tasks
+
+- Update @karmaniverous/jeeves to 0.7.0 and dependencies
+## [0.18.0] - 2026-09-29
+
 ### 💼 Other
 
 - Updated jeeves
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.18.0
 ## [0.18.0-3] - 2026-09-28
 
 ### 🐛 Bug Fixes
@@ -53,18 +62,18 @@ All notable changes to this project will be documented in this file.
 - Release @karmaniverous/jeeves-meta v0.18.0-0
 ## [0.17.0] - 2026-06-27
 
+### 🚀 Features
+
+- Templated progress reporting + status meta counts
+
 ### 🐛 Bug Fixes
 
+- Use server resolve-path API for progress links
 - Address copilot review comments (#211)
-
-### 💼 Other
-
-- [META-94] refactor: use core fetchWithTimeout in HttpWatcherClient
-- [META-129] feat: templated progress reporting + status meta counts
-- [META-210] fix: use server resolve-path API for progress links
 
 ### 🚜 Refactor
 
+- Use core fetchWithTimeout in HttpWatcherClient
 - SOLID/DRY pass — single-source template defaults, hot-reload fix, consistent fetchWithTimeout
 
 ### 📚 Documentation
