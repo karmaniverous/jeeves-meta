@@ -4,6 +4,7 @@
  * @module configRoot.test
  */
 
+import type * as Jeeves from '@karmaniverous/jeeves';
 import {
   getConfigRoot,
   type PluginApi,
@@ -19,6 +20,22 @@ import {
   warnIfConfigRootMissing,
 } from './configRoot.js';
 import { CONFIG_ROOT_MISSING_MESSAGE } from './helpers.js';
+
+/** When set, core `init` throws it (to test the gate's init-failure path). */
+const initFailure = vi.hoisted(() => ({
+  error: undefined as Error | undefined,
+}));
+
+vi.mock('@karmaniverous/jeeves', async (importOriginal) => {
+  const actual = await importOriginal<typeof Jeeves>();
+  return {
+    ...actual,
+    init: (...args: Parameters<typeof actual.init>) => {
+      if (initFailure.error) throw initFailure.error;
+      actual.init(...args);
+    },
+  };
+});
 
 const PLUGIN_ID = 'jeeves-meta-openclaw';
 const ROOT = process.cwd();
@@ -99,19 +116,16 @@ describe('createConfigRootGate', () => {
   });
 
   it('reports a core init failure as an error', () => {
-    const api = makeApi({ configRoot: ROOT });
-    api.resolvePath = () => {
-      throw new Error('boom');
-    };
-    api.config = { ...api.config, agents: undefined };
-    const cwd = vi.spyOn(process, 'cwd').mockImplementation(() => {
-      throw new Error('no cwd');
-    });
+    initFailure.error = new Error('boom');
     try {
-      const check = createConfigRootGate(api).ensure();
-      expect(check.ok).toBe(false);
+      expect(
+        createConfigRootGate(makeApi({ configRoot: ROOT })).ensure(),
+      ).toEqual({
+        ok: false,
+        error: 'jeeves core init failed: boom',
+      });
     } finally {
-      cwd.mockRestore();
+      initFailure.error = undefined;
     }
   });
 });
