@@ -1,7 +1,7 @@
 ---
 name: jeeves-meta
 description: >
-  Knowledge synthesis with jeeves-meta. Use when checking synthesis status, listing or inspecting .meta/ entities, triggering or seeding synthesis, managing the meta service, or troubleshooting stale, failed, or locked metas.
+  jeeves-meta knowledge synthesis: status, list or inspect .meta/ entities, trigger or seed synthesis, queue, service, stale, failed or locked metas.
 ---
 
 # jeeves-meta — OpenClaw Skill
