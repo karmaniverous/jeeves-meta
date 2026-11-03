@@ -45,11 +45,25 @@ describe('openclaw.plugin.json', () => {
   });
 });
 
+/**
+ * OpenClaw cuts every catalog description to a compact form once the full
+ * skills catalog exceeds `skills.limits.maxSkillsPromptChars`, so the
+ * description stays short: trigger words, no filler.
+ */
+const MAX_DESCRIPTION_CHARS = 160;
+
 describe('skills/jeeves-meta/SKILL.md', () => {
+  const content = readFileSync('skills/jeeves-meta/SKILL.md', 'utf-8');
+
   it('has name and description frontmatter', () => {
-    const content = readFileSync('skills/jeeves-meta/SKILL.md', 'utf-8');
     expect(validateSkillFrontmatter(content)).toMatchObject({
       name: 'jeeves-meta',
     });
+  });
+
+  it(`keeps its description within ${String(MAX_DESCRIPTION_CHARS)} characters`, () => {
+    expect(
+      validateSkillFrontmatter(content).description.length,
+    ).toBeLessThanOrEqual(MAX_DESCRIPTION_CHARS);
   });
 });
