@@ -19,6 +19,7 @@
     "handlebars"
   ],
   "hostedBaseUrl": "https://docs.karmanivero.us/jeeves-meta",
+  "name": "jeeves-meta",
   "navigationLinks": {
     "GitHub": "https://github.com/karmaniverous/jeeves-meta"
   },
