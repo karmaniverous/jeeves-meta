@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0-0] - 2026-11-13
+
+### 🚀 Features
+
+- *(core)* META_CATALOG, metaHealthSchema and META_ERROR_CODES (T4)
+- *(core)* Committed OpenAPI 3.1 document (T5)
+- *(service)* [**breaking**] Routes on META_CATALOG with standard errors (T6)
+- *(openclaw)* Custom tools on the SDK (T10)
+
+### 💼 Other
+
+- Updated dependencies
+
+### 📚 Documentation
+
+- [**breaking**] Catalog, SDK, error codes and migration guide (T11)
+
+### ⚙️ Miscellaneous Tasks
+
+- [**breaking**] Jeeves 0.11.0 and Node >=24.22.2 (T2)
 ## [0.3.0] - 2026-10-14
 
 ### 🚀 Features
@@ -21,6 +41,7 @@ All notable changes to this project will be documented in this file.
 
 - Update @karmaniverous/jeeves to 0.7.0 and dependencies
 - Tag-aware changelog and release notes, <package>@<version> release names (#224, #225)
+- Release @karmaniverous/jeeves-meta-core v0.3.0
 ## [0.2.2] - 2026-06-25
 
 ### 🐛 Bug Fixes

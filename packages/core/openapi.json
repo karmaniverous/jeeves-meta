@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "jeeves-meta",
-    "version": "0.3.0",
+    "version": "0.4.0-0",
     "description": "HTTP API of the jeeves-meta service: the routes in its endpoint catalog (META_CATALOG). The API has no authentication: restrict the bind address or firewall the port."
   },
   "paths": {
