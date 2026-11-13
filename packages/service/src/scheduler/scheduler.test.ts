@@ -7,6 +7,9 @@ import { SynthesisQueue } from '../queue/index.js';
 import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
 import { Scheduler } from './index.js';
 
+const probe = vi.hoisted(() => vi.fn());
+vi.mock('../watcher-client/index.js', () => ({ probeWatcher: probe }));
+
 function createTestLogger() {
   return {
     warn: vi.fn(),
@@ -133,5 +136,47 @@ describe('Scheduler', () => {
 
     scheduler.resetBackoff();
     expect(getBackoff()).toBe(1);
+  });
+});
+
+describe('Scheduler watcher restart detection', () => {
+  /** A scheduler whose next tick enqueues one candidate. */
+  function schedulerWithCandidate() {
+    const logger = createTestLogger();
+    const scheduler = new Scheduler(
+      createTestConfig(),
+      new SynthesisQueue(logger),
+      logger,
+      createMockWatcher(),
+      new MetaCache(),
+    );
+    vi.spyOn(
+      scheduler as unknown as { discoverNextPhase: () => Promise<unknown> },
+      'discoverNextPhase',
+    ).mockResolvedValue({ path: 'j:/a', phase: 'builder', band: 2 });
+    const checkAndReregister = vi.fn().mockResolvedValue(undefined);
+    scheduler.setRegistrar({ checkAndReregister } as never);
+    const tick = () =>
+      (scheduler as unknown as { tick: () => Promise<void> }).tick();
+    return { scheduler, tick, checkAndReregister };
+  }
+
+  it('probes the watcher and passes its uptime to the registrar', async () => {
+    probe.mockResolvedValueOnce({ status: 'ok', uptime: 42, indexing: false });
+    const { scheduler, tick, checkAndReregister } = schedulerWithCandidate();
+    scheduler.start();
+    await tick();
+    scheduler.stop();
+    expect(probe).toHaveBeenCalledWith('http://localhost:3456', 3000);
+    expect(checkAndReregister).toHaveBeenCalledWith(42);
+  });
+
+  it('skips re-registration when the watcher does not answer', async () => {
+    probe.mockResolvedValueOnce({ status: 'unreachable', indexing: false });
+    const { scheduler, tick, checkAndReregister } = schedulerWithCandidate();
+    scheduler.start();
+    await tick();
+    scheduler.stop();
+    expect(checkAndReregister).not.toHaveBeenCalled();
   });
 });
