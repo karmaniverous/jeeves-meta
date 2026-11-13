@@ -7,7 +7,8 @@
  * scenarios are built against a started {@link WireApp}.
  */
 
-import { FIXTURE_OWNERS, keepOnly, type WireApp } from './wireApp.js';
+import { type WireApp } from './wireApp.js';
+import { FIXTURE_OWNERS, keepOnly } from './wireFixtures.js';
 import { get, patch, post, scenario, type WireScenario } from './wireTypes.js';
 
 /** Fixture owner key. */
@@ -88,7 +89,7 @@ export function scenariosFor(wire: WireApp): WireScenario[] {
       {},
       {
         setup: (w) => {
-          keepOnly(w, 'stale');
+          keepOnly(w.dir, 'stale');
         },
       },
     ),
@@ -98,7 +99,7 @@ export function scenariosFor(wire: WireApp): WireScenario[] {
       {},
       {
         setup: (w) => {
-          keepOnly(w, 'complete');
+          keepOnly(w.dir, 'complete');
         },
       },
     ),
@@ -118,12 +119,12 @@ export function scenariosFor(wire: WireApp): WireScenario[] {
     get('preview targeted', previewUrl(path('stale'))),
     get('preview corpus-wide', '/preview', {
       setup: (w) => {
-        keepOnly(w, 'stale');
+        keepOnly(w.dir, 'stale');
       },
     }),
     get('preview nothing stale', '/preview', {
       setup: (w) => {
-        keepOnly(w, 'complete');
+        keepOnly(w.dir, 'complete');
       },
     }),
     get('preview unknown meta', previewUrl(missing)),
