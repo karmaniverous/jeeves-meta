@@ -45,6 +45,20 @@ function jsonResponse(data: unknown, status = 200) {
   };
 }
 
+/** A valid watcher `GET /status` reply with the given uptime. */
+function watcherStatus(uptime: number): Response {
+  return new Response(
+    JSON.stringify({
+      name: 'watcher',
+      version: '0.0.0',
+      uptime,
+      status: 'healthy',
+      health: {},
+    }),
+    { status: 200, headers: { 'content-type': 'application/json' } },
+  );
+}
+
 beforeEach(() => {
   vi.stubGlobal('fetch', mockFetch);
   mockFetch.mockReset();
@@ -90,7 +104,7 @@ describe('WatcherHealthCheck', () => {
       logger,
     });
 
-    mockFetch.mockResolvedValue(jsonResponse({ status: 'ok', uptime: 100 }));
+    mockFetch.mockResolvedValue(watcherStatus(100));
     hc.start();
 
     await vi.advanceTimersByTimeAsync(60_000);
@@ -119,15 +133,13 @@ describe('WatcherHealthCheck', () => {
     });
 
     // First check: uptime 100
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({ status: 'ok', uptime: 100 }),
-    );
+    mockFetch.mockResolvedValueOnce(watcherStatus(100));
     hc.start();
     await vi.advanceTimersByTimeAsync(10_000);
 
     // Second check: uptime 5 (restart detected)
     mockFetch
-      .mockResolvedValueOnce(jsonResponse({ status: 'ok', uptime: 5 }))
+      .mockResolvedValueOnce(watcherStatus(5))
       .mockResolvedValueOnce(jsonResponse({ ok: true })); // re-registration
     await vi.advanceTimersByTimeAsync(10_000);
 

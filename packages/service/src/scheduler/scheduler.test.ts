@@ -2,9 +2,9 @@ import type { Logger } from 'pino';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MetaCache } from '../cache.js';
+import type { WatcherClient } from '../interfaces/index.js';
 import { SynthesisQueue } from '../queue/index.js';
 import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
-import type { HttpWatcherClient } from '../watcher-client/index.js';
 import { Scheduler } from './index.js';
 
 function createTestLogger() {
@@ -50,14 +50,14 @@ function createMockWatcher() {
   return {
     registerRules: vi.fn().mockResolvedValue(undefined),
     walk: vi.fn().mockResolvedValue([]),
-  } as unknown as HttpWatcherClient;
+  } as unknown as WatcherClient;
 }
 
 describe('Scheduler', () => {
   let scheduler: Scheduler;
   let queue: SynthesisQueue;
   let logger: Logger;
-  let watcher: HttpWatcherClient;
+  let watcher: WatcherClient;
 
   beforeEach(() => {
     logger = createTestLogger();

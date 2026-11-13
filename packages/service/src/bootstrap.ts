@@ -29,7 +29,7 @@ import { Scheduler } from './scheduler/index.js';
 import { type ServiceConfig } from './schema/config.js';
 import { createServer } from './server.js';
 import { registerShutdownHandlers } from './shutdown/index.js';
-import { HttpWatcherClient } from './watcher-client/index.js';
+import { SdkWatcherClient } from './watcher-client/index.js';
 
 /**
  * Compute per-cycle token total from a completed meta.
@@ -73,7 +73,7 @@ export async function startService(
   });
 
   // Wire synthesis executor + watcher
-  const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+  const watcher = new SdkWatcherClient({ baseUrl: config.watcherUrl });
   const executor = new GatewayExecutor({
     gatewayUrl: config.gatewayUrl,
     apiKey: config.gatewayApiKey,

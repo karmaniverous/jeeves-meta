@@ -25,6 +25,7 @@ import {
   derivePhaseState,
   selectPhaseCandidate,
 } from '../phaseState/index.js';
+import { probeWatcher } from '../watcher-client/index.js';
 import type { RouteDeps } from './index.js';
 
 interface WatcherHealth extends DepHealth {
@@ -45,25 +46,10 @@ async function checkDependency(url: string, path: string): Promise<DepHealth> {
 
 async function checkWatcher(url: string): Promise<WatcherHealth> {
   const checkedAt = new Date().toISOString();
-  try {
-    const res = await fetch(new URL('/status', url), {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) return { url, status: 'error', checkedAt };
-
-    const data = (await res.json()) as {
-      initialScan?: { active?: boolean };
-    };
-    const indexing = data.initialScan?.active === true;
-    return {
-      url,
-      status: indexing ? 'indexing' : 'ok',
-      checkedAt,
-      indexing,
-    };
-  } catch {
-    return { url, status: 'unreachable', checkedAt };
-  }
+  const probe = await probeWatcher(url, 3000);
+  if (probe.status === 'unreachable' || probe.status === 'error')
+    return { url, status: probe.status, checkedAt };
+  return { url, status: probe.status, checkedAt, indexing: probe.indexing };
 }
 
 /** Derive service-specific state from current activity and lifecycle. */

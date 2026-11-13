@@ -1,7 +1,7 @@
 /**
- * WatcherClient implementations.
+ * Watcher client for the service, built on the watcher SDK.
  *
  * @module watcher-client
  */
 
-export { HttpWatcherClient } from './HttpWatcherClient.js';
+export { probeWatcher, SdkWatcherClient } from './SdkWatcherClient.js';
