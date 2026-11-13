@@ -6,9 +6,7 @@
  * @module progress/resolveLink
  */
 
-import { createHmac } from 'node:crypto';
-
-import { fetchWithTimeout } from '@karmaniverous/jeeves';
+import { computeInsiderKey, fetchWithTimeout } from '@karmaniverous/jeeves';
 import { z } from 'zod';
 
 /** Timeout for resolve-path API calls (ms). */
@@ -35,26 +33,10 @@ export type ResolveLinkResult =
   | { kind: 'unauthorized'; status: number };
 
 /**
- * Derive the URL key jeeves-server accepts for a machine key seed.
- *
- * Mirrors `computeInsiderKey` in `@karmaniverous/jeeves-server-core`:
- * the first 32 hex chars of HMAC-SHA256(seed, 'insider'). Kept local so this
- * service does not pull in a second copy of `@karmaniverous/jeeves`.
- *
- * @param seed - Machine key seed, as configured under `keys` in jeeves-server.
- * @returns The derived URL key.
- */
-export function deriveServerUrlKey(seed: string): string {
-  return createHmac('sha256', seed)
-    .update('insider')
-    .digest('hex')
-    .substring(0, 32);
-}
-
-/**
  * Resolve a filesystem path to a browse URL.
  *
- * Sends the derived machine key as the `k` query parameter when `serverKey`
+ * Sends the derived machine key (jeeves `computeInsiderKey`) as the `k`
+ * query parameter when `serverKey`
  * is set. On HTTP 200 uses `publicUrl` if present, otherwise prefixes
  * `serverUrl` to `browseUrl`. A malformed 200 response falls back.
  *
@@ -72,7 +54,7 @@ export async function resolveLink(
   try {
     const url = new URL('/api/resolve-path', serverUrl);
     url.searchParams.set('fsPath', fsPath);
-    if (serverKey) url.searchParams.set('k', deriveServerUrlKey(serverKey));
+    if (serverKey) url.searchParams.set('k', computeInsiderKey(serverKey));
     const res = await fetchWithTimeout(url.toString(), RESOLVE_PATH_TIMEOUT_MS);
     if (res.status === 401 || res.status === 403)
       return { kind: 'unauthorized', status: res.status };

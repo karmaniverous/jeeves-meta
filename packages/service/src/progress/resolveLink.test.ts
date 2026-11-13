@@ -6,7 +6,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { deriveServerUrlKey, resolveLink } from './resolveLink.js';
+import { resolveLink } from './resolveLink.js';
 
 const SERVER = 'http://127.0.0.1:1934';
 const FS_PATH = 'j:/domains/github/org';
@@ -28,16 +28,6 @@ const okJson = (body: unknown) => () =>
       headers: { 'content-type': 'application/json' },
     }),
   );
-
-describe('deriveServerUrlKey', () => {
-  it('matches jeeves-server-core computeInsiderKey', () => {
-    // Vector produced by @karmaniverous/jeeves-server-core@0.3.0
-    // computeInsiderKey('test-seed').
-    expect(deriveServerUrlKey('test-seed')).toBe(
-      '21efb54b51cb607b79cd48a386d4ed7b',
-    );
-  });
-});
 
 describe('resolveLink', () => {
   beforeEach(() => {
