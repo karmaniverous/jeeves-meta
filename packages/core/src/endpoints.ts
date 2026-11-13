@@ -1,10 +1,13 @@
 /**
- * Shared endpoint catalog — single source of truth for the jeeves-meta API.
+ * The original endpoint list of the jeeves-meta API (name, method, path,
+ * description), superseded by `META_CATALOG` and kept for existing
+ * consumers (Decision 183). Derived from the catalog, so names, routes and
+ * descriptions have one source.
  *
- * Both the CLI service and the OpenClaw plugin derive their registrations
- * from this declarative catalog, eliminating drift between the two.
- *
+ * @module endpoints
  */
+
+import { META_CATALOG, type MetaCatalog } from './catalog.js';
 
 /** HTTP methods used by the API. */
 export type HttpMethod = 'GET' | 'PATCH' | 'POST';
@@ -21,105 +24,33 @@ export interface EndpointDescriptor {
   description: string;
 }
 
-/**
- * Canonical endpoint catalog for the jeeves-meta API.
- *
- * Every entry describes a single HTTP endpoint exposed by the service.
- * Route handlers, plugin tools, and HTTP clients should reference these
- * descriptors rather than hard-coding paths and descriptions.
- */
-export const META_ENDPOINTS = [
-  {
-    name: 'status',
-    method: 'GET',
-    path: '/status',
-    description: 'Service health and status overview.',
-  },
-  {
-    name: 'listMetas',
-    method: 'GET',
-    path: '/metas',
-    description:
-      'List metas with summary stats and per-meta projection. Response includes phaseState and owedPhase per meta.',
-  },
-  {
-    name: 'metaDetail',
-    method: 'GET',
-    path: '/metas/:path',
-    description:
-      'Full detail for a single meta, with optional archive history. Response includes phaseState, owedPhase, and crossRefs.',
-  },
-  {
-    name: 'updateMeta',
-    method: 'PATCH',
-    path: '/metas/:path',
-    description:
-      'Update user-settable reserved properties on a meta entity. Returns { path, meta } with large fields excluded. Rejects unknown property keys with a 400 error.',
-  },
-  {
-    name: 'synthesize',
-    method: 'POST',
-    path: '/synthesize',
-    description:
-      'Trigger synthesis. Path-targeted creates an override queue entry; returns owedPhase. Fully-fresh metas return status:skipped.',
-  },
-  {
-    name: 'abort',
-    method: 'POST',
-    path: '/synthesize/abort',
-    description: 'Abort the currently running synthesis.',
-  },
-  {
-    name: 'preview',
-    method: 'GET',
-    path: '/preview',
-    description:
-      'Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, inputStatus, and architectInvalidators.',
-  },
-  {
-    name: 'seed',
-    method: 'POST',
-    path: '/seed',
-    description:
-      'Create a .meta/ directory and initial meta.json for a new entity path.',
-  },
-  {
-    name: 'unlock',
-    method: 'POST',
-    path: '/unlock',
-    description: 'Remove a stale .lock from a meta entity that is stuck.',
-  },
-  {
-    name: 'config',
-    method: 'GET',
-    path: '/config',
-    description: 'Query service configuration with optional JSONPath.',
-  },
-  {
-    name: 'configApply',
-    method: 'POST',
-    path: '/config/apply',
-    description: 'Apply a configuration patch.',
-  },
-  {
-    name: 'queue',
-    method: 'GET',
-    path: '/queue',
-    description:
-      'List queued synthesis operations (3-layer model: current, overrides, automatic).',
-  },
-  {
-    name: 'queueClear',
-    method: 'POST',
-    path: '/queue/clear',
-    description: 'Clear override entries from the queue.',
-  },
-] as const satisfies readonly EndpointDescriptor[];
+/** The descriptor fields of catalog entry `E` (distributive). */
+type Descriptor<E> = E extends {
+  name: unknown;
+  method: unknown;
+  path: unknown;
+  description: unknown;
+}
+  ? Pick<E, 'name' | 'method' | 'path' | 'description'>
+  : never;
+
+/** The descriptor fields of every catalog entry, in catalog order. */
+type Descriptors = readonly Descriptor<MetaCatalog['entries'][number]>[];
+
+/** Every endpoint: name, method, path and description of each entry. */
+export const META_ENDPOINTS = META_CATALOG.entries.map(
+  ({ name, method, path, description }) => ({
+    name,
+    method,
+    path,
+    description,
+  }),
+) as unknown as Descriptors;
 
 /** Union of all endpoint names. */
 export type EndpointName = (typeof META_ENDPOINTS)[number]['name'];
 
-/** Single entry from the catalog, narrowed by name. */
+/** Single entry from the list, narrowed by name. */
 export type Endpoint<N extends EndpointName> = Extract<
   (typeof META_ENDPOINTS)[number],
   { name: N }
