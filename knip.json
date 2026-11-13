@@ -9,7 +9,8 @@
     "packages/openclaw": {
       "ignoreBinaries": ["plantuml"]
     },
-    "packages/core": {}
+    "packages/core": {},
+    "packages/sdk": {}
   },
   "ignoreExportsUsedInFile": true
 }

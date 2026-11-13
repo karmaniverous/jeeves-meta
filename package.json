@@ -5,12 +5,12 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace=packages/core && npm run build --workspace=packages/service && npm run build --workspace=packages/openclaw",
+    "build": "npm run build --workspace=packages/core && npm run build --workspace=packages/sdk && npm run build --workspace=packages/service && npm run build --workspace=packages/openclaw",
     "knip": "knip",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspace=packages/core && npm run typecheck --workspace=packages/service && npm run typecheck --workspace=packages/openclaw",
+    "typecheck": "npm run typecheck --workspace=packages/core && npm run typecheck --workspace=packages/sdk && npm run typecheck --workspace=packages/service && npm run typecheck --workspace=packages/openclaw",
     "docs": "typedoc"
   },
   "devDependencies": {
