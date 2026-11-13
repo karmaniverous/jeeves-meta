@@ -9,6 +9,7 @@
   "dependencies": {
     "@karmaniverous/jeeves": "0.11.0",
     "@karmaniverous/jeeves-meta-core": "^0.3.0",
+    "@karmaniverous/jeeves-meta-sdk": "^0.0.0",
     "@karmaniverous/jeeves-watcher-sdk": "^0.4.1",
     "commander": "^15",
     "croner": "^10",
@@ -21,7 +22,6 @@
   "description": "Fastify HTTP service for the Jeeves Meta synthesis engine",
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.35.0",
-    "@karmaniverous/jeeves-meta-sdk": "^0.0.0",
     "@rollup/plugin-commonjs": "^29.0.3",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
