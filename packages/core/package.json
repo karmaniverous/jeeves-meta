@@ -6,13 +6,17 @@
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.35.0",
     "@rollup/plugin-commonjs": "^29.0.3",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.0",
+    "@seriousme/openapi-schema-validator": "^2.11.0",
     "cross-env": "^10.1.0",
     "release-it": "^21.1.1",
     "rollup": "^4.64.6",
     "tslib": "^2.8.1",
-    "vitest": "^5.0.4"
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.4",
+    "zod-openapi": "^6.0.2"
   },
   "engines": {
     "node": ">=24.22.2"
@@ -23,10 +27,12 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
-    }
+    },
+    "./openapi.json": "./openapi.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "openapi.json"
   ],
   "name": "@karmaniverous/jeeves-meta-core",
   "publishConfig": {
@@ -47,7 +53,10 @@
     "hooks": {
       "after:bump": [
         "npm install --package-lock-only --ignore-scripts",
-        "git -C ../.. add package-lock.json"
+        "npm run openapi",
+        "npm run build",
+        "git -C ../.. add package-lock.json",
+        "git add openapi.json"
       ],
       "after:init": [
         "npm run lint",
@@ -75,6 +84,7 @@
     "knip": "knip",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
+    "openapi": "tsx scripts/write-openapi.ts",
     "release": "dotenvx run -f .env.local -- release-it",
     "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.preRelease --preRelease",
     "test": "vitest run --passWithNoTests",

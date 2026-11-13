@@ -1,0 +1,2034 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "jeeves-meta",
+    "version": "0.3.0",
+    "description": "HTTP API of the jeeves-meta service: the routes in its endpoint catalog (META_CATALOG). The API has no authentication: restrict the bind address or firewall the port."
+  },
+  "paths": {
+    "/status": {
+      "get": {
+        "operationId": "status",
+        "description": "Get meta service health, version, and uptime.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    },
+                    "uptime": {
+                      "type": "number"
+                    },
+                    "status": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "const": "healthy"
+                        },
+                        {
+                          "type": "string",
+                          "const": "degraded"
+                        },
+                        {
+                          "type": "string",
+                          "const": "unhealthy"
+                        }
+                      ]
+                    },
+                    "health": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "serviceState": {
+                              "type": "string",
+                              "enum": [
+                                "idle",
+                                "synthesizing",
+                                "waiting",
+                                "stopping"
+                              ]
+                            },
+                            "currentTarget": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "queue": {
+                              "type": "object",
+                              "properties": {
+                                "depth": {
+                                  "type": "number"
+                                },
+                                "items": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "path": {
+                                        "type": "string"
+                                      },
+                                      "enqueuedAt": {
+                                        "type": "string"
+                                      }
+                                    },
+                                    "required": [
+                                      "path",
+                                      "enqueuedAt"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "depth",
+                                "items"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "stats": {
+                              "type": "object",
+                              "properties": {
+                                "totalSyntheses": {
+                                  "type": "number"
+                                },
+                                "totalTokens": {
+                                  "type": "number"
+                                },
+                                "totalErrors": {
+                                  "type": "number"
+                                },
+                                "lastCycleDurationMs": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                },
+                                "lastCycleAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "totalSyntheses",
+                                "totalTokens",
+                                "totalErrors",
+                                "lastCycleDurationMs",
+                                "lastCycleAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "schedule": {
+                              "type": "object",
+                              "properties": {
+                                "expression": {
+                                  "type": "string"
+                                },
+                                "nextAt": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "expression",
+                                "nextAt"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "dependencies": {
+                              "type": "object",
+                              "properties": {
+                                "watcher": {
+                                  "type": "object",
+                                  "properties": {
+                                    "url": {
+                                      "type": "string"
+                                    },
+                                    "checkedAt": {
+                                      "type": "string"
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "ok",
+                                        "indexing",
+                                        "error",
+                                        "unreachable"
+                                      ]
+                                    },
+                                    "indexing": {
+                                      "type": "boolean"
+                                    },
+                                    "rulesRegistered": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "url",
+                                    "checkedAt",
+                                    "status",
+                                    "rulesRegistered"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "gateway": {
+                                  "type": "object",
+                                  "properties": {
+                                    "url": {
+                                      "type": "string"
+                                    },
+                                    "checkedAt": {
+                                      "type": "string"
+                                    },
+                                    "status": {
+                                      "type": "string",
+                                      "enum": [
+                                        "ok",
+                                        "error",
+                                        "unreachable"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "url",
+                                    "checkedAt",
+                                    "status"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "watcher",
+                                "gateway"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "phaseStateSummary": {
+                              "type": "object",
+                              "properties": {
+                                "architect": {
+                                  "type": "object",
+                                  "properties": {
+                                    "fresh": {
+                                      "type": "number"
+                                    },
+                                    "stale": {
+                                      "type": "number"
+                                    },
+                                    "pending": {
+                                      "type": "number"
+                                    },
+                                    "running": {
+                                      "type": "number"
+                                    },
+                                    "failed": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "fresh",
+                                    "stale",
+                                    "pending",
+                                    "running",
+                                    "failed"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "builder": {
+                                  "type": "object",
+                                  "properties": {
+                                    "fresh": {
+                                      "type": "number"
+                                    },
+                                    "stale": {
+                                      "type": "number"
+                                    },
+                                    "pending": {
+                                      "type": "number"
+                                    },
+                                    "running": {
+                                      "type": "number"
+                                    },
+                                    "failed": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "fresh",
+                                    "stale",
+                                    "pending",
+                                    "running",
+                                    "failed"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "critic": {
+                                  "type": "object",
+                                  "properties": {
+                                    "fresh": {
+                                      "type": "number"
+                                    },
+                                    "stale": {
+                                      "type": "number"
+                                    },
+                                    "pending": {
+                                      "type": "number"
+                                    },
+                                    "running": {
+                                      "type": "number"
+                                    },
+                                    "failed": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "fresh",
+                                    "stale",
+                                    "pending",
+                                    "running",
+                                    "failed"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "architect",
+                                "builder",
+                                "critic"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "nextPhase": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "path": {
+                                      "type": "string"
+                                    },
+                                    "phase": {
+                                      "type": "string",
+                                      "enum": [
+                                        "architect",
+                                        "builder",
+                                        "critic"
+                                      ]
+                                    },
+                                    "band": {
+                                      "type": "number"
+                                    },
+                                    "staleness": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "path",
+                                    "phase",
+                                    "band",
+                                    "staleness"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "metaCounts": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "total": {
+                                      "type": "number"
+                                    },
+                                    "enabled": {
+                                      "type": "number"
+                                    },
+                                    "disabled": {
+                                      "type": "number"
+                                    },
+                                    "neverSynthesized": {
+                                      "type": "number"
+                                    },
+                                    "stale": {
+                                      "type": "number"
+                                    },
+                                    "errors": {
+                                      "type": "number"
+                                    },
+                                    "locked": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "required": [
+                                    "total",
+                                    "enabled",
+                                    "disabled",
+                                    "neverSynthesized",
+                                    "stale",
+                                    "errors",
+                                    "locked"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "serviceState",
+                            "currentTarget",
+                            "queue",
+                            "stats",
+                            "schedule",
+                            "dependencies",
+                            "phaseStateSummary",
+                            "nextPhase",
+                            "metaCounts"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "object",
+                          "properties": {
+                            "error": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "error"
+                          ],
+                          "additionalProperties": false
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "version",
+                    "uptime",
+                    "status",
+                    "health"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metas": {
+      "get": {
+        "operationId": "listMetas",
+        "description": "List metas with summary stats and per-meta projection. Response includes phaseState and owedPhase per meta.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "pathPrefix",
+            "schema": {
+              "description": "Only metas under this path.",
+              "type": "string"
+            },
+            "description": "Only metas under this path."
+          },
+          {
+            "in": "query",
+            "name": "hasError",
+            "schema": {
+              "description": "Filter by error state.",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by error state."
+          },
+          {
+            "in": "query",
+            "name": "staleHours",
+            "schema": {
+              "description": "Only metas at least this many hours stale.",
+              "type": "string"
+            },
+            "description": "Only metas at least this many hours stale."
+          },
+          {
+            "in": "query",
+            "name": "neverSynthesized",
+            "schema": {
+              "description": "Filter by never-synthesized state.",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by never-synthesized state."
+          },
+          {
+            "in": "query",
+            "name": "locked",
+            "schema": {
+              "description": "Filter by lock state.",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by lock state."
+          },
+          {
+            "in": "query",
+            "name": "disabled",
+            "schema": {
+              "description": "Filter by disabled state.",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "Filter by disabled state."
+          },
+          {
+            "in": "query",
+            "name": "fields",
+            "schema": {
+              "description": "Comma-separated fields to return for each meta.",
+              "type": "string"
+            },
+            "description": "Comma-separated fields to return for each meta."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "number"
+                        },
+                        "stale": {
+                          "type": "number"
+                        },
+                        "errors": {
+                          "type": "number"
+                        },
+                        "locked": {
+                          "type": "number"
+                        },
+                        "disabled": {
+                          "type": "number"
+                        },
+                        "neverSynthesized": {
+                          "type": "number"
+                        },
+                        "tokens": {
+                          "type": "object",
+                          "properties": {
+                            "architect": {
+                              "type": "number"
+                            },
+                            "builder": {
+                              "type": "number"
+                            },
+                            "critic": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "architect",
+                            "builder",
+                            "critic"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "stalestPath": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "lastSynthesizedPath": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "lastSynthesizedAt": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "total",
+                        "stale",
+                        "errors",
+                        "locked",
+                        "disabled",
+                        "neverSynthesized",
+                        "tokens",
+                        "stalestPath",
+                        "lastSynthesizedPath",
+                        "lastSynthesizedAt"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "metas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "depth": {
+                            "type": "number"
+                          },
+                          "emphasis": {
+                            "type": "number"
+                          },
+                          "stalenessSeconds": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "lastSynthesized": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "hasError": {
+                            "type": "boolean"
+                          },
+                          "locked": {
+                            "type": "boolean"
+                          },
+                          "disabled": {
+                            "type": "boolean"
+                          },
+                          "architectTokens": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "builderTokens": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "criticTokens": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "phaseState": {
+                            "type": "object",
+                            "properties": {
+                              "architect": {
+                                "type": "string",
+                                "enum": [
+                                  "fresh",
+                                  "stale",
+                                  "pending",
+                                  "running",
+                                  "failed"
+                                ]
+                              },
+                              "builder": {
+                                "type": "string",
+                                "enum": [
+                                  "fresh",
+                                  "stale",
+                                  "pending",
+                                  "running",
+                                  "failed"
+                                ]
+                              },
+                              "critic": {
+                                "type": "string",
+                                "enum": [
+                                  "fresh",
+                                  "stale",
+                                  "pending",
+                                  "running",
+                                  "failed"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "architect",
+                              "builder",
+                              "critic"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "owedPhase": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "architect",
+                                  "builder",
+                                  "critic"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "additionalProperties": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "summary",
+                    "metas"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metas/{path}": {
+      "get": {
+        "operationId": "metaDetail",
+        "description": "Full detail for a single meta, with optional archive history. Response includes phaseState, owedPhase, and crossRefs.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string",
+              "description": "The meta's owner path or .meta/ path (URI-encoded)."
+            },
+            "required": true,
+            "description": "The meta's owner path or .meta/ path (URI-encoded)."
+          },
+          {
+            "in": "query",
+            "name": "fields",
+            "schema": {
+              "description": "Comma-separated meta.json fields to return.",
+              "type": "string"
+            },
+            "description": "Comma-separated meta.json fields to return."
+          },
+          {
+            "in": "query",
+            "name": "includeArchive",
+            "schema": {
+              "description": "true for all archive entries, or how many to return.",
+              "type": "string"
+            },
+            "description": "true for all archive entries, or how many to return."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": {}
+                    },
+                    "scope": {
+                      "type": "object",
+                      "properties": {
+                        "ownedFiles": {
+                          "type": "number"
+                        },
+                        "childMetas": {
+                          "type": "number"
+                        },
+                        "totalFiles": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "ownedFiles",
+                        "childMetas",
+                        "totalFiles"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "staleness": {
+                      "type": "object",
+                      "properties": {
+                        "seconds": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "score": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "seconds",
+                        "score"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "phaseState": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "architect": {
+                              "type": "string",
+                              "enum": [
+                                "fresh",
+                                "stale",
+                                "pending",
+                                "running",
+                                "failed"
+                              ]
+                            },
+                            "builder": {
+                              "type": "string",
+                              "enum": [
+                                "fresh",
+                                "stale",
+                                "pending",
+                                "running",
+                                "failed"
+                              ]
+                            },
+                            "critic": {
+                              "type": "string",
+                              "enum": [
+                                "fresh",
+                                "stale",
+                                "pending",
+                                "running",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "architect",
+                            "builder",
+                            "critic"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "owedPhase": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "architect",
+                            "builder",
+                            "critic"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "crossRefs": {
+                      "type": "array",
+                      "items": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "const": "resolved"
+                              },
+                              "hasContent": {
+                                "type": "boolean"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "status",
+                              "hasContent"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "status": {
+                                "type": "string",
+                                "const": "missing"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "status"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      }
+                    },
+                    "archive": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {},
+                        "additionalProperties": {}
+                      }
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "meta",
+                    "scope",
+                    "staleness",
+                    "phaseState",
+                    "owedPhase"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateMeta",
+        "description": "Update user-settable reserved properties on a meta entity. Returns { path, meta } with large fields excluded. Rejects unknown property keys with a 400 error.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "path",
+            "schema": {
+              "type": "string",
+              "description": "The meta's owner path or .meta/ path (URI-encoded)."
+            },
+            "required": true,
+            "description": "The meta's owner path or .meta/ path (URI-encoded)."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "_steer": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "_emphasis": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "_depth": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "_crossRefs": {
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "_disabled": {
+                    "type": [
+                      "boolean",
+                      "null"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "path": {
+                      "type": "string"
+                    },
+                    "meta": {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "path",
+                    "meta"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/synthesize": {
+      "post": {
+        "operationId": "synthesize",
+        "description": "Trigger synthesis. Path-targeted creates an override queue entry; returns owedPhase. Fully-fresh metas return status:skipped.",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "queued"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "owedPhase": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "architect",
+                                "builder",
+                                "critic"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "queuePosition": {
+                          "type": "number"
+                        },
+                        "alreadyQueued": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "path",
+                        "owedPhase",
+                        "queuePosition",
+                        "alreadyQueued"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "skipped"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "owedPhase": {
+                          "type": "null"
+                        },
+                        "queuePosition": {
+                          "type": "number",
+                          "const": -1
+                        },
+                        "alreadyQueued": {
+                          "type": "boolean",
+                          "const": false
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "path",
+                        "owedPhase",
+                        "queuePosition",
+                        "alreadyQueued"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "skipped"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/synthesize/abort": {
+      "post": {
+        "operationId": "abort",
+        "description": "Abort the currently running synthesis.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "aborted"
+                        },
+                        "path": {
+                          "type": "string"
+                        },
+                        "phase": {
+                          "type": "string",
+                          "enum": [
+                            "architect",
+                            "builder",
+                            "critic"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "path",
+                        "phase"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "const": "idle"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/preview": {
+      "get": {
+        "operationId": "preview",
+        "description": "Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, inputStatus, and architectInvalidators.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "schema": {
+              "description": "Meta path to preview (default: the stalest meta).",
+              "type": "string"
+            },
+            "description": "Meta path to preview (default: the stalest meta)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "path": {
+                          "type": "string"
+                        },
+                        "staleness": {
+                          "type": "object",
+                          "properties": {
+                            "seconds": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "score": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "seconds",
+                            "score"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "architectWillRun": {
+                          "type": "boolean"
+                        },
+                        "architectReason": {
+                          "type": "string"
+                        },
+                        "scope": {
+                          "type": "object",
+                          "properties": {
+                            "ownedFiles": {
+                              "type": "number"
+                            },
+                            "childMetas": {
+                              "type": "number"
+                            },
+                            "deltaFiles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "path": {
+                                    "type": "string"
+                                  },
+                                  "action": {
+                                    "type": "string",
+                                    "const": "modified"
+                                  }
+                                },
+                                "required": [
+                                  "path",
+                                  "action"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "deltaCount": {
+                              "type": "number"
+                            },
+                            "deltaFilesTruncated": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "ownedFiles",
+                            "childMetas",
+                            "deltaFiles",
+                            "deltaCount",
+                            "deltaFilesTruncated"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "estimatedTokens": {
+                          "type": "object",
+                          "properties": {
+                            "architect": {
+                              "type": "number"
+                            },
+                            "builder": {
+                              "type": "number"
+                            },
+                            "critic": {
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "architect",
+                            "builder",
+                            "critic"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "owedPhase": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "architect",
+                                "builder",
+                                "critic"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "priorityBand": {
+                          "type": "number"
+                        },
+                        "phaseState": {
+                          "type": "object",
+                          "properties": {
+                            "architect": {
+                              "type": "string",
+                              "enum": [
+                                "fresh",
+                                "stale",
+                                "pending",
+                                "running",
+                                "failed"
+                              ]
+                            },
+                            "builder": {
+                              "type": "string",
+                              "enum": [
+                                "fresh",
+                                "stale",
+                                "pending",
+                                "running",
+                                "failed"
+                              ]
+                            },
+                            "critic": {
+                              "type": "string",
+                              "enum": [
+                                "fresh",
+                                "stale",
+                                "pending",
+                                "running",
+                                "failed"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "architect",
+                            "builder",
+                            "critic"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "inputStatus": {
+                          "type": "object",
+                          "properties": {
+                            "structureHash": {
+                              "type": "string"
+                            },
+                            "steerChanged": {
+                              "type": "boolean"
+                            },
+                            "architectChanged": {
+                              "type": "boolean"
+                            },
+                            "criticChanged": {
+                              "type": "boolean"
+                            },
+                            "crossRefsDeclChanged": {
+                              "type": "boolean"
+                            },
+                            "crossRefContentChanged": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "structureHash",
+                            "steerChanged",
+                            "architectChanged",
+                            "criticChanged",
+                            "crossRefsDeclChanged",
+                            "crossRefContentChanged"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "architectInvalidators": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "path",
+                        "staleness",
+                        "architectWillRun",
+                        "architectReason",
+                        "scope",
+                        "estimatedTokens",
+                        "owedPhase",
+                        "priorityBand",
+                        "phaseState",
+                        "inputStatus",
+                        "architectInvalidators"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "message": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "message"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seed": {
+      "post": {
+        "operationId": "seed",
+        "description": "Create a .meta/ directory and initial meta.json for a new entity path.",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "crossRefs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "steer": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "const": "created"
+                    },
+                    "path": {
+                      "type": "string"
+                    },
+                    "metaDir": {
+                      "type": "string"
+                    },
+                    "_id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "path",
+                    "metaDir",
+                    "_id"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/unlock": {
+      "post": {
+        "operationId": "unlock",
+        "description": "Remove a stale .lock from a meta entity that is stuck.",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "const": "unlocked"
+                    },
+                    "path": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "path"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config": {
+      "get": {
+        "operationId": "config",
+        "description": "Query meta running configuration. Optional JSONPath filter.",
+        "security": [],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "schema": {
+              "type": "string",
+              "description": "JSONPath expression (optional)"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "result": {
+                          "type": "array",
+                          "items": {}
+                        },
+                        "count": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "result",
+                        "count"
+                      ],
+                      "additionalProperties": {}
+                    },
+                    {
+                      "type": "object",
+                      "properties": {},
+                      "additionalProperties": {}
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/config/apply": {
+      "post": {
+        "operationId": "configApply",
+        "description": "Apply a configuration patch.",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patch": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string"
+                    },
+                    "additionalProperties": {},
+                    "description": "Config patch to apply"
+                  },
+                  "replace": {
+                    "type": "boolean",
+                    "description": "Replace the whole config instead of merging"
+                  }
+                },
+                "required": [
+                  "patch"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "applied": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "restartRequired": {
+                      "type": "boolean"
+                    },
+                    "warning": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "applied",
+                    "restartRequired"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue": {
+      "get": {
+        "operationId": "queue",
+        "description": "List queued synthesis operations (3-layer model: current, overrides, automatic).",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "current": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "properties": {
+                            "path": {
+                              "type": "string"
+                            },
+                            "phase": {
+                              "type": "string",
+                              "enum": [
+                                "architect",
+                                "builder",
+                                "critic"
+                              ]
+                            },
+                            "startedAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "path",
+                            "phase",
+                            "startedAt"
+                          ],
+                          "additionalProperties": false
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "pending": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "owedPhase": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "architect",
+                                  "builder",
+                                  "critic"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "enqueuedAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "owedPhase",
+                          "enqueuedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "automatic": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "owedPhase": {
+                            "type": "string",
+                            "enum": [
+                              "architect",
+                              "builder",
+                              "critic"
+                            ]
+                          },
+                          "priorityBand": {
+                            "type": "number"
+                          },
+                          "effectiveStaleness": {
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "owedPhase",
+                          "priorityBand",
+                          "effectiveStaleness"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "current",
+                    "pending",
+                    "automatic"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue/clear": {
+      "post": {
+        "operationId": "queueClear",
+        "description": "Clear override entries from the queue.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cleared": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "cleared"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorBody": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "code": {
+            "type": "string"
+          },
+          "error": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "statusCode",
+          "error",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}

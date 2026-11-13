@@ -4,6 +4,11 @@
     "isolatedModules": false,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/**/*", "rollup.config.ts", "vitest.config.ts"],
+  "include": [
+    "src/**/*",
+    "scripts/**/*",
+    "rollup.config.ts",
+    "vitest.config.ts"
+  ],
   "exclude": ["dist", "node_modules", ".rollup.cache"]
 }

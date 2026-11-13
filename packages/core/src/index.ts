@@ -64,6 +64,7 @@ export { metaErrorSchema } from './errors.js';
 export type { MetaConfig } from './metaConfig.js';
 export { metaConfigSchema } from './metaConfig.js';
 export { normalizePath } from './normalizePath.js';
+export { META_OPENAPI_DOCUMENT } from './openapi.js';
 export type { PhaseName, PhaseState, PhaseStatus } from './phases.js';
 export {
   phaseNames,
