@@ -2,14 +2,22 @@
  * Rollup configuration for the OpenClaw plugin package.
  * Single entry point: the plugin (ESM + declarations).
  *
- * Runtime dependencies (`@karmaniverous/jeeves`, `@karmaniverous/jeeves-meta-core`,
- * `zod`) are externalized and resolved from the plugin's installed dependencies.
+ * Every runtime dependency (and its sub-paths) is externalized and resolved
+ * from the plugin's installed dependencies.
  */
+
+import { readFileSync } from 'node:fs';
 
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import typescriptPlugin from '@rollup/plugin-typescript';
 import type { RollupOptions } from 'rollup';
+
+const pkg = JSON.parse(
+  readFileSync(new URL('./package.json', import.meta.url), 'utf-8'),
+) as { dependencies?: Record<string, string> };
+
+const dependencyExternals = Object.keys(pkg.dependencies ?? {});
 
 const onwarn: RollupOptions['onwarn'] = (warning, warn) => {
   if (warning.code === 'CIRCULAR_DEPENDENCY') return;
@@ -20,9 +28,8 @@ const pluginConfig: RollupOptions = {
   input: 'src/index.ts',
   output: { dir: 'dist', format: 'esm' },
   external: [
-    '@karmaniverous/jeeves',
-    '@karmaniverous/jeeves-meta-core',
-    'zod',
+    ...dependencyExternals,
+    ...dependencyExternals.map((dep) => new RegExp('^' + dep + '/')),
     /^node:/,
   ],
   onwarn,

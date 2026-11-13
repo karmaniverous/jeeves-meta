@@ -1,7 +1,7 @@
 /**
  * Tests for `META_CATALOG` and what derives from it: the 13 entries with
  * their routes, auth and kinds (spec 4.4.1, Decisions 183, 192, 208), the
- * deprecated `META_ENDPOINTS`/`getEndpoint` kept in step, the error-code
+ * error-code
  * table, and `metaConfigSchema` unchanged (jeeves-tools imports it).
  *
  * @module catalog.test
@@ -11,7 +11,6 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { META_CATALOG } from './catalog.js';
-import { getEndpoint, META_ENDPOINTS } from './endpoints.js';
 import { META_ERROR_CODES, META_ERROR_STATUS } from './errorCodes.js';
 import { metaConfigSchema } from './metaConfig.js';
 
@@ -56,26 +55,6 @@ describe('META_CATALOG', () => {
       restartRequired: false,
     });
     expect(() => entry?.response.parse({ applied: true })).toThrow();
-  });
-});
-
-describe('META_ENDPOINTS (deprecated)', () => {
-  it('mirrors the catalog by name, method, path and description', () => {
-    expect(META_ENDPOINTS).toEqual(
-      META_CATALOG.entries.map(({ name, method, path, description }) => ({
-        name,
-        method,
-        path,
-        description,
-      })),
-    );
-  });
-
-  it('getEndpoint finds an entry by name and refuses an unknown one', () => {
-    expect(getEndpoint('metaDetail').path).toBe('/metas/:path');
-    expect(() => getEndpoint('nope' as 'status')).toThrow(
-      'Unknown endpoint: nope',
-    );
   });
 });
 

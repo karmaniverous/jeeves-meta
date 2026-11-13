@@ -21,7 +21,6 @@ import {
 } from './configRoot.js';
 import { buildCustomTools } from './customTools.js';
 import { getServiceUrl } from './helpers.js';
-import type { MetaServiceClient } from './serviceClient.js';
 
 /**
  * Tool calls that read `configRoot`, keyed by tool name.
@@ -39,12 +38,10 @@ const CONFIG_ROOT_TOOLS = new Map<string, NeedsConfigRoot>([
 /** Register all meta_* tools (standard + custom). */
 export function registerMetaTools(
   api: PluginApi,
-  client: MetaServiceClient,
+  baseUrl: string,
   descriptor: JeevesComponentDescriptor,
   gate: ConfigRootGate,
 ): void {
-  const baseUrl = client.getBaseUrl();
-
   // Standard tools from factory: meta_status, meta_config, meta_config_apply, meta_service.
   // `apiUrl` is resolved on every call with the same resolution as the
   // custom tools, so the standard HTTP tools hit the configured service.
@@ -59,7 +56,7 @@ export function registerMetaTools(
   }
 
   // Custom domain-specific tools
-  for (const tool of buildCustomTools(client, baseUrl)) {
+  for (const tool of buildCustomTools(baseUrl)) {
     api.registerTool(tool);
   }
 }

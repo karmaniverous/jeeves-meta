@@ -1,0 +1,254 @@
+[
+  {
+    "name": "meta_config",
+    "description": "Query meta running configuration. Optional JSONPath filter.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "JSONPath expression (optional)"
+        }
+      }
+    }
+  },
+  {
+    "name": "meta_config_apply",
+    "description": "Apply a config patch to the running meta service.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "config": {
+          "type": "object",
+          "description": "Config patch to apply"
+        }
+      },
+      "required": ["config"]
+    }
+  },
+  {
+    "name": "meta_detail",
+    "description": "Full detail for a single meta, with optional archive history. Response includes phaseState, owedPhase, and crossRefs.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to .meta/ directory or owner directory."
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to include."
+        },
+        "includeArchive": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "description": "false (default), true (all snapshots), or number (N most recent)."
+        }
+      },
+      "required": ["path"]
+    }
+  },
+  {
+    "name": "meta_list",
+    "description": "List metas with summary stats and per-meta projection. Response includes phaseState and owedPhase per meta.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "pathPrefix": {
+          "type": "string",
+          "description": "Filter metas by path prefix (e.g. \"github/\")."
+        },
+        "filter": {
+          "type": "object",
+          "description": "Structured filter. Supported keys: hasError (boolean), staleHours (number), neverSynthesized (boolean), locked (boolean), disabled (boolean).",
+          "properties": {
+            "hasError": {
+              "type": "boolean"
+            },
+            "staleHours": {
+              "type": "number"
+            },
+            "neverSynthesized": {
+              "type": "boolean"
+            },
+            "locked": {
+              "type": "boolean"
+            },
+            "disabled": {
+              "type": "boolean"
+            }
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fields to include per meta."
+        }
+      }
+    }
+  },
+  {
+    "name": "meta_preview",
+    "description": "Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, inputStatus, and architectInvalidators.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Optional: specific .meta/ path to preview. If omitted, previews the stalest candidate."
+        }
+      }
+    }
+  },
+  {
+    "name": "meta_queue",
+    "description": "Queue management. list: List queued synthesis operations (3-layer model: current, overrides, automatic). clear: Clear override entries from the queue. abort: Abort the currently running synthesis.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["list", "clear", "abort"],
+          "description": "Queue action: list (show state), clear (remove pending), abort (stop current synthesis)."
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
+    "name": "meta_seed",
+    "description": "Create a .meta/ directory and initial meta.json for a new entity path.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Owner directory path to seed with .meta/ and meta.json."
+        },
+        "crossRefs": {
+          "type": "string",
+          "description": "JSON array of cross-ref owner paths (e.g. '[\"<drive label>:/path/a\",\"<drive label>:/path/b\"]'). Use server_drives to discover available drive labels."
+        },
+        "steer": {
+          "type": "string",
+          "description": "Steering prompt written as _steer in the initial meta.json."
+        }
+      },
+      "required": ["path"]
+    }
+  },
+  {
+    "name": "meta_service",
+    "description": "Manage the meta system service. Actions: install, uninstall, start, stop, restart, status.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "install",
+            "uninstall",
+            "start",
+            "stop",
+            "restart",
+            "status"
+          ],
+          "description": "Service action to perform"
+        }
+      },
+      "required": ["action"]
+    }
+  },
+  {
+    "name": "meta_status",
+    "description": "Get meta service health, version, and uptime.",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "meta_trigger",
+    "description": "Trigger synthesis. Path-targeted creates an override queue entry; returns owedPhase. Fully-fresh metas return status:skipped.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Optional: specific .meta/ or owner path to synthesize."
+        }
+      }
+    }
+  },
+  {
+    "name": "meta_unlock",
+    "description": "Remove a stale .lock from a meta entity that is stuck.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to the .meta/ directory or owner directory."
+        }
+      },
+      "required": ["path"]
+    }
+  },
+  {
+    "name": "meta_update",
+    "description": "Update user-settable reserved properties on a meta entity. Returns { path, meta } with large fields excluded. Rejects unknown property keys with a 400 error.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to the .meta/ directory or owner directory."
+        },
+        "updates": {
+          "type": "object",
+          "description": "Properties to set. Supported: _steer, _emphasis, _depth, _crossRefs, _disabled. Set to null to remove.",
+          "properties": {
+            "_steer": {
+              "type": ["string", "null"]
+            },
+            "_emphasis": {
+              "type": ["number", "null"]
+            },
+            "_depth": {
+              "type": ["number", "null"]
+            },
+            "_crossRefs": {
+              "oneOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "_disabled": {
+              "type": ["boolean", "null"]
+            }
+          }
+        }
+      },
+      "required": ["path", "updates"]
+    }
+  }
+]
