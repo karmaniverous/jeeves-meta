@@ -151,9 +151,9 @@ describe('POST /config/apply', () => {
     const res = await apply({ patch: { port: 'bad' } });
 
     expect(res.statusCode).toBe(400);
-    expect(res.json<{ error: string }>().error).toBe(
-      'Config validation failed',
-    );
+    const body = res.json<{ code: string; message: string }>();
+    expect(body.code).toBe('JEEVES_CONFIG_INVALID');
+    expect(body.message).toMatch(/^Config validation failed: port: /);
     expect(readFileSync(configPath).equals(before)).toBe(true);
   });
 

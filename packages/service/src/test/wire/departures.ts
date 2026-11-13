@@ -2,8 +2,9 @@
  * @module test/wire/departures
  * The closed list of approved wire departures from the 0.19.0 baseline
  * (spec 4.4.2, Decision 184): each departing scenario, what 0.19.0
- * answered, and the spec item that allows the change. Pure data. Empty
- * until the catalog lands (T6/T7).
+ * answered, and the spec item that allows the change. Pure data. T2 adds
+ * the bodies jeeves 0.11.0's config handlers now send; the catalog
+ * departures follow in T6/T7.
  */
 
 /**
@@ -27,4 +28,17 @@ export interface WireDeparture {
 
 /** Approved departures by scenario name. */
 export const WIRE_DEPARTURES: Readonly<Partial<Record<string, WireDeparture>>> =
-  {};
+  {
+    // jeeves 0.11.0 config handlers: same status, standard body (T2).
+    'config invalid jsonpath': {
+      before: '400 { error: <JSONPath parser message> } from jeeves 0.8',
+      item: 'error-body',
+      code: 'JEEVES_CONFIG_QUERY_INVALID',
+    },
+    'configApply invalid config': {
+      before:
+        "400 { error: 'Config validation failed', issues } from jeeves 0.8",
+      item: 'error-body',
+      code: 'JEEVES_CONFIG_INVALID',
+    },
+  };
