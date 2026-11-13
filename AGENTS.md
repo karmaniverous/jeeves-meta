@@ -1,53 +1,45 @@
-# AGENTS.md — Standing Rules for feature/234-catalog-sdk
+# AGENTS.md
 
-This file is a standing contract for any agent (human-directed or autonomous) working on
-`feature/234-catalog-sdk` (jeeves-meta spec §4, issues #234, #243, #240, #244).
+Standing rules for any agent working in this repository.
 
 ## Authority
 
-- `J:\domains\projects\jeeves-meta\spec.md` §4 is the authority. It is locked; do not
-  reverse any owner decision in §4.5. If a decision looks wrong, stop and report instead
-  of overriding it.
-- Tasks T1–T14 (§4.6) run in order, one at a time.
-- One branch, `feature/234-catalog-sdk`, one PR, closing #234, #243, #240, #244.
+- The jeeves-meta product spec is the authority for design. Its Next Version section, once locked, lists the tasks in order; do them one at a time on one branch with one PR.
+- Never reverse an owner decision recorded in the spec. If one looks wrong, stop and report.
 
 ## Commits
 
-- Every commit message starts with `[234] ` followed by a conventional-commit type
-  (e.g. `[234] feat: ...`, `[234] test: ...`, `[234] docs: ...`).
-- Breaking commits carry a `BREAKING CHANGE:` footer pointing at
-  `packages/service/guides/migrating-to-0.20.md`.
-- Commit AND push immediately after every commit. No force-push.
+- Every commit message starts with the branch's issue prefix (for example `[234] `) followed by a conventional-commit type: `[234] feat(service): ...`.
+- Breaking commits carry a `BREAKING CHANGE:` footer that points at the migration guide.
+- Commit and push immediately after every commit. Never force-push.
 
 ## Lint and Tests
 
 - Never use `eslint-disable` in production code.
-- In tests only, `eslint-disable-next-line <rule> -- <why>` is allowed when truly
-  unavoidable, and every such line must be listed in the PR description.
-- No lint `ignores` entries and no rules turned off for tests.
-- No trivial tests. Every new module gets coverage. A test must fail if the behaviour
-  it covers breaks (mutation-style check).
+- In tests only, `eslint-disable-next-line <rule> -- <why>` is allowed when the test cannot be written another way; list every such line in the PR description.
+- No lint `ignores` and no rules turned off for tests.
+- No trivial tests. Every new module is covered, and a test must fail if the behaviour it covers breaks.
 
 ## Before Every Push
 
-- Run all gates at the repo root and in every touched package, with zero errors and
-  zero warnings: `build`, `typecheck`, `lint`, `knip`, `test`, and
-  `npx prettier --check .`.
-- Check `gh pr list --head <branch> --repo karmaniverous/jeeves-meta --json number,state`:
-  it must show the PR `OPEN`, or no PR yet. Never push to a merged/closed PR branch.
+- Run every gate at the root and in each touched package, with zero errors and zero warnings: `build`, `typecheck`, `lint`, `knip`, `test`, and `npx prettier --check .`.
+- Run `gh pr list --head <branch> --repo karmaniverous/jeeves-meta --json number,state`. Push only if the PR is `OPEN` or there is no PR yet.
 
 ## Docs
 
-- README, guides and SKILL docs change in the same task as the code they describe,
-  never as a separate follow-up.
+- README, guides and skill docs change in the same commit series as the code they describe.
 
 ## Code Shape
 
 - Files stay at or under 300 lines.
-- SOLID/DRY.
-- Schema-first Zod: schemas define the shape; types are derived from them.
+- SOLID and DRY.
+- Schema-first Zod: schemas define shapes; types derive from them.
 
 ## Dependencies
 
-- New runtime dependencies are only those named in the spec, pinned exact or caret
-  exactly as the spec specifies.
+- Add only the runtime dependencies the spec names, with the range the spec gives.
+
+## Wire Baseline
+
+- `packages/service/src/test/wire/wire-0.19.0.json` records what service 0.19.0 sends for every scenario in `src/test/wire/scenarios.ts`; `src/api/wireBaseline.test.ts` replays them. A changed reply must be listed in `src/test/wire/departures.ts`.
+- Re-record the baseline from the release itself with `npm run wire:capture` (in `packages/service`), never by hand.
