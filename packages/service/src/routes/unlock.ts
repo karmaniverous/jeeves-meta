@@ -1,5 +1,6 @@
 /**
- * POST /unlock — remove .lock from a .meta/ directory.
+ * `unlock` handler: remove `.lock` from a `.meta/` directory. Deletes a
+ * file.
  *
  * @module routes/unlock
  */
@@ -7,39 +8,31 @@
 import { existsSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
-
+import { capArg, MetaNotLocked } from '../api/errors.js';
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import { resolveMetaDir } from '../lock.js';
 import type { RouteDeps } from './index.js';
 
-const unlockBodySchema = z.object({
-  path: z.string().min(1),
-});
-
-export function registerUnlockRoute(
-  app: FastifyInstance,
+/**
+ * The `unlock` handler.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handler.
+ */
+export function createUnlockHandlers(
   deps: RouteDeps,
-): void {
-  app.post(getEndpoint('unlock').path, (request, reply) => {
-    const body = unlockBodySchema.parse(request.body);
-    const metaDir = resolveMetaDir(body.path);
-    const lockPath = join(metaDir, '.lock');
+): Pick<MetaHandlers, 'unlock'> {
+  return {
+    unlock: ({ body }) => {
+      const lockPath = join(resolveMetaDir(body.path), '.lock');
+      if (!existsSync(lockPath)) throw new MetaNotLocked(capArg(body.path));
 
-    if (!existsSync(lockPath)) {
-      return reply.status(409).send({
-        error: 'ALREADY_UNLOCKED',
-        message: `No lock file at ${body.path} (already unlocked)`,
+      deps.logger.info({ lockPath }, 'removing lock file');
+      unlinkSync(lockPath);
+      return Promise.resolve({
+        status: 200,
+        body: { status: 'unlocked', path: body.path },
       });
-    }
-
-    deps.logger.info({ lockPath }, 'removing lock file');
-    unlinkSync(lockPath);
-
-    return reply.status(200).send({
-      status: 'unlocked',
-      path: body.path,
-    });
-  });
+    },
+  };
 }

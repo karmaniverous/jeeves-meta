@@ -6,12 +6,11 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
-import { makeTestDeps, makeTestLogger } from './__testUtils.js';
-import { registerQueueRoutes } from './queue.js';
+import { createTestApp, makeTestDeps, makeTestLogger } from './__testUtils.js';
 
 describe('queue routes', () => {
   let app: FastifyInstance;
@@ -25,8 +24,7 @@ describe('queue routes', () => {
     queue.enqueue('/meta/a');
     queue.enqueue('/meta/b');
 
-    app = Fastify();
-    registerQueueRoutes(app, makeTestDeps({ queue }));
+    app = createTestApp(makeTestDeps({ queue }));
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/queue' });
@@ -46,8 +44,7 @@ describe('queue routes', () => {
     queue.enqueue('/meta/a');
     queue.enqueue('/meta/b');
 
-    app = Fastify();
-    registerQueueRoutes(app, makeTestDeps({ queue }));
+    app = createTestApp(makeTestDeps({ queue }));
     await app.ready();
 
     const res = await app.inject({ method: 'POST', url: '/queue/clear' });
@@ -57,8 +54,7 @@ describe('queue routes', () => {
   });
 
   it('POST /synthesize/abort returns idle when nothing running', async () => {
-    app = Fastify();
-    registerQueueRoutes(app, makeTestDeps());
+    app = createTestApp(makeTestDeps());
     await app.ready();
 
     const res = await app.inject({ method: 'POST', url: '/synthesize/abort' });
@@ -90,8 +86,7 @@ describe('queue routes', () => {
     queue.setCurrentPhase(ownerDir, 'builder');
     const abort = vi.fn();
 
-    app = Fastify();
-    registerQueueRoutes(app, makeTestDeps({ queue, executor: { abort } }));
+    app = createTestApp(makeTestDeps({ queue, executor: { abort } }));
     await app.ready();
 
     const res = await app.inject({ method: 'POST', url: '/synthesize/abort' });

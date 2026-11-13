@@ -8,18 +8,18 @@ import { rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
 import {
+  createTestApp,
   createTestMeta,
   makeFailingTestWatcher,
   makeTestDeps,
   makeTestLogger,
   makeTestWatcher,
 } from './__testUtils.js';
-import { registerSynthesizeRoute } from './synthesize.js';
 
 const synthRoot = join(
   tmpdir(),
@@ -38,8 +38,7 @@ describe('POST /synthesize', () => {
     const logger = makeTestLogger();
     const queue = new SynthesisQueue(logger);
     const deps = makeTestDeps({ queue });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -67,8 +66,7 @@ describe('POST /synthesize', () => {
     const logger = makeTestLogger();
     const queue = new SynthesisQueue(logger);
     const deps = makeTestDeps({ queue });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -88,8 +86,7 @@ describe('POST /synthesize', () => {
     const logger = makeTestLogger();
     const queue = new SynthesisQueue(logger);
     const deps = makeTestDeps({ queue });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -112,8 +109,7 @@ describe('POST /synthesize', () => {
     queue.enqueue('/meta/second');
 
     const deps = makeTestDeps({ queue });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -132,8 +128,7 @@ describe('POST /synthesize', () => {
     const queue = new SynthesisQueue(logger);
 
     const deps = makeTestDeps({ queue });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     // First request
@@ -173,8 +168,7 @@ describe('POST /synthesize', () => {
       queue,
       watcher: watcher,
     });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -204,8 +198,7 @@ describe('POST /synthesize', () => {
       queue,
       watcher: watcher,
     });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     // Auto-select: disabled meta must be skipped.
@@ -261,8 +254,7 @@ describe('POST /synthesize', () => {
     const queue = new SynthesisQueue(logger);
 
     const deps = makeTestDeps({ queue, watcher });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -288,8 +280,7 @@ describe('POST /synthesize', () => {
       queue,
       watcher: makeFailingTestWatcher(),
     });
-    app = Fastify();
-    registerSynthesizeRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -299,7 +290,7 @@ describe('POST /synthesize', () => {
     });
 
     expect(res.statusCode).toBe(503);
-    const body = res.json<{ error: string }>();
-    expect(body.error).toBe('SERVICE_UNAVAILABLE');
+    const body = res.json<{ code: string }>();
+    expect(body.code).toBe('META_WATCHER_UNAVAILABLE');
   });
 });

@@ -1,44 +1,43 @@
 /**
- * POST /seed — create a .meta/ directory with an empty meta.json.
+ * `seed` handler: create a `.meta/` directory with an initial meta.json.
+ * Writes files.
  *
  * @module routes/seed
  */
 
-import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
-
+import { capArg, MetaAlreadyExists } from '../api/errors.js';
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import { createMeta, metaExists } from '../seed/index.js';
 import type { RouteDeps } from './index.js';
 
-const seedBodySchema = z.object({
-  path: z.string().min(1),
-  crossRefs: z.array(z.string()).optional(),
-  steer: z.string().optional(),
-});
+/**
+ * The `seed` handler.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handler.
+ */
+export function createSeedHandlers(
+  deps: RouteDeps,
+): Pick<MetaHandlers, 'seed'> {
+  return {
+    seed: async ({ body }) => {
+      if (metaExists(body.path)) throw new MetaAlreadyExists(capArg(body.path));
 
-export function registerSeedRoute(app: FastifyInstance, deps: RouteDeps): void {
-  app.post(getEndpoint('seed').path, async (request, reply) => {
-    const body = seedBodySchema.parse(request.body);
-
-    if (metaExists(body.path)) {
-      return reply.status(409).send({
-        error: 'CONFLICT',
-        message: `.meta directory already exists at ${body.path}`,
+      deps.logger.info({ path: body.path }, 'seeding .meta directory');
+      const result = await createMeta(body.path, {
+        crossRefs: body.crossRefs,
+        steer: body.steer,
       });
-    }
 
-    deps.logger.info({ path: body.path }, 'seeding .meta directory');
-    const result = await createMeta(body.path, {
-      crossRefs: body.crossRefs,
-      steer: body.steer,
-    });
-
-    return reply.status(201).send({
-      status: 'created',
-      path: body.path,
-      metaDir: result.metaDir,
-      _id: result._id,
-    });
-  });
+      return {
+        status: 201,
+        body: {
+          status: 'created',
+          path: body.path,
+          metaDir: result.metaDir,
+          _id: result._id,
+        },
+      };
+    },
+  };
 }

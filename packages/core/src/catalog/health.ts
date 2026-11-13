@@ -26,14 +26,6 @@ const phaseStateSummarySchema = z.object(
   >,
 );
 
-/** A dependency check result. */
-const dependencySchema = {
-  /** The dependency's base URL. */
-  url: z.string(),
-  /** When it was checked (ISO 8601). */
-  checkedAt: z.string(),
-};
-
 /** The full health object. */
 const metaHealthDetailSchema = z.object({
   /** What the service is doing. */
@@ -66,8 +58,11 @@ const metaHealthDetailSchema = z.object({
   dependencies: z.object({
     /** jeeves-watcher. */
     watcher: z.object({
-      ...dependencySchema,
+      /** Base URL. */
+      url: z.string(),
       status: z.enum(['ok', 'indexing', 'error', 'unreachable']),
+      /** When it was checked (ISO 8601). */
+      checkedAt: z.string(),
       /** Whether the watcher's initial scan is running (#244). */
       indexing: z.boolean().optional(),
       /** Whether meta's inference rules are registered. */
@@ -75,8 +70,11 @@ const metaHealthDetailSchema = z.object({
     }),
     /** OpenClaw gateway. */
     gateway: z.object({
-      ...dependencySchema,
+      /** Base URL. */
+      url: z.string(),
       status: z.enum(['ok', 'error', 'unreachable']),
+      /** When it was checked (ISO 8601). */
+      checkedAt: z.string(),
     }),
   }),
   /** Phase status counts; zero when the watcher is unreachable. */
@@ -87,7 +85,8 @@ const metaHealthDetailSchema = z.object({
       path: z.string(),
       phase: z.enum(phaseNames),
       band: z.number(),
-      staleness: z.number(),
+      /** `null` for a never-synthesized meta (infinitely stale). */
+      staleness: z.number().nullable(),
     })
     .nullable(),
   /** Corpus counts; `null` when the watcher is unreachable. */

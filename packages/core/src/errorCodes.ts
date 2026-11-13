@@ -40,7 +40,7 @@ export const META_ERROR_CODES = [
 export type MetaErrorCode = (typeof META_ERROR_CODES)[number];
 
 /** The HTTP status each `META_*` code is sent with (one per code). */
-export const META_ERROR_STATUS: Readonly<Record<MetaErrorCode, number>> = {
+export const META_ERROR_STATUS = {
   META_INVALID_JSONPATH: 400,
   META_NOT_FOUND: 404,
   META_ALREADY_EXISTS: 409,
@@ -48,4 +48,4 @@ export const META_ERROR_STATUS: Readonly<Record<MetaErrorCode, number>> = {
   META_CONFIG_UNAVAILABLE: 500,
   META_WATCHER_UNAVAILABLE: 503,
   META_NOT_READY: 503,
-};
+} as const satisfies Readonly<Record<MetaErrorCode, number>>;

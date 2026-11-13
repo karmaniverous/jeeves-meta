@@ -158,9 +158,6 @@
                                     "url": {
                                       "type": "string"
                                     },
-                                    "checkedAt": {
-                                      "type": "string"
-                                    },
                                     "status": {
                                       "type": "string",
                                       "enum": [
@@ -169,6 +166,9 @@
                                         "error",
                                         "unreachable"
                                       ]
+                                    },
+                                    "checkedAt": {
+                                      "type": "string"
                                     },
                                     "indexing": {
                                       "type": "boolean"
@@ -179,8 +179,8 @@
                                   },
                                   "required": [
                                     "url",
-                                    "checkedAt",
                                     "status",
+                                    "checkedAt",
                                     "rulesRegistered"
                                   ],
                                   "additionalProperties": false
@@ -191,9 +191,6 @@
                                     "url": {
                                       "type": "string"
                                     },
-                                    "checkedAt": {
-                                      "type": "string"
-                                    },
                                     "status": {
                                       "type": "string",
                                       "enum": [
@@ -201,12 +198,15 @@
                                         "error",
                                         "unreachable"
                                       ]
+                                    },
+                                    "checkedAt": {
+                                      "type": "string"
                                     }
                                   },
                                   "required": [
                                     "url",
-                                    "checkedAt",
-                                    "status"
+                                    "status",
+                                    "checkedAt"
                                   ],
                                   "additionalProperties": false
                                 }
@@ -332,7 +332,10 @@
                                       "type": "number"
                                     },
                                     "staleness": {
-                                      "type": "number"
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
                                     }
                                   },
                                   "required": [
@@ -1427,7 +1430,10 @@
                           ]
                         },
                         "priorityBand": {
-                          "type": "number"
+                          "type": [
+                            "number",
+                            "null"
+                          ]
                         },
                         "phaseState": {
                           "type": "object",
@@ -1927,7 +1933,10 @@
                             "type": "number"
                           },
                           "effectiveStaleness": {
-                            "type": "number"
+                            "type": [
+                              "number",
+                              "null"
+                            ]
                           }
                         },
                         "required": [

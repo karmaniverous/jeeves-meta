@@ -2,19 +2,16 @@
  * @module routes/config.test
  */
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { makeTestDeps } from './__testUtils.js';
-import { registerConfigRoute } from './config.js';
+import { createTestApp, makeTestDeps } from './__testUtils.js';
 
 describe('GET /config', () => {
   let app: FastifyInstance;
 
   beforeEach(async () => {
-    app = Fastify();
-    registerConfigRoute(
-      app,
+    app = createTestApp(
       makeTestDeps({
         config: { gatewayApiKey: 'secret-key', serverKey: 'server-seed' },
       }),
@@ -71,7 +68,8 @@ describe('GET /config', () => {
       url: '/config?path=$[?(',
     });
     expect(res.statusCode).toBe(400);
-    const body = res.json<{ error: string }>();
-    expect(body).toHaveProperty('error');
+    const body = res.json<{ code: string; message: string }>();
+    expect(body.code).toBe('META_INVALID_JSONPATH');
+    expect(body.message).toMatch(/^Invalid JSONPath: /);
   });
 });

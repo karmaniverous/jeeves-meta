@@ -11,17 +11,17 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { normalizePath } from '../normalizePath.js';
 import {
+  createTestApp,
   createTestMeta,
   makeTestDeps,
   makeTestWatcher,
 } from './__testUtils.js';
 import type { RouteDeps } from './index.js';
-import { registerMetasRoutes } from './metas.js';
 
 const testRoot = join(tmpdir(), `jeeves-meta-metas-${Date.now().toString()}`);
 
@@ -55,8 +55,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/metas' });
@@ -87,8 +86,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -125,8 +123,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -157,8 +154,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -188,8 +184,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     // neverSynthesized=true: only entries with lastSynthesized === null
@@ -228,8 +223,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -253,8 +247,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/metas' });
@@ -294,8 +287,7 @@ describe('GET /metas — list with filters', () => {
     const deps = makeDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const resTrue = await app.inject({
@@ -362,8 +354,7 @@ describe('GET /metas/:path — crossRefs status', () => {
       watcher: watcher,
     });
 
-    app = Fastify();
-    registerMetasRoutes(app, deps);
+    app = createTestApp(deps);
     await app.ready();
   });
 
@@ -480,8 +471,7 @@ describe('GET /metas/:path — archive reads', () => {
     });
 
     const watcher = makeTestWatcher([join(metaDir, 'meta.json')], scan);
-    app = Fastify();
-    registerMetasRoutes(app, makeDeps({ watcher: watcher }));
+    app = createTestApp(makeDeps({ watcher: watcher }));
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(ownerDir));
@@ -504,8 +494,7 @@ describe('GET /metas/:path — archive reads', () => {
       [join(metaDir, 'meta.json')],
       vi.fn().mockRejectedValue(new Error('watcher down')),
     );
-    app = Fastify();
-    registerMetasRoutes(app, makeDeps({ watcher: watcher }));
+    app = createTestApp(makeDeps({ watcher: watcher }));
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(ownerDir));

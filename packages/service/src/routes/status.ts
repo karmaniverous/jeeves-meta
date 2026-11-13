@@ -10,16 +10,17 @@
 import { createStatusHandler } from '@karmaniverous/jeeves';
 import {
   type DepHealth,
-  getEndpoint,
+  type MetaResponse,
   type NextPhaseCandidate,
   type PhaseStateSummary,
   type PhaseStatus,
   type ServiceState,
 } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
 
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
 import { computeSummary } from '../discovery/computeSummary.js';
+import { finiteOrNull } from '../finiteOrNull.js';
 import {
   buildPhaseCandidates,
   derivePhaseState,
@@ -64,10 +65,15 @@ function emptyPhaseCounts(): Record<PhaseStatus, number> {
   return { fresh: 0, stale: 0, pending: 0, running: 0, failed: 0 };
 }
 
-export function registerStatusRoute(
-  app: FastifyInstance,
+/**
+ * The `status` handler: jeeves `createStatusHandler` with meta's health.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handler.
+ */
+export function createStatusHandlers(
   deps: RouteDeps,
-): void {
+): Pick<MetaHandlers, 'status'> {
   const statusHandler = createStatusHandler({
     name: SERVICE_NAME,
     version: SERVICE_VERSION,
@@ -122,7 +128,7 @@ export function registerStatusRoute(
             path: winner.node.metaPath,
             phase: winner.owedPhase,
             band: winner.band,
-            staleness: winner.effectiveStaleness,
+            staleness: finiteOrNull(winner.effectiveStaleness),
           };
         }
 
@@ -170,8 +176,13 @@ export function registerStatusRoute(
     },
   });
 
-  app.get(getEndpoint('status').path, async (_request, reply) => {
-    const result = await statusHandler();
-    return reply.status(result.status).send(result.body);
-  });
+  return {
+    status: async () => {
+      const result = await statusHandler();
+      return {
+        status: 200,
+        body: result.body as MetaResponse<'status'>,
+      };
+    },
+  };
 }

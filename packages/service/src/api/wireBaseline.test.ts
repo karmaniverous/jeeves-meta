@@ -12,6 +12,7 @@ import { STATUS_CODES } from 'node:http';
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { entryFor } from '../test/wire/catalogEntry.js';
 import {
   WIRE_DEPARTURES,
   type WireDeparture,
@@ -71,15 +72,12 @@ describe('wire baseline', () => {
 });
 
 describe('approved departures', () => {
-  it.each(departing)(
-    '%s sends the standard error body',
+  it.each(departing.filter(([, , d]) => d.status >= 400))(
+    '%s sends the standard error body with its code',
     async (name, scenario, departure: WireDeparture) => {
-      const before = baseline[name];
       const now = await runScenario(wire, scenario);
-      expect(now.body).not.toBe(before.body);
-      // T7 adds the items that change the status (validation, decode).
-      expect(departure.item).toBe('error-body');
-      expect(now.status).toBe(before.status);
+      expect(now.body).not.toBe(baseline[name].body);
+      expect(now.status).toBe(departure.status);
       expect(now.contentType).toBe('application/json; charset=utf-8');
       const body = JSON.parse(now.body) as Record<string, unknown>;
       expect(Object.keys(body)).toEqual([
@@ -94,6 +92,18 @@ describe('approved departures', () => {
         error: STATUS_CODES[now.status],
       });
       expect(typeof body.message).toBe('string');
+    },
+  );
+
+  it.each(departing.filter(([, , d]) => d.status < 400))(
+    '%s now succeeds with its catalog response',
+    async (name, scenario, departure: WireDeparture) => {
+      const now = await runScenario(wire, scenario);
+      expect(baseline[name].status).toBeGreaterThanOrEqual(400);
+      expect(now.status).toBe(departure.status);
+      const entry = entryFor(scenario.method, scenario.url);
+      const parsed: unknown = entry?.response.parse(JSON.parse(now.body));
+      expect(JSON.stringify(parsed)).toBe(now.body);
     },
   );
 });

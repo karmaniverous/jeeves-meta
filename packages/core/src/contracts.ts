@@ -62,5 +62,6 @@ export interface NextPhaseCandidate {
   path: string;
   phase: PhaseName;
   band: number;
-  staleness: number;
+  /** Effective staleness; `null` for a never-synthesized meta. */
+  staleness: number | null;
 }

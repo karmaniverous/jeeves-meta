@@ -145,7 +145,8 @@ const previewDetailSchema = z.object({
   }),
   estimatedTokens: tokensSchema,
   owedPhase: owedPhase(),
-  priorityBand: z.number(),
+  /** `null` when the meta owes nothing. */
+  priorityBand: z.number().nullable(),
   phaseState: phaseStateSchema,
   inputStatus: z.object({
     structureHash: z.string(),
@@ -206,7 +207,8 @@ export const queueResponseSchema = z.object({
       path: z.string(),
       owedPhase: z.enum(phaseNames),
       priorityBand: z.number(),
-      effectiveStaleness: z.number(),
+      /** `null` for a never-synthesized meta (infinitely stale). */
+      effectiveStaleness: z.number().nullable(),
     }),
   ),
 });

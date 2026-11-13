@@ -7,7 +7,11 @@
 import Fastify, { type FastifyBaseLogger } from 'fastify';
 import type { Logger } from 'pino';
 
+import { MetaNotReady } from './api/errors.js';
 import { registerRoutes, type RouteDeps } from './routes/index.js';
+
+/** Routes served while the service is starting (matched route URLs). */
+const UNGATED_ROUTES = new Set(['/config', '/config/apply', '/openapi.json']);
 
 /** Options for creating the server. */
 export interface ServerOptions {
@@ -30,14 +34,18 @@ export function createServer(options: ServerOptions) {
     requestTimeout: 30_000,
   });
 
-  // Readiness gate: return 503 while service is initializing
-  app.addHook('onRequest', async (request, reply) => {
-    if (options.deps.ready) return;
-    const url = request.url;
-    if (url === '/config' || url.startsWith('/config/apply')) return;
-    return reply
-      .status(503)
-      .send({ status: 'starting', message: 'Service initializing' });
+  // Readiness gate (Decision 199): 503 META_NOT_READY while starting,
+  // except routes matched as config, configApply and the OpenAPI document.
+  // onRequest runs before catalog validation, so any request shape gets it.
+  app.addHook('onRequest', (request, _reply, done) => {
+    if (
+      options.deps.ready ||
+      UNGATED_ROUTES.has(request.routeOptions.url ?? '')
+    ) {
+      done();
+      return;
+    }
+    done(new MetaNotReady());
   });
 
   registerRoutes(app, options.deps);

@@ -1,5 +1,5 @@
 /**
- * Queue management and abort routes.
+ * Queue management and abort handlers.
  *
  * - GET /queue — 3-layer queue model (current, pending, automatic)
  * - POST /queue/clear — remove pending entries
@@ -11,9 +11,10 @@
 import { copyFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
+import type { PhaseName } from '@karmaniverous/jeeves-meta-core';
 
+import type { MetaHandlers } from '../api/handlerTypes.js';
+import { finiteOrNull } from '../finiteOrNull.js';
 import { releaseLock, resolveMetaDir } from '../lock.js';
 import {
   buildPhaseCandidates,
@@ -25,14 +26,18 @@ import {
 import { readMetaJson } from '../readMetaJson.js';
 import type { RouteDeps } from './index.js';
 
-/** Register queue management routes. */
-export function registerQueueRoutes(
-  app: FastifyInstance,
+/**
+ * The `queue`, `queueClear` and `abort` handlers.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handlers.
+ */
+export function createQueueHandlers(
   deps: RouteDeps,
-): void {
+): Pick<MetaHandlers, 'queue' | 'queueClear' | 'abort'> {
   const { queue } = deps;
 
-  app.get(getEndpoint('queue').path, async () => {
+  const listQueue = async () => {
     const currentPhase = queue.currentPhase;
     const pending = queue.items;
 
@@ -51,7 +56,7 @@ export function registerQueueRoutes(
         } catch {
           return {
             path: entry.path,
-            owedPhase: null as string | null,
+            owedPhase: null,
             enqueuedAt: entry.enqueuedAt,
           };
         }
@@ -62,9 +67,9 @@ export function registerQueueRoutes(
     // ranked by scheduler priority (computed on read, not persisted)
     let automatic: Array<{
       path: string;
-      owedPhase: string;
+      owedPhase: PhaseName;
       priorityBand: number;
-      effectiveStaleness: number;
+      effectiveStaleness: number | null;
     }> = [];
     try {
       const metaResult = await deps.cache.get(deps.config, deps.watcher);
@@ -77,7 +82,7 @@ export function registerQueueRoutes(
         path: c.node.metaPath,
         owedPhase: c.owedPhase,
         priorityBand: c.band,
-        effectiveStaleness: c.effectiveStaleness,
+        effectiveStaleness: finiteOrNull(c.effectiveStaleness),
       }));
     } catch {
       // If listing fails, automatic stays empty
@@ -94,19 +99,12 @@ export function registerQueueRoutes(
       pending: enrichedPending,
       automatic,
     };
-  });
+  };
 
-  app.post(getEndpoint('queueClear').path, () => {
-    const removed = queue.clear();
-    return { cleared: removed };
-  });
-
-  app.post(getEndpoint('abort').path, async (_request, reply) => {
+  const abort = async () => {
     const currentPhase = queue.currentPhase;
 
-    if (!currentPhase) {
-      return reply.status(200).send({ status: 'idle' });
-    }
+    if (!currentPhase) return { status: 'idle' as const };
 
     // Abort the executor
     deps.executor?.abort();
@@ -148,9 +146,16 @@ export function registerQueueRoutes(
     deps.logger.info({ path: currentPhase.path }, 'Synthesis aborted');
 
     return {
-      status: 'aborted',
+      status: 'aborted' as const,
       path: currentPhase.path,
       phase,
     };
-  });
+  };
+
+  return {
+    queue: async () => ({ status: 200, body: await listQueue() }),
+    queueClear: () =>
+      Promise.resolve({ status: 200, body: { cleared: queue.clear() } }),
+    abort: async () => ({ status: 200, body: await abort() }),
+  };
 }

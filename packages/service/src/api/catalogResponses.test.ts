@@ -1,8 +1,9 @@
 /**
  * Decision 200 guard, ahead of the routes moving onto the catalog: every 2xx
  * reply recorded from 0.19.0 (`test/wire/wire-0.19.0.json`) parses under its
- * `META_CATALOG` entry's response schema with nothing dropped, so strict
- * response mode will send the same bytes.
+ * `META_CATALOG` entry's response schema and serialises back to the same
+ * bytes (nothing dropped or reordered), so strict response mode sends what
+ * 0.19.0 sent.
  *
  * @module api/catalogResponses.test
  */
@@ -12,6 +13,7 @@ import { readFileSync } from 'node:fs';
 import { META_CATALOG } from '@karmaniverous/jeeves-meta-core';
 import { describe, expect, it } from 'vitest';
 
+import { entryFor } from '../test/wire/catalogEntry.js';
 import { WIRE_DEPARTURES } from '../test/wire/departures.js';
 import { scenariosFor } from '../test/wire/scenarios.js';
 import type { WireApp } from '../test/wire/wireApp.js';
@@ -30,22 +32,6 @@ const fakeWire = {
   ownerPath: (p: string) => `{dir}/${p}`,
 } as unknown as WireApp;
 const scenarios = new Map(scenariosFor(fakeWire).map((s) => [s.name, s]));
-
-/**
- * The catalog entry serving `method url`.
- *
- * @param method - HTTP method.
- * @param url - Request URL (query ignored).
- * @returns The entry, if any.
- */
-function entryFor(method: string, url: string) {
-  const path = url.split('?')[0];
-  return META_CATALOG.entries.find(
-    (e) =>
-      e.method === method &&
-      new RegExp(`^${e.path.replace(/:\w+/g, '[^/]+')}$`).test(path),
-  );
-}
 
 const successes = Object.entries(records).filter(
   ([name, r]) =>
@@ -70,7 +56,8 @@ describe('0.19.0 2xx replies under META_CATALOG response schemas', () => {
     expect(scenario).toBeDefined();
     const entry = entryFor(scenario!.method, scenario!.url);
     expect(entry).toBeDefined();
-    const body: unknown = JSON.parse(record.body);
-    expect(entry!.response.parse(body)).toEqual(body);
+    // Byte-for-byte: no key dropped, none reordered.
+    const parsed: unknown = entry!.response.parse(JSON.parse(record.body));
+    expect(JSON.stringify(parsed)).toBe(record.body);
   });
 });

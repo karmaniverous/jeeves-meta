@@ -4,15 +4,14 @@
  * @module routes/status.test
  */
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { MetaCache } from '../cache.js';
 import type { MetaEntry, MetaListResult } from '../discovery/listMetas.js';
 import { SynthesisQueue } from '../queue/index.js';
-import { makeTestDeps, makeTestLogger } from './__testUtils.js';
+import { createTestApp, makeTestDeps, makeTestLogger } from './__testUtils.js';
 import type { RouteDeps } from './index.js';
-import { registerStatusRoute } from './status.js';
 
 /** Custom stats used by status tests. */
 const TEST_STATS: RouteDeps['stats'] = {
@@ -59,8 +58,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -78,8 +76,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -97,8 +94,7 @@ describe('GET /status', () => {
     queue.enqueue('/meta/b');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -114,8 +110,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -133,8 +128,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -150,8 +144,7 @@ describe('GET /status', () => {
     queue.setCurrentPhase('/meta/active', 'builder');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -166,8 +159,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -181,8 +173,7 @@ describe('GET /status', () => {
     queue.setCurrentPhase('/meta/active', 'builder');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -196,8 +187,7 @@ describe('GET /status', () => {
     queue.enqueue('/meta/pending');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -211,8 +201,7 @@ describe('GET /status', () => {
       shuttingDown: true,
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -277,8 +266,7 @@ describe('GET /status', () => {
       stats: TEST_STATS,
       cache,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });

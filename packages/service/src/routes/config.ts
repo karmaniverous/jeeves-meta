@@ -1,20 +1,20 @@
 /**
- * GET /config — query service configuration with optional JSONPath.
- *
- * Replaces the old GET /config/validate endpoint with the core SDK's
- * `createConfigQueryHandler()` for JSONPath support.
+ * `config` handler: the service configuration with secrets redacted, or a
+ * JSONPath result (jeeves `createConfigQueryHandler`). A JSONPath that
+ * cannot be evaluated is meta's `META_INVALID_JSONPATH` (Decision 212).
+ * Pure apart from reading the in-memory config.
  *
  * @module routes/config
  */
 
 import { createConfigQueryHandler } from '@karmaniverous/jeeves';
-import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
 
+import { capArg, MetaInvalidJsonPath } from '../api/errors.js';
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import type { ServiceConfig } from '../schema/config.js';
 import type { RouteDeps } from './index.js';
 
-/** Return a sanitized copy of the config (redact gatewayApiKey and serverKey). */
+/** A sanitized copy of the config (gatewayApiKey and serverKey redacted). */
 function sanitizeConfig(config: ServiceConfig): unknown {
   return {
     ...config,
@@ -23,17 +23,24 @@ function sanitizeConfig(config: ServiceConfig): unknown {
   };
 }
 
-export function registerConfigRoute(
-  app: FastifyInstance,
+/**
+ * The `config` handler.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handler.
+ */
+export function createConfigHandlers(
   deps: RouteDeps,
-): void {
-  const configHandler = createConfigQueryHandler(() =>
-    sanitizeConfig(deps.config),
-  );
-
-  app.get(getEndpoint('config').path, async (request, reply) => {
-    const { path } = request.query as { path?: string };
-    const result = await configHandler({ path });
-    return reply.status(result.status).send(result.body);
-  });
+): Pick<MetaHandlers, 'config'> {
+  const query = createConfigQueryHandler(() => sanitizeConfig(deps.config));
+  return {
+    config: async ({ query: { path } }) => {
+      const result = await query({ path });
+      if (result.status === 400) {
+        const { message } = result.body as { message: string };
+        throw new MetaInvalidJsonPath(capArg(message));
+      }
+      return { status: 200, body: result.body as Record<string, unknown> };
+    },
+  };
 }

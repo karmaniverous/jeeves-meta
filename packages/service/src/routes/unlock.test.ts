@@ -8,11 +8,10 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { makeTestDeps } from './__testUtils.js';
-import { registerUnlockRoute } from './unlock.js';
+import { createTestApp, makeTestDeps } from './__testUtils.js';
 
 const unlockRoot = join(
   tmpdir(),
@@ -39,8 +38,7 @@ describe('POST /unlock', () => {
     );
 
     const deps = makeTestDeps();
-    app = Fastify();
-    registerUnlockRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -62,8 +60,7 @@ describe('POST /unlock', () => {
     // No .lock file created
 
     const deps = makeTestDeps();
-    app = Fastify();
-    registerUnlockRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -73,16 +70,15 @@ describe('POST /unlock', () => {
     });
 
     expect(res.statusCode).toBe(409);
-    const body = res.json<{ error: string }>();
-    expect(body.error).toBe('ALREADY_UNLOCKED');
+    const body = res.json<{ code: string }>();
+    expect(body.code).toBe('META_NOT_LOCKED');
   });
 
   it('returns 409 when meta path does not exist', async () => {
     const nonExistent = join(unlockRoot, 'nonexistent', '.meta');
 
     const deps = makeTestDeps();
-    app = Fastify();
-    registerUnlockRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -93,7 +89,7 @@ describe('POST /unlock', () => {
 
     // No lock file at nonexistent path → 409 ALREADY_UNLOCKED
     expect(res.statusCode).toBe(409);
-    const body = res.json<{ error: string }>();
-    expect(body.error).toBe('ALREADY_UNLOCKED');
+    const body = res.json<{ code: string }>();
+    expect(body.code).toBe('META_NOT_LOCKED');
   });
 });
