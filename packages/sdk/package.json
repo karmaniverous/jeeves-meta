@@ -40,7 +40,7 @@
   },
   "dependencies": {
     "@karmaniverous/jeeves": "0.11.0",
-    "@karmaniverous/jeeves-meta-core": "^0.3.0"
+    "@karmaniverous/jeeves-meta-core": "^0.4.0-0"
   },
   "devDependencies": {
     "@dotenvx/dotenvx": "^2.38.2",
