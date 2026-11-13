@@ -1,0 +1,302 @@
+{
+  "status": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"name\":\"jeeves-meta\",\"version\":\"{version}\",\"uptime\":0,\"status\":\"healthy\",\"health\":{\"serviceState\":\"idle\",\"currentTarget\":null,\"queue\":{\"depth\":0,\"items\":[]},\"stats\":{\"totalSyntheses\":0,\"totalTokens\":0,\"totalErrors\":0,\"lastCycleDurationMs\":null,\"lastCycleAt\":null},\"schedule\":{\"expression\":\"*/30 * * * *\",\"nextAt\":null},\"dependencies\":{\"watcher\":{\"url\":\"http://127.0.0.1:9\",\"status\":\"unreachable\",\"checkedAt\":\"{time}\",\"rulesRegistered\":true},\"gateway\":{\"url\":\"http://127.0.0.1:9\",\"status\":\"unreachable\",\"checkedAt\":\"{time}\"}},\"phaseStateSummary\":{\"architect\":{\"fresh\":2,\"stale\":0,\"pending\":7,\"running\":0,\"failed\":0},\"builder\":{\"fresh\":1,\"stale\":7,\"pending\":0,\"running\":0,\"failed\":1},\"critic\":{\"fresh\":1,\"stale\":8,\"pending\":0,\"running\":0,\"failed\":0}},\"nextPhase\":{\"path\":\"{dir}/alpha-error/.meta\",\"phase\":\"builder\",\"band\":2,\"staleness\":60},\"metaCounts\":{\"total\":9,\"enabled\":8,\"disabled\":1,\"neverSynthesized\":0,\"stale\":9,\"errors\":1,\"locked\":1}}}"
+  },
+  "status not ready": {
+    "status": 503,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"starting\",\"message\":\"Service initializing\"}"
+  },
+  "listMetas": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"summary\":{\"total\":9,\"stale\":9,\"errors\":1,\"locked\":1,\"disabled\":1,\"neverSynthesized\":0,\"tokens\":{\"architect\":110,\"builder\":220,\"critic\":55},\"stalestPath\":\"{dir}/alpha-stale/.meta\",\"lastSynthesizedPath\":\"{dir}/alpha/.meta\",\"lastSynthesizedAt\":\"{timestamp}\"},\"metas\":[{\"path\":\"{dir}/alpha/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":false,\"architectTokens\":100,\"builderTokens\":200,\"criticTokens\":50,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"},{\"path\":\"{dir}/pct%off/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"},{\"path\":\"{dir}/alpha-error/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":true,\"locked\":false,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"fresh\",\"builder\":\"failed\",\"critic\":\"stale\"},\"owedPhase\":\"builder\"},{\"path\":\"{dir}/alpha-stale/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"},{\"path\":\"{dir}/alpha-locked/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":true,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"},{\"path\":\"{dir}/alpha-complete/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":false,\"architectTokens\":10,\"builderTokens\":20,\"criticTokens\":5,\"phaseState\":{\"architect\":\"fresh\",\"builder\":\"fresh\",\"critic\":\"fresh\"},\"owedPhase\":null},{\"path\":\"{dir}/alpha-crossref/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"},{\"path\":\"{dir}/alpha-disabled/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":true,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"},{\"path\":\"{dir}/sub dir with space/leaf/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"}]}"
+  },
+  "listMetas pathPrefix": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"summary\":{\"total\":1,\"stale\":1,\"errors\":0,\"locked\":0,\"disabled\":0,\"neverSynthesized\":0,\"tokens\":{\"architect\":0,\"builder\":0,\"critic\":0},\"stalestPath\":\"{dir}/alpha-stale/.meta\",\"lastSynthesizedPath\":\"{dir}/alpha-stale/.meta\",\"lastSynthesizedAt\":\"{timestamp}\"},\"metas\":[{\"path\":\"{dir}/alpha-stale/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"}]}"
+  },
+  "listMetas fields": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"summary\":{\"total\":9,\"stale\":9,\"errors\":1,\"locked\":1,\"disabled\":1,\"neverSynthesized\":0,\"tokens\":{\"architect\":110,\"builder\":220,\"critic\":55},\"stalestPath\":\"{dir}/alpha-stale/.meta\",\"lastSynthesizedPath\":\"{dir}/alpha/.meta\",\"lastSynthesizedAt\":\"{timestamp}\"},\"metas\":[{\"path\":\"{dir}/alpha/.meta\",\"hasError\":false},{\"path\":\"{dir}/pct%off/.meta\",\"hasError\":false},{\"path\":\"{dir}/alpha-error/.meta\",\"hasError\":true},{\"path\":\"{dir}/alpha-stale/.meta\",\"hasError\":false},{\"path\":\"{dir}/alpha-locked/.meta\",\"hasError\":false},{\"path\":\"{dir}/alpha-complete/.meta\",\"hasError\":false},{\"path\":\"{dir}/alpha-crossref/.meta\",\"hasError\":false},{\"path\":\"{dir}/alpha-disabled/.meta\",\"hasError\":false},{\"path\":\"{dir}/sub dir with space/leaf/.meta\",\"hasError\":false}]}"
+  },
+  "listMetas hasError": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"summary\":{\"total\":1,\"stale\":1,\"errors\":1,\"locked\":0,\"disabled\":0,\"neverSynthesized\":0,\"tokens\":{\"architect\":0,\"builder\":0,\"critic\":0},\"stalestPath\":\"{dir}/alpha-error/.meta\",\"lastSynthesizedPath\":\"{dir}/alpha-error/.meta\",\"lastSynthesizedAt\":\"{timestamp}\"},\"metas\":[{\"path\":\"{dir}/alpha-error/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":true,\"locked\":false,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"fresh\",\"builder\":\"failed\",\"critic\":\"stale\"},\"owedPhase\":\"builder\"}]}"
+  },
+  "listMetas locked": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"summary\":{\"total\":1,\"stale\":1,\"errors\":0,\"locked\":1,\"disabled\":0,\"neverSynthesized\":0,\"tokens\":{\"architect\":0,\"builder\":0,\"critic\":0},\"stalestPath\":\"{dir}/alpha-locked/.meta\",\"lastSynthesizedPath\":\"{dir}/alpha-locked/.meta\",\"lastSynthesizedAt\":\"{timestamp}\"},\"metas\":[{\"path\":\"{dir}/alpha-locked/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":true,\"disabled\":false,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"}]}"
+  },
+  "listMetas disabled": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"summary\":{\"total\":1,\"stale\":1,\"errors\":0,\"locked\":0,\"disabled\":1,\"neverSynthesized\":0,\"tokens\":{\"architect\":0,\"builder\":0,\"critic\":0},\"stalestPath\":\"{dir}/alpha-disabled/.meta\",\"lastSynthesizedPath\":\"{dir}/alpha-disabled/.meta\",\"lastSynthesizedAt\":\"{timestamp}\"},\"metas\":[{\"path\":\"{dir}/alpha-disabled/.meta\",\"depth\":0,\"emphasis\":1,\"stalenessSeconds\":0,\"lastSynthesized\":\"{timestamp}\",\"hasError\":false,\"locked\":false,\"disabled\":true,\"architectTokens\":null,\"builderTokens\":null,\"criticTokens\":null,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"}]}"
+  },
+  "listMetas malformed staleHours": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"INTERNAL_ERROR\",\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"number\\\",\\n    \\\"code\\\": \\\"invalid_type\\\",\\n    \\\"received\\\": \\\"NaN\\\",\\n    \\\"path\\\": [\\n      \\\"staleHours\\\"\\n    ],\\n    \\\"message\\\": \\\"Invalid input: expected number, received NaN\\\"\\n  }\\n]\"}"
+  },
+  "listMetas watcher unreachable": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"INTERNAL_ERROR\",\"message\":\"connection refused\"}"
+  },
+  "listMetas not ready": {
+    "status": 503,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"starting\",\"message\":\"Service initializing\"}"
+  },
+  "metaDetail": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/alpha/.meta\",\"meta\":{\"_id\":\"11111111-1111-1111-1111-111111111111\",\"_generatedAt\":\"{timestamp}\",\"_architectTokens\":100,\"_builderTokens\":200,\"_criticTokens\":50},\"scope\":{\"ownedFiles\":0,\"childMetas\":0,\"totalFiles\":9},\"staleness\":{\"seconds\":0,\"score\":0},\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"}"
+  },
+  "metaDetail fields": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/alpha/.meta\",\"meta\":{\"_id\":\"11111111-1111-1111-1111-111111111111\",\"_generatedAt\":\"{timestamp}\"},\"scope\":{\"ownedFiles\":0,\"childMetas\":0,\"totalFiles\":9},\"staleness\":{\"seconds\":0,\"score\":0},\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"}"
+  },
+  "metaDetail crossRefs": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/alpha-crossref/.meta\",\"meta\":{\"_id\":\"66666666-6666-6666-6666-666666666666\",\"_generatedAt\":\"{timestamp}\",\"_crossRefs\":[\"{dir}/alpha\",\"{dir}/does-not-exist\"]},\"scope\":{\"ownedFiles\":0,\"childMetas\":0,\"totalFiles\":9},\"staleness\":{\"seconds\":0,\"score\":0},\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\",\"crossRefs\":[{\"path\":\"{dir}/alpha\",\"status\":\"resolved\",\"hasContent\":false},{\"path\":\"{dir}/does-not-exist\",\"status\":\"missing\"}]}"
+  },
+  "metaDetail includeArchive": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/alpha/.meta\",\"meta\":{\"_id\":\"11111111-1111-1111-1111-111111111111\",\"_generatedAt\":\"{timestamp}\",\"_architectTokens\":100,\"_builderTokens\":200,\"_criticTokens\":50},\"scope\":{\"ownedFiles\":0,\"childMetas\":0,\"totalFiles\":9},\"staleness\":{\"seconds\":0,\"score\":0},\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\",\"archive\":[]}"
+  },
+  "metaDetail malformed includeArchive": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"INTERNAL_ERROR\",\"message\":\"[\\n  {\\n    \\\"code\\\": \\\"invalid_union\\\",\\n    \\\"errors\\\": [\\n      [\\n        {\\n          \\\"code\\\": \\\"invalid_value\\\",\\n          \\\"values\\\": [\\n            \\\"true\\\",\\n            \\\"false\\\"\\n          ],\\n          \\\"path\\\": [],\\n          \\\"message\\\": \\\"Invalid option: expected one of \\\\\\\"true\\\\\\\"|\\\\\\\"false\\\\\\\"\\\"\\n        }\\n      ],\\n      [\\n        {\\n          \\\"expected\\\": \\\"number\\\",\\n          \\\"code\\\": \\\"invalid_type\\\",\\n          \\\"received\\\": \\\"NaN\\\",\\n          \\\"path\\\": [],\\n          \\\"message\\\": \\\"Invalid input: expected number, received NaN\\\"\\n        }\\n      ]\\n    ],\\n    \\\"path\\\": [\\n      \\\"includeArchive\\\"\\n    ],\\n    \\\"message\\\": \\\"Invalid input\\\"\\n  }\\n]\"}"
+  },
+  "metaDetail spaced path": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/sub dir with space/leaf/.meta\",\"meta\":{\"_id\":\"77777777-7777-7777-7777-777777777777\",\"_generatedAt\":\"{timestamp}\"},\"scope\":{\"ownedFiles\":0,\"childMetas\":0,\"totalFiles\":9},\"staleness\":{\"seconds\":0,\"score\":0},\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"owedPhase\":\"architect\"}"
+  },
+  "metaDetail percent path": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"INTERNAL_ERROR\",\"message\":\"URI malformed\"}"
+  },
+  "metaDetail unknown meta": {
+    "status": 404,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"NOT_FOUND\",\"message\":\"Meta path not found: {dir}/does-not-exist\"}"
+  },
+  "updateMeta": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/alpha/.meta\",\"meta\":{\"_id\":\"11111111-1111-1111-1111-111111111111\",\"_generatedAt\":\"{timestamp}\",\"_architectTokens\":100,\"_builderTokens\":200,\"_criticTokens\":50,\"_steer\":\"focus on tests\",\"_emphasis\":2}}"
+  },
+  "updateMeta unknown meta": {
+    "status": 404,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"NOT_FOUND\",\"message\":\"Meta path not found: {dir}/does-not-exist\"}"
+  },
+  "updateMeta invalid body": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"BAD_REQUEST\",\"message\":\"[\\n  {\\n    \\\"code\\\": \\\"unrecognized_keys\\\",\\n    \\\"keys\\\": [\\n      \\\"unknownKey\\\"\\n    ],\\n    \\\"path\\\": [],\\n    \\\"message\\\": \\\"Unrecognized key: \\\\\\\"unknownKey\\\\\\\"\\\"\\n  }\\n]\"}"
+  },
+  "updateMeta engine key": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"BAD_REQUEST\",\"message\":\"[\\n  {\\n    \\\"code\\\": \\\"unrecognized_keys\\\",\\n    \\\"keys\\\": [\\n      \\\"_content\\\"\\n    ],\\n    \\\"path\\\": [],\\n    \\\"message\\\": \\\"Unrecognized key: \\\\\\\"_content\\\\\\\"\\\"\\n  }\\n]\"}"
+  },
+  "synthesize targeted": {
+    "status": 202,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"queued\",\"path\":\"{dir}/alpha-stale/.meta\",\"owedPhase\":\"architect\",\"queuePosition\":0,\"alreadyQueued\":false}"
+  },
+  "synthesize targeted owes nothing": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"skipped\",\"path\":\"{dir}/alpha-complete/.meta\",\"owedPhase\":null,\"queuePosition\":-1,\"alreadyQueued\":false}"
+  },
+  "synthesize corpus-wide": {
+    "status": 202,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"queued\",\"path\":\"{dir}/alpha-stale/.meta\",\"owedPhase\":\"architect\",\"queuePosition\":0,\"alreadyQueued\":false}"
+  },
+  "synthesize nothing stale": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"skipped\",\"message\":\"No stale metas found. Nothing to synthesize.\"}"
+  },
+  "synthesize unknown meta": {
+    "status": 202,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"queued\",\"path\":\"{dir}/does-not-exist/.meta\",\"owedPhase\":null,\"queuePosition\":0,\"alreadyQueued\":false}"
+  },
+  "synthesize watcher unreachable": {
+    "status": 503,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"SERVICE_UNAVAILABLE\",\"message\":\"Watcher unreachable — cannot discover candidates\"}"
+  },
+  "synthesize malformed body": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"INTERNAL_ERROR\",\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"string\\\",\\n    \\\"code\\\": \\\"invalid_type\\\",\\n    \\\"path\\\": [\\n      \\\"path\\\"\\n    ],\\n    \\\"message\\\": \\\"Invalid input: expected string, received number\\\"\\n  }\\n]\"}"
+  },
+  "abort idle": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"idle\"}"
+  },
+  "abort running": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"aborted\",\"path\":\"{dir}/alpha-stale\",\"phase\":\"builder\"}"
+  },
+  "preview targeted": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/alpha-stale/.meta\",\"staleness\":{\"seconds\":0,\"score\":1},\"architectWillRun\":true,\"architectReason\":\"no cached builder (first run), structure changed\",\"scope\":{\"ownedFiles\":0,\"childMetas\":0,\"deltaFiles\":[],\"deltaCount\":0,\"deltaFilesTruncated\":false},\"estimatedTokens\":{\"architect\":0,\"builder\":0,\"critic\":0},\"owedPhase\":\"architect\",\"priorityBand\":3,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"inputStatus\":{\"structureHash\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"steerChanged\":false,\"architectChanged\":false,\"criticChanged\":false,\"crossRefsDeclChanged\":false,\"crossRefContentChanged\":false},\"architectInvalidators\":[\"structureHash\",\"firstRun\"]}"
+  },
+  "preview corpus-wide": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"path\":\"{dir}/alpha-stale/.meta\",\"staleness\":{\"seconds\":0,\"score\":1},\"architectWillRun\":true,\"architectReason\":\"no cached builder (first run), structure changed\",\"scope\":{\"ownedFiles\":0,\"childMetas\":0,\"deltaFiles\":[],\"deltaCount\":0,\"deltaFilesTruncated\":false},\"estimatedTokens\":{\"architect\":0,\"builder\":0,\"critic\":0},\"owedPhase\":\"architect\",\"priorityBand\":3,\"phaseState\":{\"architect\":\"pending\",\"builder\":\"stale\",\"critic\":\"stale\"},\"inputStatus\":{\"structureHash\":\"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855\",\"steerChanged\":false,\"architectChanged\":false,\"criticChanged\":false,\"crossRefsDeclChanged\":false,\"crossRefContentChanged\":false},\"architectInvalidators\":[\"structureHash\",\"firstRun\"]}"
+  },
+  "preview nothing stale": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"message\":\"No stale metas found. Nothing to synthesize.\"}"
+  },
+  "preview unknown meta": {
+    "status": 404,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"NOT_FOUND\",\"message\":\"Meta path not found: {dir}/does-not-exist\"}"
+  },
+  "preview watcher unreachable": {
+    "status": 503,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"SERVICE_UNAVAILABLE\",\"message\":\"Watcher unreachable — cannot compute preview\"}"
+  },
+  "seed": {
+    "status": 201,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"created\",\"path\":\"{dir}/new-owner\",\"metaDir\":\"{dir}/new-owner/.meta\",\"_id\":\"{uuid}\"}"
+  },
+  "seed conflict": {
+    "status": 409,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"CONFLICT\",\"message\":\".meta directory already exists at {dir}/alpha\"}"
+  },
+  "seed malformed body": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"INTERNAL_ERROR\",\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"string\\\",\\n    \\\"code\\\": \\\"invalid_type\\\",\\n    \\\"path\\\": [\\n      \\\"path\\\"\\n    ],\\n    \\\"message\\\": \\\"Invalid input: expected string, received undefined\\\"\\n  }\\n]\"}"
+  },
+  "unlock": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"unlocked\",\"path\":\"{dir}/alpha-locked\"}"
+  },
+  "unlock not locked": {
+    "status": 409,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"ALREADY_UNLOCKED\",\"message\":\"No lock file at {dir}/alpha (already unlocked)\"}"
+  },
+  "unlock malformed body": {
+    "status": 500,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"INTERNAL_ERROR\",\"message\":\"[\\n  {\\n    \\\"expected\\\": \\\"string\\\",\\n    \\\"code\\\": \\\"invalid_type\\\",\\n    \\\"path\\\": [\\n      \\\"path\\\"\\n    ],\\n    \\\"message\\\": \\\"Invalid input: expected string, received undefined\\\"\\n  }\\n]\"}"
+  },
+  "config": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"watcherUrl\":\"http://127.0.0.1:9\",\"gatewayUrl\":\"http://127.0.0.1:9\",\"depthWeight\":0.5,\"architectEvery\":10,\"maxArchive\":20,\"maxLines\":500,\"thinking\":\"low\",\"skipUnchanged\":true,\"metaProperty\":{},\"metaArchiveProperty\":{},\"port\":1938,\"schedule\":\"*/30 * * * *\",\"watcherHealthIntervalMs\":60000,\"tier2ScanLimit\":50,\"logging\":{\"level\":\"info\"},\"autoSeed\":[],\"stagingRetries\":10,\"stagingRetryDelayMs\":250,\"previewDeltaFilesCap\":50,\"serverUrl\":\"http://127.0.0.1:1934\",\"templates\":{\"phaseStart\":\":gear: Started meta synthesis {{phase}} phase{{#if dirLink}} of <{{dirLink}}>{{/if}}\",\"phaseEnd\":\":white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s){{#if metaLink}} at <{{metaLink}}>{{/if}}\",\"phaseError\":\":x: Meta synthesis {{phase}} phase failed{{#if dirLink}} at <{{dirLink}}>{{/if}}\\n   Error: {{error}}\"}}"
+  },
+  "config jsonpath": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"result\":[1938],\"count\":1}"
+  },
+  "config invalid jsonpath": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"Unclosed ( at character 3\"}"
+  },
+  "config not ready": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"watcherUrl\":\"http://127.0.0.1:9\",\"gatewayUrl\":\"http://127.0.0.1:9\",\"depthWeight\":0.5,\"architectEvery\":10,\"maxArchive\":20,\"maxLines\":500,\"thinking\":\"low\",\"skipUnchanged\":true,\"metaProperty\":{},\"metaArchiveProperty\":{},\"port\":1938,\"schedule\":\"*/30 * * * *\",\"watcherHealthIntervalMs\":60000,\"tier2ScanLimit\":50,\"logging\":{\"level\":\"info\"},\"autoSeed\":[],\"stagingRetries\":10,\"stagingRetryDelayMs\":250,\"previewDeltaFilesCap\":50,\"serverUrl\":\"http://127.0.0.1:1934\",\"templates\":{\"phaseStart\":\":gear: Started meta synthesis {{phase}} phase{{#if dirLink}} of <{{dirLink}}>{{/if}}\",\"phaseEnd\":\":white_check_mark: Completed meta synthesis {{phase}} phase ({{tokens}} tokens / {{seconds}}s){{#if metaLink}} at <{{metaLink}}>{{/if}}\",\"phaseError\":\":x: Meta synthesis {{phase}} phase failed{{#if dirLink}} at <{{dirLink}}>{{/if}}\\n   Error: {{error}}\"}}"
+  },
+  "config jsonpath not ready": {
+    "status": 503,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"status\":\"starting\",\"message\":\"Service initializing\"}"
+  },
+  "configApply": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"applied\":true,\"restartRequired\":false}"
+  },
+  "configApply restart field": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"applied\":true,\"restartRequired\":true}"
+  },
+  "configApply invalid config": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"Config validation failed\",\"issues\":[{\"expected\":\"number\",\"code\":\"invalid_type\",\"path\":[\"port\"],\"message\":\"Invalid input: expected number, received string\"}]}"
+  },
+  "configApply empty body": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"`patch` must be a non-null object\"}"
+  },
+  "configApply non-object patch": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"`patch` must be a non-null object\"}"
+  },
+  "configApply non-boolean replace": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"`replace` must be a boolean if provided\"}"
+  },
+  "configApply no body": {
+    "status": 400,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"error\":\"Request body must be a JSON object\"}"
+  },
+  "configApply not ready": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"applied\":true,\"restartRequired\":false}"
+  },
+  "queue empty": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"current\":null,\"pending\":[],\"automatic\":[{\"path\":\"{dir}/alpha-error/.meta\",\"owedPhase\":\"builder\",\"priorityBand\":2,\"effectiveStaleness\":0},{\"path\":\"{dir}/alpha-stale/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/alpha/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/pct%off/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/alpha-crossref/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/sub dir with space/leaf/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0}]}"
+  },
+  "queue pending and current": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"current\":{\"path\":\"{dir}/alpha-error\",\"phase\":\"critic\",\"startedAt\":\"{time}\"},\"pending\":[{\"path\":\"{dir}/alpha-stale\",\"owedPhase\":\"architect\",\"enqueuedAt\":\"{time}\"}],\"automatic\":[{\"path\":\"{dir}/alpha-error/.meta\",\"owedPhase\":\"builder\",\"priorityBand\":2,\"effectiveStaleness\":0},{\"path\":\"{dir}/alpha-stale/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/alpha/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/pct%off/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/alpha-crossref/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0},{\"path\":\"{dir}/sub dir with space/leaf/.meta\",\"owedPhase\":\"architect\",\"priorityBand\":3,\"effectiveStaleness\":0}]}"
+  },
+  "queueClear": {
+    "status": 200,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"cleared\":1}"
+  },
+  "unknown route": {
+    "status": 404,
+    "contentType": "application/json; charset=utf-8",
+    "body": "{\"message\":\"Route GET:/nope not found\",\"error\":\"Not Found\",\"statusCode\":404}"
+  }
+}

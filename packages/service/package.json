@@ -105,7 +105,9 @@
     "release": "dotenvx run -f .env.local -- release-it",
     "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.preRelease --preRelease",
     "test": "vitest run",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "wire:capture": "node scripts/capture-wire.ts",
+    "wire:record": "vitest run --config vitest.wire-record.config.ts"
   },
   "type": "module",
   "version": "0.19.0"
