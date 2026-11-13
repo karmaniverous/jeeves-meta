@@ -57,7 +57,7 @@ Abort the currently running synthesis and release its lock.
 
 ## `jeeves-meta prune`
 
-Prune old archive snapshots beyond `maxArchive` for all metas.
+Prune old archive snapshots beyond `maxArchive` for all metas. Not available yet: the service has no prune route ([#69](https://github.com/karmaniverous/jeeves-meta/issues/69)), so the command says so and exits 1. Archives are still pruned after every full synthesis cycle.
 
 ## `jeeves-meta queue list`
 

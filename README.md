@@ -18,9 +18,10 @@ Metas can declare explicit cross-references (`_crossRefs`) to other metas, formi
 
 | Package | Description |
 | --- | --- |
-| [`@karmaniverous/jeeves-meta-core`](packages/core/README.md) | Shared types, schemas, endpoint descriptors, and utilities |
+| [`@karmaniverous/jeeves-meta-core`](packages/core/README.md) | Shared types, schemas, the endpoint catalog (`META_CATALOG`), OpenAPI document and error codes |
+| [`@karmaniverous/jeeves-meta-sdk`](packages/sdk/README.md) | Typed client for the HTTP API, built from the catalog |
 | [`@karmaniverous/jeeves-meta`](packages/service/README.md) | HTTP service — Fastify API, built-in scheduler, synthesis queue, CLI |
-| [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw/README.md) | Standard OpenClaw plugin — thin HTTP client, interactive tools, lazy `configRoot` |
+| [`@karmaniverous/jeeves-meta-openclaw`](packages/openclaw/README.md) | Standard OpenClaw plugin — tools on the SDK, lazy `configRoot` |
 
 ## Architecture
 
@@ -30,7 +31,7 @@ Metas can declare explicit cross-references (`_crossRefs`) to other metas, formi
 - **Built-in scheduler** (croner-based) discovers stale candidates via phase-state machine and enqueues one phase per tick
 - **GatewayExecutor** spawns LLM sessions via the OpenClaw gateway `/tools/invoke` endpoint
 - **jeeves-watcher** provides filesystem enumeration (`POST /walk`) and hosts virtual inference rules
-- **OpenClaw plugin** is a thin HTTP client — all logic lives in the service
+- **OpenClaw plugin** calls the service through the SDK — all logic lives in the service
 
 ## Synthesis Data Flow
 
@@ -129,6 +130,7 @@ npm run docs        # generate TypeDoc documentation
 
 - **[Service Guides](packages/service/guides/index.md)** — concepts, configuration, orchestration, scheduling, architecture
 - **[CLI Reference](packages/service/guides/cli.md)** — all CLI commands with usage
+- **[Migrating to 0.20](packages/service/guides/migrating-to-0.20.md)** � error codes, request validation, Node.js 24.22.2
 - **[Plugin Guides](packages/openclaw/guides/index.md)** — setup, tools reference, virtual rules
 
 ## License

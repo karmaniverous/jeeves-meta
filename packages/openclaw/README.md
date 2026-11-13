@@ -5,8 +5,8 @@ OpenClaw plugin for [jeeves-meta](https://github.com/karmaniverous/jeeves-meta/t
 ## Features
 
 - **Twelve tools** — standard: `meta_status`, `meta_config`, `meta_config_apply`, `meta_service`; custom: `meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_queue` (list/clear/abort), `meta_update`
-- **MetaServiceClient** — typed HTTP client delegating all operations to the running service
-- **Phase-state awareness** — tools expose per-meta `_phaseState`, `owedPhase`, and phase-state summary from the service's phase-state machine
+- **SDK client** — every tool calls the running service through `@karmaniverous/jeeves-meta-sdk`
+- **Phase-state awareness** — tools expose per-meta `phaseState`, `owedPhase`, and phase-state summary from the service's phase-state machine
 - **Lazy config** — registers with no config; `configRoot` is resolved when a tool needs it
 - **Consumer skill** — `jeeves-meta` skill shipped through the plugin manifest
 

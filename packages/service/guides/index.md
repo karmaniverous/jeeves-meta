@@ -7,6 +7,7 @@ children:
   - ./scheduling.md
   - ./architecture.md
   - ./cli.md
+  - ./migrating-to-0.20.md
   - ../CHANGELOG.md
 ---
 
@@ -18,4 +19,5 @@ children:
 - [Scheduling](./scheduling.md) — Weighted staleness formula, adaptive backoff, and queue processing.
 - [Architecture](./architecture.md) — Service components, data flow, virtual rules, and port allocation.
 - [CLI Reference](./cli.md) — All commands with usage.
+- [Migrating to 0.20](./migrating-to-0.20.md) — Error codes, request validation and the Node.js floor in 0.20.
 - [Changelog](../CHANGELOG.md) — Release history for `@karmaniverous/jeeves-meta`.

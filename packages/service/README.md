@@ -24,7 +24,7 @@ HTTP service for the Jeeves knowledge synthesis engine. Provides a Fastify API, 
 - **Config hot-reload** — all synthesis parameters reload without restart; restart-required fields (port, URLs) warn on change
 - **Auto-seed policy** — config-driven declarative `.meta/` creation via `autoSeed` rules
 - **Token tracking** — per-step counts with exponential moving averages
-- **CLI** — `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `config`, `abort`, `prune`, `queue`, `service` commands
+- **CLI** — `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `config`, `abort`, `prune` (no API route yet, [#69](https://github.com/karmaniverous/jeeves-meta/issues/69)), `queue`, `service` commands, built on the SDK
 - **Zod schemas** — validated meta.json and config with open schema support
 
 ## Install
@@ -57,8 +57,8 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/status` | Service health, queue state, dependency checks, phase-state summary |
-| GET | `/metas` | List metas with summary stats and per-meta projection. Response includes `_phaseState` and `owedPhase` per meta. |
-| GET | `/metas/:path` | Full detail for a single meta, with optional archive history. Response includes `_phaseState` and `owedPhase`. |
+| GET | `/metas` | List metas with summary stats and per-meta projection. Response includes `phaseState` and `owedPhase` per meta. |
+| GET | `/metas/:path` | Full detail for a single meta, with optional archive history. Response includes `phaseState`, `owedPhase` and `crossRefs`. |
 | GET | `/preview` | Dry-run: preview inputs for next synthesis |
 | POST | `/synthesize` | Enqueue synthesis (stalest or specific path) |
 | POST | `/synthesize/abort` | Abort the currently running synthesis |
@@ -66,9 +66,31 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 | POST | `/config/apply` | Apply a config patch (merge or replace) |
-| GET | `/queue` | Queue state: current (with phase), overrides, automatic, pending |
+| GET | `/queue` | Queue state: `current` (with phase), `pending` overrides, `automatic` candidates |
 | POST | `/queue/clear` | Remove all override queue entries |
 | PATCH | `/metas/:path` | Update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`) |
+| GET | `/openapi.json` | The OpenAPI 3.1 document of every route above |
+
+Every route is defined in `META_CATALOG` (`@karmaniverous/jeeves-meta-core`) and validated against it: a malformed request is answered 400 `FST_ERR_VALIDATION`. Every route except `/config`, `/config/apply` and `/openapi.json` answers 503 `META_NOT_READY` while the service starts. Use [`@karmaniverous/jeeves-meta-sdk`](../sdk/README.md) for a typed client.
+
+### Errors
+
+Every non-2xx response is Fastify's standard body, `{ statusCode, code?, error, message }`. Branch on `code`:
+
+| `code` | Status | When |
+| --- | --- | --- |
+| `META_INVALID_JSONPATH` | 400 | `GET /config?path=` with a JSONPath that cannot be evaluated |
+| `META_NOT_FOUND` | 404 | No meta at the path given to `GET`/`PATCH /metas/:path` or `GET /preview` |
+| `META_ALREADY_EXISTS` | 409 | `POST /seed` where a `.meta/` already exists |
+| `META_NOT_LOCKED` | 409 | `POST /unlock` with no lock file |
+| `META_CONFIG_UNAVAILABLE` | 500 | `POST /config/apply` on a service started without a config file |
+| `META_WATCHER_UNAVAILABLE` | 503 | `GET /metas`, `GET /preview` or `POST /synthesize` could not reach jeeves-watcher; retry later |
+| `META_NOT_READY` | 503 | The service is starting; retry shortly |
+| `FST_ERR_VALIDATION` | 400 | The request failed the route's schema |
+| `JEEVES_CONFIG_INVALID` | 400 | `POST /config/apply`: the merged config is invalid |
+| `JEEVES_RESPONSE_VALIDATION` | 500 | The service's own reply failed its schema (a bug; report it) |
+
+An unexpected failure is a 500 with no `code` and a generic message; the cause is in the service log. No response carries `Retry-After`. Upgrading from 0.19: see [Migrating to 0.20](guides/migrating-to-0.20.md).
 
 ## Configuration
 

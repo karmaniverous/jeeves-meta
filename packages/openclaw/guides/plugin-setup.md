@@ -63,7 +63,7 @@ Only `meta_service` with `action: "install"` reads it (core resolves the service
 
 On gateway startup, `register(api)`:
 
-1. Resolves the service URL (`apiUrl`) and creates a `MetaServiceClient`
+1. Resolves the service URL (`apiUrl`); the custom tools call it through `@karmaniverous/jeeves-meta-sdk`
 2. Logs one warning if `configRoot` is not set yet (it never throws)
 3. Registers 12 tools: 4 standard (`meta_status`, `meta_config`, `meta_config_apply`, `meta_service`) via `createPluginToolset()`, plus 8 custom (`meta_list`, `meta_detail`, `meta_trigger`, `meta_preview`, `meta_seed`, `meta_unlock`, `meta_queue`, `meta_update`). `meta_service` is wrapped so that `install` resolves `configRoot` and calls core `init({ workspacePath, configRoot })` on first use; its other actions and all other tools are not gated.
 
