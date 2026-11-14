@@ -1,6 +1,6 @@
 {
   "name": "@karmaniverous/jeeves-meta-sdk",
-  "version": "0.1.0-0",
+  "version": "0.1.0",
   "author": "Jason Williscroft",
   "description": "Typed TypeScript client for the jeeves-meta HTTP API (metas, synthesis, queue, preview, seed, unlock, status and config), built from jeeves-meta's endpoint catalog.",
   "license": "BSD-3-Clause",
