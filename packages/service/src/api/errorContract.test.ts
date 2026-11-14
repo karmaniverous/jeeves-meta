@@ -82,7 +82,7 @@ const MESSAGES: Array<[string, string, RegExp]> = [
     /^No lock file at .+\/alpha \(already unlocked\)$/,
   ],
   [
-    'status not ready',
+    'listMetas not ready',
     'META_NOT_READY',
     /^The service is starting; retry shortly\.$/,
   ],

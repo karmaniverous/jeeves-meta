@@ -11,7 +11,12 @@ import { MetaNotReady } from './api/errors.js';
 import { registerRoutes, type RouteDeps } from './routes/index.js';
 
 /** Routes served while the service is starting (matched route URLs). */
-const UNGATED_ROUTES = new Set(['/config', '/config/apply', '/openapi.json']);
+const UNGATED_ROUTES = new Set([
+  '/status',
+  '/config',
+  '/config/apply',
+  '/openapi.json',
+]);
 
 /** Options for creating the server. */
 export interface ServerOptions {

@@ -56,6 +56,7 @@ async function checkWatcher(url: string): Promise<WatcherHealth> {
 /** Derive service-specific state from current activity and lifecycle. */
 function deriveServiceState(deps: RouteDeps): ServiceState {
   if (deps.shuttingDown) return 'stopping';
+  if (!deps.ready) return 'starting';
   if (deps.queue.currentPhase) return 'synthesizing';
   if (deps.queue.depth > 0) return 'waiting';
   return 'idle';
@@ -104,49 +105,56 @@ export function createStatusHandlers(
         locked: number;
       } | null = null;
 
-      try {
-        // Never wait on a refresh of the whole corpus: a health check answers
-        // from the last list, refreshed in the background.
-        const metaResult = await cache.peek(config, watcher);
+      // While starting, the first meta list is still loading: report the
+      // state, dependencies and stats without it (Decision 199).
+      if (deps.ready) {
+        try {
+          // Never wait on a refresh of the whole corpus: a health check answers
+          // from the last list, refreshed in the background.
+          const metaResult = await cache.peek(config, watcher);
 
-        // Count raw phase states (before retry) for display
-        for (const entry of metaResult.entries) {
-          const ps = derivePhaseState(entry.meta);
-          for (const phase of ['architect', 'builder', 'critic'] as const) {
-            phaseStateSummary[phase][ps[phase]]++;
+          // Count raw phase states (before retry) for display
+          for (const entry of metaResult.entries) {
+            const ps = derivePhaseState(entry.meta);
+            for (const phase of ['architect', 'builder', 'critic'] as const) {
+              phaseStateSummary[phase][ps[phase]]++;
+            }
           }
-        }
 
-        // Build candidates (with auto-retry) for scheduling
-        const candidates = buildPhaseCandidates(
-          metaResult.entries,
-          config.architectEvery,
-        );
+          // Build candidates (with auto-retry) for scheduling
+          const candidates = buildPhaseCandidates(
+            metaResult.entries,
+            config.architectEvery,
+          );
 
-        // Find next phase candidate
-        const winner = selectPhaseCandidate(candidates, config.depthWeight);
-        if (winner) {
-          nextPhase = {
-            path: winner.node.metaPath,
-            phase: winner.owedPhase,
-            band: winner.band,
-            staleness: finiteOrNull(winner.effectiveStaleness),
+          // Find next phase candidate
+          const winner = selectPhaseCandidate(candidates, config.depthWeight);
+          if (winner) {
+            nextPhase = {
+              path: winner.node.metaPath,
+              phase: winner.owedPhase,
+              band: winner.band,
+              staleness: finiteOrNull(winner.effectiveStaleness),
+            };
+          }
+
+          // Meta counts summary
+          const summary = computeSummary(
+            metaResult.entries,
+            config.depthWeight,
+          );
+          metaCounts = {
+            total: summary.total,
+            enabled: summary.total - summary.disabled,
+            disabled: summary.disabled,
+            neverSynthesized: summary.neverSynthesized,
+            stale: summary.stale,
+            errors: summary.errors,
+            locked: summary.locked,
           };
+        } catch {
+          // Watcher unreachable — phase summary unavailable
         }
-
-        // Meta counts summary
-        const summary = computeSummary(metaResult.entries, config.depthWeight);
-        metaCounts = {
-          total: summary.total,
-          enabled: summary.total - summary.disabled,
-          disabled: summary.disabled,
-          neverSynthesized: summary.neverSynthesized,
-          stale: summary.stale,
-          errors: summary.errors,
-          locked: summary.locked,
-        };
-      } catch {
-        // Watcher unreachable — phase summary unavailable
       }
 
       return {

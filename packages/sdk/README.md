@@ -85,7 +85,7 @@ A non-2xx body is always Fastify's standard error body, `{ statusCode, code?, er
 | `META_NOT_LOCKED` | 409 | `unlock` where there is no lock file |
 | `META_CONFIG_UNAVAILABLE` | 500 | `configApply` on a service started without a config file |
 | `META_WATCHER_UNAVAILABLE` | 503 | `listMetas`, `preview` or `synthesize` could not reach jeeves-watcher; retry later |
-| `META_NOT_READY` | 503 | the service is still starting; retry shortly (`config` and `configApply` are served during start-up) |
+| `META_NOT_READY` | 503 | the service is still starting; retry shortly (`status`, `config` and `configApply` are served during start-up; `status` reports `serviceState: "starting"`) |
 
 Also: `FST_ERR_VALIDATION` (400) when a request fails the catalog's schemas (the SDK checks input first, so you see `invalid_request` instead), jeeves' `JEEVES_CONFIG_INVALID` from `configApply`, and `JEEVES_RESPONSE_VALIDATION` (500) if jeeves-meta's own response fails its schema. No error carries `Retry-After`.
 

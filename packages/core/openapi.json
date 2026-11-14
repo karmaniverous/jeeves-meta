@@ -52,6 +52,7 @@
                             "serviceState": {
                               "type": "string",
                               "enum": [
+                                "starting",
                                 "idle",
                                 "synthesizing",
                                 "waiting",

@@ -67,7 +67,11 @@ export const WIRE_DEPARTURES: Readonly<Partial<Record<string, WireDeparture>>> =
       400,
       'META_INVALID_JSONPATH',
     ),
-    'status not ready': notReady,
+    'status not ready': {
+      before: "503 { status: 'starting', message }",
+      item: 'readiness',
+      status: 200,
+    },
     'listMetas not ready': notReady,
     'metaDetail unknown meta': errorBody(
       '404 NOT_FOUND',

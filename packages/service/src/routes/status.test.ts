@@ -309,3 +309,41 @@ describe('GET /status meta list', () => {
     }
   });
 });
+
+describe('GET /status while starting', () => {
+  it("answers 200 with serviceState 'starting' and no meta list", async () => {
+    const cache = new MetaCache();
+    const peek = vi.spyOn(cache, 'peek');
+    const app = createTestApp(makeTestDeps({ cache, ready: false }));
+    try {
+      const res = await app.inject({ method: 'GET', url: '/status' });
+      expect(res.statusCode).toBe(200);
+      const { health } = res.json<{
+        health: {
+          serviceState: string;
+          metaCounts: unknown;
+          nextPhase: unknown;
+          dependencies: unknown;
+        };
+      }>();
+      expect(health.serviceState).toBe('starting');
+      expect(health.metaCounts).toBeNull();
+      expect(health.nextPhase).toBeNull();
+      expect(health.dependencies).toHaveProperty('watcher');
+      expect(peek).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('still refuses other routes with META_NOT_READY', async () => {
+    const app = createTestApp(makeTestDeps({ ready: false }));
+    try {
+      const res = await app.inject({ method: 'GET', url: '/metas' });
+      expect(res.statusCode).toBe(503);
+      expect(res.json()).toMatchObject({ code: 'META_NOT_READY' });
+    } finally {
+      await app.close();
+    }
+  });
+});

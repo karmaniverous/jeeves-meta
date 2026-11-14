@@ -35,7 +35,7 @@ Branch on `code`, never on `message`. What each case answered in 0.19 and answer
 | `POST /config/apply` without a config file | 500 `{ error }` | 500 `META_CONFIG_UNAVAILABLE` |
 | `GET /config?path=` with a bad JSONPath | 400 `{ error: <parser message> }` | 400 `META_INVALID_JSONPATH` |
 | `POST /config/apply` with an invalid merged config | 400 `{ error: 'Config validation failed', issues }` | 400 `JEEVES_CONFIG_INVALID` |
-| Any route while the service starts | 503 `{ status: 'starting', message }` | 503 `META_NOT_READY` |
+| Any route except `GET /status`, `/config`, `/config/apply` and `/openapi.json` while the service starts | 503 `{ status: 'starting', message }` | 503 `META_NOT_READY` |
 | An unexpected failure | 500 `{ error: 'INTERNAL_ERROR', message: <raw cause> }` | 500, no `code`, a generic message; the cause is logged |
 
 No response carries `Retry-After`.
@@ -51,6 +51,7 @@ Every request is validated against its catalog schema before the handler runs. A
 Two requests that failed in 0.19 now succeed:
 
 - `GET /metas/:path` with a path containing `%`: 0.19 decoded `:path` twice and answered 500. Encode the path once (`encodeURIComponent`).
+- `GET /status` during start-up: 0.19 answered 503 `{ status: 'starting', message }`. 0.20 answers 200 with the usual body, `health.serviceState: "starting"` and `metaCounts`, `nextPhase` null until the first meta list loads, so health probes no longer see an error while meta starts. `ServiceState` in core gains `'starting'`.
 - `GET /config?path=...` during start-up: 0.19's readiness gate matched the raw URL, so a JSONPath query got 503. `/config`, `/config/apply` and `/openapi.json` are served while the service starts.
 
 ## New

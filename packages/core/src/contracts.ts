@@ -52,7 +52,8 @@ export interface WatcherDepHealth extends DepHealth {
 export type GatewayDepHealth = DepHealth;
 
 /** Service lifecycle state. */
-export type ServiceState = 'idle' | 'synthesizing' | 'waiting' | 'stopping';
+export type ServiceState =
+  'starting' | 'idle' | 'synthesizing' | 'waiting' | 'stopping';
 
 /** Phase state summary: per-phase counts of each status. */
 export type PhaseStateSummary = Record<PhaseName, Record<PhaseStatus, number>>;

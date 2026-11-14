@@ -29,7 +29,13 @@ const phaseStateSummarySchema = z.object(
 /** The full health object. */
 const metaHealthDetailSchema = z.object({
   /** What the service is doing. */
-  serviceState: z.enum(['idle', 'synthesizing', 'waiting', 'stopping']),
+  serviceState: z.enum([
+    'starting',
+    'idle',
+    'synthesizing',
+    'waiting',
+    'stopping',
+  ]),
   /** Path of the meta being synthesized, if any. */
   currentTarget: z.string().nullable(),
   /** Override queue. */

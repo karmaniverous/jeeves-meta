@@ -71,7 +71,7 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 | PATCH | `/metas/:path` | Update user-settable reserved properties (`_steer`, `_emphasis`, `_depth`, `_crossRefs`, `_disabled`) |
 | GET | `/openapi.json` | The OpenAPI 3.1 document of every route above |
 
-Every route is defined in `META_CATALOG` (`@karmaniverous/jeeves-meta-core`) and validated against it: a malformed request is answered 400 `FST_ERR_VALIDATION`. Every route except `/config`, `/config/apply` and `/openapi.json` answers 503 `META_NOT_READY` while the service starts. Use [`@karmaniverous/jeeves-meta-sdk`](../sdk/README.md) for a typed client.
+Every route is defined in `META_CATALOG` (`@karmaniverous/jeeves-meta-core`) and validated against it: a malformed request is answered 400 `FST_ERR_VALIDATION`. While the service starts, `GET /status` answers 200 with `serviceState: "starting"` (no meta counts until the first meta list loads), `/config`, `/config/apply` and `/openapi.json` are served, and every other route answers 503 `META_NOT_READY`. Use [`@karmaniverous/jeeves-meta-sdk`](../sdk/README.md) for a typed client.
 
 ### Errors
 

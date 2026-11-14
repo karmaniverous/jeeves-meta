@@ -452,7 +452,7 @@ A failed tool reads `Error: HTTP <status>: <body>`; the body is `{ statusCode, c
 | `META_ALREADY_EXISTS` | 409 | `meta_seed` on a path that already has `.meta/` | Nothing to create; use `meta_update` to change it |
 | `META_NOT_LOCKED` | 409 | `meta_unlock` on a meta with no lock | Nothing to do; it is already unlocked |
 | `META_WATCHER_UNAVAILABLE` | 503 | The service could not reach jeeves-watcher | Check `watcher_status`; retry once the watcher is up (see Troubleshooting) |
-| `META_NOT_READY` | 503 | The service is starting | Retry in a few seconds; `meta_config` works meanwhile |
+| `META_NOT_READY` | 503 | The service is starting | Retry in a few seconds; `meta_status` (it reports `serviceState: "starting"`) and `meta_config` work meanwhile |
 | `META_INVALID_JSONPATH` | 400 | `meta_config` with a JSONPath that cannot be evaluated | Fix the expression (e.g. `$.schedule`) |
 | `META_CONFIG_UNAVAILABLE` | 500 | `meta_config_apply` on a service started without a config file | Restart the service with `--config <path>`, or edit the config file directly |
 | `JEEVES_CONFIG_INVALID` | 400 | `meta_config_apply`: the patched config is invalid | Read `message` for the failing field; fix the patch |
