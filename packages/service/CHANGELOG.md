@@ -2,11 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0-2] - 2026-11-14
+
+### 🚀 Features
+
+- *(service)* GET /status answers 200 'starting' during start-up
+
+### 🐛 Bug Fixes
+
+- *(service)* GET /status answers from the cached meta list
+
+### 💼 Other
+
+- Updated core
 ## [0.20.0-1] - 2026-11-14
 
 ### 🐛 Bug Fixes
 
 - *(service)* CLI commands initialise jeeves before resolving the service URL
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.20.0-1
 ## [0.20.0-0] - 2026-11-13
 
 ### 🚀 Features

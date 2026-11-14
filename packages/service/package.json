@@ -112,5 +112,5 @@
     "wire:record": "vitest run --config vitest.wire-record.config.ts"
   },
   "type": "module",
-  "version": "0.20.0-1"
+  "version": "0.20.0-2"
 }
