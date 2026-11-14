@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0-1] - 2026-11-14
+
+### 🐛 Bug Fixes
+
+- *(service)* CLI commands initialise jeeves before resolving the service URL
 ## [0.20.0-0] - 2026-11-13
 
 ### 🚀 Features
@@ -37,6 +42,7 @@ All notable changes to this project will be documented in this file.
 
 - Adopt @karmaniverous/jeeves 0.8.0
 - [**breaking**] Jeeves 0.11.0 and Node >=24.22.2 (T2)
+- Release @karmaniverous/jeeves-meta v0.20.0-0
 ## [0.19.0] - 2026-10-14
 
 ### 🚀 Features
