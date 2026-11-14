@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
 ### 💼 Other
 
 - Updated dependencies
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-core v0.4.0-1
 ## [0.4.0-0] - 2026-11-13
 
 ### 🚀 Features
