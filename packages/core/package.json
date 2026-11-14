@@ -9,7 +9,7 @@
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.1",
-    "@seriousme/openapi-schema-validator": "^2.11.0",
+    "@seriousme/openapi-schema-validator": "^2.12.0",
     "cross-env": "^10.1.0",
     "release-it": "^21.1.2",
     "rollup": "^4.68.3",
