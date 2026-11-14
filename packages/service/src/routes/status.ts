@@ -10,21 +10,23 @@
 import { createStatusHandler } from '@karmaniverous/jeeves';
 import {
   type DepHealth,
-  getEndpoint,
+  type MetaResponse,
   type NextPhaseCandidate,
   type PhaseStateSummary,
   type PhaseStatus,
   type ServiceState,
 } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
 
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import { SERVICE_NAME, SERVICE_VERSION } from '../constants.js';
 import { computeSummary } from '../discovery/computeSummary.js';
+import { finiteOrNull } from '../finiteOrNull.js';
 import {
   buildPhaseCandidates,
   derivePhaseState,
   selectPhaseCandidate,
 } from '../phaseState/index.js';
+import { probeWatcher } from '../watcher-client/index.js';
 import type { RouteDeps } from './index.js';
 
 interface WatcherHealth extends DepHealth {
@@ -45,30 +47,16 @@ async function checkDependency(url: string, path: string): Promise<DepHealth> {
 
 async function checkWatcher(url: string): Promise<WatcherHealth> {
   const checkedAt = new Date().toISOString();
-  try {
-    const res = await fetch(new URL('/status', url), {
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) return { url, status: 'error', checkedAt };
-
-    const data = (await res.json()) as {
-      initialScan?: { active?: boolean };
-    };
-    const indexing = data.initialScan?.active === true;
-    return {
-      url,
-      status: indexing ? 'indexing' : 'ok',
-      checkedAt,
-      indexing,
-    };
-  } catch {
-    return { url, status: 'unreachable', checkedAt };
-  }
+  const probe = await probeWatcher(url, 3000);
+  if (probe.status === 'unreachable' || probe.status === 'error')
+    return { url, status: probe.status, checkedAt };
+  return { url, status: probe.status, checkedAt, indexing: probe.indexing };
 }
 
 /** Derive service-specific state from current activity and lifecycle. */
 function deriveServiceState(deps: RouteDeps): ServiceState {
   if (deps.shuttingDown) return 'stopping';
+  if (!deps.ready) return 'starting';
   if (deps.queue.currentPhase) return 'synthesizing';
   if (deps.queue.depth > 0) return 'waiting';
   return 'idle';
@@ -78,10 +66,15 @@ function emptyPhaseCounts(): Record<PhaseStatus, number> {
   return { fresh: 0, stale: 0, pending: 0, running: 0, failed: 0 };
 }
 
-export function registerStatusRoute(
-  app: FastifyInstance,
+/**
+ * The `status` handler: jeeves `createStatusHandler` with meta's health.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handler.
+ */
+export function createStatusHandlers(
   deps: RouteDeps,
-): void {
+): Pick<MetaHandlers, 'status'> {
   const statusHandler = createStatusHandler({
     name: SERVICE_NAME,
     version: SERVICE_VERSION,
@@ -112,47 +105,56 @@ export function registerStatusRoute(
         locked: number;
       } | null = null;
 
-      try {
-        const metaResult = await cache.get(config, watcher);
+      // While starting, the first meta list is still loading: report the
+      // state, dependencies and stats without it (Decision 199).
+      if (deps.ready) {
+        try {
+          // Never wait on a refresh of the whole corpus: a health check answers
+          // from the last list, refreshed in the background.
+          const metaResult = await cache.peek(config, watcher);
 
-        // Count raw phase states (before retry) for display
-        for (const entry of metaResult.entries) {
-          const ps = derivePhaseState(entry.meta);
-          for (const phase of ['architect', 'builder', 'critic'] as const) {
-            phaseStateSummary[phase][ps[phase]]++;
+          // Count raw phase states (before retry) for display
+          for (const entry of metaResult.entries) {
+            const ps = derivePhaseState(entry.meta);
+            for (const phase of ['architect', 'builder', 'critic'] as const) {
+              phaseStateSummary[phase][ps[phase]]++;
+            }
           }
-        }
 
-        // Build candidates (with auto-retry) for scheduling
-        const candidates = buildPhaseCandidates(
-          metaResult.entries,
-          config.architectEvery,
-        );
+          // Build candidates (with auto-retry) for scheduling
+          const candidates = buildPhaseCandidates(
+            metaResult.entries,
+            config.architectEvery,
+          );
 
-        // Find next phase candidate
-        const winner = selectPhaseCandidate(candidates, config.depthWeight);
-        if (winner) {
-          nextPhase = {
-            path: winner.node.metaPath,
-            phase: winner.owedPhase,
-            band: winner.band,
-            staleness: winner.effectiveStaleness,
+          // Find next phase candidate
+          const winner = selectPhaseCandidate(candidates, config.depthWeight);
+          if (winner) {
+            nextPhase = {
+              path: winner.node.metaPath,
+              phase: winner.owedPhase,
+              band: winner.band,
+              staleness: finiteOrNull(winner.effectiveStaleness),
+            };
+          }
+
+          // Meta counts summary
+          const summary = computeSummary(
+            metaResult.entries,
+            config.depthWeight,
+          );
+          metaCounts = {
+            total: summary.total,
+            enabled: summary.total - summary.disabled,
+            disabled: summary.disabled,
+            neverSynthesized: summary.neverSynthesized,
+            stale: summary.stale,
+            errors: summary.errors,
+            locked: summary.locked,
           };
+        } catch {
+          // Watcher unreachable — phase summary unavailable
         }
-
-        // Meta counts summary
-        const summary = computeSummary(metaResult.entries, config.depthWeight);
-        metaCounts = {
-          total: summary.total,
-          enabled: summary.total - summary.disabled,
-          disabled: summary.disabled,
-          neverSynthesized: summary.neverSynthesized,
-          stale: summary.stale,
-          errors: summary.errors,
-          locked: summary.locked,
-        };
-      } catch {
-        // Watcher unreachable — phase summary unavailable
       }
 
       return {
@@ -184,8 +186,13 @@ export function registerStatusRoute(
     },
   });
 
-  app.get(getEndpoint('status').path, async (_request, reply) => {
-    const result = await statusHandler();
-    return reply.status(result.status).send(result.body);
-  });
+  return {
+    status: async () => {
+      const result = await statusHandler();
+      return {
+        status: 200,
+        body: result.body as MetaResponse<'status'>,
+      };
+    },
+  };
 }

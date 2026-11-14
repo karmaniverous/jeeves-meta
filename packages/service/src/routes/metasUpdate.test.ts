@@ -8,16 +8,16 @@ import { readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { normalizePath } from '../normalizePath.js';
 import {
+  createTestApp,
   createTestMeta,
   makeTestDeps,
   makeTestWatcher,
 } from './__testUtils.js';
-import { registerMetasUpdateRoute } from './metasUpdate.js';
 
 const root = join(
   tmpdir(),
@@ -56,8 +56,7 @@ describe('PATCH /metas/:path', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasUpdateRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(owner));
@@ -83,8 +82,7 @@ describe('PATCH /metas/:path', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasUpdateRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(owner));
@@ -109,8 +107,7 @@ describe('PATCH /metas/:path', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasUpdateRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(owner));
@@ -133,8 +130,7 @@ describe('PATCH /metas/:path', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasUpdateRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(owner));
@@ -145,8 +141,8 @@ describe('PATCH /metas/:path', () => {
     });
 
     expect(res.statusCode).toBe(400);
-    const body = res.json<{ error: string }>();
-    expect(body.error).toBe('BAD_REQUEST');
+    const body = res.json<{ code: string }>();
+    expect(body.code).toBe('FST_ERR_VALIDATION');
   });
 
   it('returns 404 for unknown path', async () => {
@@ -154,8 +150,7 @@ describe('PATCH /metas/:path', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasUpdateRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const encoded = encodeURIComponent('j:/does/not/exist');
@@ -166,8 +161,8 @@ describe('PATCH /metas/:path', () => {
     });
 
     expect(res.statusCode).toBe(404);
-    const body = res.json<{ error: string }>();
-    expect(body.error).toBe('NOT_FOUND');
+    const body = res.json<{ code: string }>();
+    expect(body.code).toBe('META_NOT_FOUND');
   });
 
   it('invalidates MetaCache after successful write', async () => {
@@ -176,8 +171,7 @@ describe('PATCH /metas/:path', () => {
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({ watcher });
     const invalidateSpy = vi.spyOn(deps.cache, 'invalidate');
-    app = Fastify();
-    registerMetasUpdateRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(owner));
@@ -205,8 +199,7 @@ describe('PATCH /metas/:path', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerMetasUpdateRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const encoded = encodeURIComponent(normalizePath(owner));

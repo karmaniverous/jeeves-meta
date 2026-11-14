@@ -13,7 +13,7 @@ title: Architecture
 | `GatewayExecutor` | Spawns LLM sessions via gateway `/tools/invoke`, polls for completion |
 | `ProgressReporter` | Sends synthesis events to a channel via gateway `/tools/invoke` → `message` tool |
 | `RuleRegistrar` | Registers 2 virtual inference rules with watcher at startup |
-| `HttpWatcherClient` | Watcher HTTP client with 3-retry exponential backoff and connection timeout protection |
+| `SdkWatcherClient` | Watcher client on `@karmaniverous/jeeves-watcher-sdk`: 3 retries with exponential backoff (1 s, 4 s, 16 s) on HTTP 5xx/408/429, 30 s per call; `probeWatcher` checks the watcher's `/status` |
 | Fastify server | 13 HTTP endpoints across 10 route modules |
 | Config hot-reload | `fs.watchFile` monitors config; hot-reloadable fields applied immediately, restart-required fields warn on change |
 | Shutdown handlers | SIGTERM/SIGINT → stop scheduler → release lock → close server |
@@ -50,9 +50,9 @@ The `autoSeedPass()` function is executed at the start of each scheduler tick (b
 
 1. For each rule, walk the watcher with the rule's `match` glob
 2. Extract candidate directories (with optional `parentDepth` walking)
-3. Build a map of owner path → effective options (**last match wins** for all fields including timeouts)
+3. Build a map of owner path → effective options (**last match wins** for all fields)
 4. Filter out paths that already have a `.meta/` directory
-5. Create `.meta/meta.json` for each new candidate with the matched rule's `steer`, `crossRefs`, and timeout overrides
+5. Create `.meta/meta.json` for each new candidate with the matched rule's `steer` and `crossRefs`
 
 ## Virtual Rules
 
@@ -69,7 +69,7 @@ The service monitors its config file via `fs.watchFile`. Fields are divided into
 
 **Restart-required** (warn on change, no live effect): `port`, `watcherUrl`, `gatewayUrl`, `gatewayApiKey`, `defaultArchitect`, `defaultCritic`.
 
-**Hot-reloadable** (applied immediately): `schedule` (cron reschedule), `logging.level` (Pino level change), and all remaining fields (`reportChannel`, `reportTarget`, `serverBaseUrl`, `watcherHealthIntervalMs`, `tier2ScanLimit`, `autoSeed`, `architectEvery`, `depthWeight`, `maxArchive`, `maxLines`, `thinking`, `skipUnchanged`, `metaProperty`, `metaArchiveProperty`).
+**Hot-reloadable** (applied immediately): `schedule` (cron reschedule), `logging.level` (Pino level change), and all remaining fields (`reportChannel`, `reportTarget`, `serverKey`, `watcherHealthIntervalMs`, `tier2ScanLimit`, `autoSeed`, `architectEvery`, `depthWeight`, `maxArchive`, `maxLines`, `thinking`, `skipUnchanged`, `metaProperty`, `metaArchiveProperty`).
 
 ## Phase-State Machine
 

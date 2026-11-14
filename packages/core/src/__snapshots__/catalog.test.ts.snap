@@ -1,0 +1,72 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`metaConfigSchema > is unchanged (jeeves-tools imports it) 1`] = `
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "architectEvery": {
+      "default": 10,
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "type": "integer",
+    },
+    "depthWeight": {
+      "default": 0.5,
+      "minimum": 0,
+      "type": "number",
+    },
+    "gatewayApiKey": {
+      "type": "string",
+    },
+    "gatewayUrl": {
+      "default": "http://127.0.0.1:18789",
+      "format": "uri",
+      "type": "string",
+    },
+    "maxArchive": {
+      "default": 20,
+      "maximum": 9007199254740991,
+      "minimum": 1,
+      "type": "integer",
+    },
+    "maxLines": {
+      "default": 500,
+      "maximum": 9007199254740991,
+      "minimum": 50,
+      "type": "integer",
+    },
+    "metaArchiveProperty": {
+      "additionalProperties": {},
+      "propertyNames": {
+        "type": "string",
+      },
+      "type": "object",
+    },
+    "metaProperty": {
+      "additionalProperties": {},
+      "propertyNames": {
+        "type": "string",
+      },
+      "type": "object",
+    },
+    "skipUnchanged": {
+      "default": true,
+      "type": "boolean",
+    },
+    "thinking": {
+      "default": "low",
+      "type": "string",
+    },
+    "watcherUrl": {
+      "format": "uri",
+      "type": "string",
+    },
+  },
+  "required": [
+    "watcherUrl",
+    "metaProperty",
+    "metaArchiveProperty",
+  ],
+  "type": "object",
+}
+`;

@@ -8,10 +8,10 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import type { MetaResponse } from '@karmaniverous/jeeves-meta-core';
 
+import { capArg, MetaNotFound, MetaWatcherUnavailable } from '../api/errors.js';
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import {
   readArchiveFromDisk,
   readArchiveFromWatcher,
@@ -24,135 +24,114 @@ import { derivePhaseState, getOwedPhase } from '../phaseState/index.js';
 import { computeStalenessScore } from '../scheduling/index.js';
 import { DEFAULT_EXCLUDE_FIELDS, type RouteDeps } from './index.js';
 
-/** Reusable Zod schema for boolean query string parameters ('true'/'false'). */
-const boolQueryParam = z.enum(['true', 'false']).transform((v) => v === 'true');
-
-const metasQuerySchema = z.object({
-  pathPrefix: z.string().optional(),
-  hasError: boolQueryParam.optional(),
-  staleHours: z
-    .string()
-    .transform(Number)
-    .pipe(z.number().positive())
-    .optional(),
-  neverSynthesized: boolQueryParam.optional(),
-  locked: boolQueryParam.optional(),
-  disabled: boolQueryParam.optional(),
-  fields: z.string().optional(),
-});
-
-const metaDetailQuerySchema = z.object({
-  fields: z.string().optional(),
-  includeArchive: z
-    .union([
-      boolQueryParam,
-      z.string().transform(Number).pipe(z.number().int().nonnegative()),
-    ])
-    .optional(),
-});
-
-export function registerMetasRoutes(
-  app: FastifyInstance,
+/**
+ * The `listMetas` and `metaDetail` handlers.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handlers.
+ */
+export function createMetasHandlers(
   deps: RouteDeps,
-): void {
-  app.get(getEndpoint('listMetas').path, async (request) => {
-    const query = metasQuerySchema.parse(request.query);
-    const { config, watcher } = deps;
-
-    const result = await listMetas(config, watcher);
-    let entries = result.entries;
-
-    // Apply filters
-    if (query.pathPrefix) {
-      entries = entries.filter((e) => e.path.includes(query.pathPrefix!));
-    }
-    if (query.hasError !== undefined) {
-      entries = entries.filter((e) => e.hasError === query.hasError);
-    }
-    if (query.neverSynthesized !== undefined) {
-      entries = entries.filter(
-        (e) => (e.lastSynthesized === null) === query.neverSynthesized,
-      );
-    }
-    if (query.locked !== undefined) {
-      entries = entries.filter((e) => e.locked === query.locked);
-    }
-    if (query.disabled !== undefined) {
-      entries = entries.filter((e) => e.disabled === query.disabled);
-    }
-    if (typeof query.staleHours === 'number') {
-      entries = entries.filter(
-        (e) => e.stalenessSeconds >= query.staleHours! * 3600,
-      );
-    }
-
-    // Summary (computed from filtered entries)
-    const summary = computeSummary(entries, config.depthWeight);
-
-    // Field projection
-    const fieldList = query.fields?.split(',');
-    const defaultFields = [
-      'path',
-      'depth',
-      'emphasis',
-      'stalenessSeconds',
-      'lastSynthesized',
-      'hasError',
-      'locked',
-      'disabled',
-      'architectTokens',
-      'builderTokens',
-      'criticTokens',
-      'phaseState',
-      'owedPhase',
-    ];
-    const projectedFields = fieldList ?? defaultFields;
-
-    const metas = entries.map((e) => {
-      const ps = derivePhaseState(e.meta);
-      const full: Record<string, unknown> = {
-        path: e.path,
-        depth: e.depth,
-        emphasis: e.emphasis,
-        stalenessSeconds:
-          e.stalenessSeconds === Infinity
-            ? null
-            : Math.round(e.stalenessSeconds),
-        lastSynthesized: e.lastSynthesized,
-        hasError: e.hasError,
-        locked: e.locked,
-        disabled: e.disabled,
-        architectTokens: e.architectTokens,
-        builderTokens: e.builderTokens,
-        criticTokens: e.criticTokens,
-        phaseState: ps,
-        owedPhase: getOwedPhase(ps),
-      };
-      const projected: Record<string, unknown> = {};
-      for (const f of projectedFields) {
-        if (f in full) projected[f] = full[f];
-      }
-      return projected;
-    });
-
-    return { summary, metas };
-  });
-
-  app.get<{ Params: { path: string } }>(
-    getEndpoint('metaDetail').path,
-    async (request, reply) => {
-      const query = metaDetailQuerySchema.parse(request.query);
+): Pick<MetaHandlers, 'listMetas' | 'metaDetail'> {
+  return {
+    listMetas: async ({ query }) => {
       const { config, watcher } = deps;
 
-      const targetPath = normalizePath(decodeURIComponent(request.params.path));
+      let result;
+      try {
+        result = await listMetas(config, watcher);
+      } catch {
+        throw new MetaWatcherUnavailable('list metas');
+      }
+      let entries = result.entries;
+
+      // Apply filters
+      const { pathPrefix, staleHours } = query;
+      if (pathPrefix) {
+        entries = entries.filter((e) => e.path.includes(pathPrefix));
+      }
+      if (query.hasError !== undefined) {
+        entries = entries.filter((e) => e.hasError === query.hasError);
+      }
+      if (query.neverSynthesized !== undefined) {
+        entries = entries.filter(
+          (e) => (e.lastSynthesized === null) === query.neverSynthesized,
+        );
+      }
+      if (query.locked !== undefined) {
+        entries = entries.filter((e) => e.locked === query.locked);
+      }
+      if (query.disabled !== undefined) {
+        entries = entries.filter((e) => e.disabled === query.disabled);
+      }
+      if (typeof staleHours === 'number') {
+        entries = entries.filter(
+          (e) => e.stalenessSeconds >= staleHours * 3600,
+        );
+      }
+
+      // Summary (computed from filtered entries)
+      const summary = computeSummary(entries, config.depthWeight);
+
+      // Field projection
+      const fieldList = query.fields?.split(',');
+      const defaultFields = [
+        'path',
+        'depth',
+        'emphasis',
+        'stalenessSeconds',
+        'lastSynthesized',
+        'hasError',
+        'locked',
+        'disabled',
+        'architectTokens',
+        'builderTokens',
+        'criticTokens',
+        'phaseState',
+        'owedPhase',
+      ];
+      const projectedFields = fieldList ?? defaultFields;
+
+      const metas = entries.map((e) => {
+        const ps = derivePhaseState(e.meta);
+        const full: Record<string, unknown> = {
+          path: e.path,
+          depth: e.depth,
+          emphasis: e.emphasis,
+          stalenessSeconds:
+            e.stalenessSeconds === Infinity
+              ? null
+              : Math.round(e.stalenessSeconds),
+          lastSynthesized: e.lastSynthesized,
+          hasError: e.hasError,
+          locked: e.locked,
+          disabled: e.disabled,
+          architectTokens: e.architectTokens,
+          builderTokens: e.builderTokens,
+          criticTokens: e.criticTokens,
+          phaseState: ps,
+          owedPhase: getOwedPhase(ps),
+        };
+        const projected: Record<string, unknown> = {};
+        for (const f of projectedFields) {
+          if (f in full) projected[f] = full[f];
+        }
+        return projected;
+      });
+
+      return { status: 200, body: { summary, metas } };
+    },
+
+    metaDetail: async ({ params, query }) => {
+      const { config, watcher } = deps;
+
+      // Fastify decodes :path once (Decision 202).
+      const targetPath = normalizePath(params.path);
       const result = await listMetas(config, watcher);
       const targetNode = findNode(result.tree, targetPath);
 
       if (!targetNode) {
-        return reply.status(404).send({
-          error: 'NOT_FOUND',
-          message: 'Meta path not found: ' + targetPath,
-        });
+        throw new MetaNotFound(capArg(targetPath));
       }
 
       const meta = JSON.parse(
@@ -268,7 +247,10 @@ export function registerMetasRoutes(
         }
       }
 
-      return response;
+      return {
+        status: 200,
+        body: response as MetaResponse<'metaDetail'>,
+      };
     },
-  );
+  };
 }

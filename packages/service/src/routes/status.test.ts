@@ -4,15 +4,14 @@
  * @module routes/status.test
  */
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { MetaCache } from '../cache.js';
 import type { MetaEntry, MetaListResult } from '../discovery/listMetas.js';
 import { SynthesisQueue } from '../queue/index.js';
-import { makeTestDeps, makeTestLogger } from './__testUtils.js';
+import { createTestApp, makeTestDeps, makeTestLogger } from './__testUtils.js';
 import type { RouteDeps } from './index.js';
-import { registerStatusRoute } from './status.js';
 
 /** Custom stats used by status tests. */
 const TEST_STATS: RouteDeps['stats'] = {
@@ -59,8 +58,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -78,8 +76,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -97,8 +94,7 @@ describe('GET /status', () => {
     queue.enqueue('/meta/b');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -114,8 +110,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -133,8 +128,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -150,8 +144,7 @@ describe('GET /status', () => {
     queue.setCurrentPhase('/meta/active', 'builder');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -166,8 +159,7 @@ describe('GET /status', () => {
       queue: new SynthesisQueue(makeTestLogger()),
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -181,8 +173,7 @@ describe('GET /status', () => {
     queue.setCurrentPhase('/meta/active', 'builder');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -196,8 +187,7 @@ describe('GET /status', () => {
     queue.enqueue('/meta/pending');
 
     const deps = makeTestDeps({ queue, stats: TEST_STATS });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -211,8 +201,7 @@ describe('GET /status', () => {
       shuttingDown: true,
       stats: TEST_STATS,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -255,7 +244,7 @@ describe('GET /status', () => {
       },
     ] as MetaEntry[];
 
-    vi.spyOn(cache, 'get').mockResolvedValue({
+    vi.spyOn(cache, 'peek').mockResolvedValue({
       entries,
       summary: {
         total: 2,
@@ -277,8 +266,7 @@ describe('GET /status', () => {
       stats: TEST_STATS,
       cache,
     });
-    app = Fastify();
-    registerStatusRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/status' });
@@ -295,5 +283,67 @@ describe('GET /status', () => {
       errors: 1,
       locked: 0,
     });
+  });
+});
+
+describe('GET /status meta list', () => {
+  it('answers from the cached list without waiting on a refresh', async () => {
+    const cache = new MetaCache();
+    // A blocking read would fail; the health check must not use it.
+    const get = vi
+      .spyOn(cache, 'get')
+      .mockRejectedValue(new Error('refresh in flight'));
+    vi.spyOn(cache, 'peek').mockResolvedValue({
+      entries: [],
+      tree: {},
+    } as unknown as MetaListResult);
+    const app = createTestApp(makeTestDeps({ cache }));
+    try {
+      const res = await app.inject({ method: 'GET', url: '/status' });
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ health: { metaCounts: unknown } }>();
+      expect(body.health.metaCounts).toMatchObject({ total: 0 });
+      expect(get).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+});
+
+describe('GET /status while starting', () => {
+  it("answers 200 with serviceState 'starting' and no meta list", async () => {
+    const cache = new MetaCache();
+    const peek = vi.spyOn(cache, 'peek');
+    const app = createTestApp(makeTestDeps({ cache, ready: false }));
+    try {
+      const res = await app.inject({ method: 'GET', url: '/status' });
+      expect(res.statusCode).toBe(200);
+      const { health } = res.json<{
+        health: {
+          serviceState: string;
+          metaCounts: unknown;
+          nextPhase: unknown;
+          dependencies: unknown;
+        };
+      }>();
+      expect(health.serviceState).toBe('starting');
+      expect(health.metaCounts).toBeNull();
+      expect(health.nextPhase).toBeNull();
+      expect(health.dependencies).toHaveProperty('watcher');
+      expect(peek).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('still refuses other routes with META_NOT_READY', async () => {
+    const app = createTestApp(makeTestDeps({ ready: false }));
+    try {
+      const res = await app.inject({ method: 'GET', url: '/metas' });
+      expect(res.statusCode).toBe(503);
+      expect(res.json()).toMatchObject({ code: 'META_NOT_READY' });
+    } finally {
+      await app.close();
+    }
   });
 });

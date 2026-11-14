@@ -4,21 +4,22 @@
  * Delegates the read/merge/validate/write cycle to the core SDK's
  * `createConfigApplyHandler` (bound to the runtime config path), which
  * merges into the raw file, validates without writing the schema's parsed
- * output, and keeps the file mode (0600 for a new file). This route adds
- * request validation, `restartRequired` reporting, and keeps the resolved
- * config (which may hold secrets) out of the response.
+ * output, and keeps the file mode (0600 for a new file). The catalog
+ * validates the request; this handler adds `restartRequired` reporting and
+ * keeps the resolved config (which may hold secrets) out of the response.
  *
  * @module routes/configApply
  */
 
 import { readFileSync } from 'node:fs';
 
-import type { ConfigApplyHandler } from '@karmaniverous/jeeves';
-import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
-import type { FastifyInstance } from 'fastify';
+import type { HandlerErrorBody } from '@karmaniverous/jeeves/fastify';
 
+import { MetaConfigUnavailable } from '../api/errors.js';
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import { RESTART_REQUIRED_FIELDS } from '../configHotReload.js';
 import { serviceConfigSchema } from '../schema/config.js';
+import type { RouteDeps } from './index.js';
 
 /** Core handler success/warning body shape. */
 interface AppliedBody {
@@ -49,73 +50,44 @@ function readEffectiveConfig(configPath: string): Record<string, unknown> {
 }
 
 /**
- * Register the POST /config/apply route.
+ * The `configApply` handler.
  *
- * @param app - Fastify instance.
- * @param applyConfig - Core config apply handler bound to the runtime path.
- * @param configPath - Runtime config file path (for restart detection).
+ * @param deps - Route dependencies (`configApply` and `configPath`).
+ * @returns The handler.
  */
-export function registerConfigApplyRoute(
-  app: FastifyInstance,
-  applyConfig?: ConfigApplyHandler,
-  configPath?: string,
-): void {
-  app.post(getEndpoint('configApply').path, async (request, reply) => {
-    if (!applyConfig || !configPath) {
-      return reply
-        .status(500)
-        .send({ error: 'No runtime config path available' });
-    }
+export function createConfigApplyHandlers(
+  deps: Pick<RouteDeps, 'configApply' | 'configPath'>,
+): Pick<MetaHandlers, 'configApply'> {
+  return {
+    configApply: async ({ body: { patch, replace } }) => {
+      const { configApply: applyConfig, configPath } = deps;
+      if (!applyConfig || !configPath) throw new MetaConfigUnavailable();
 
-    const body = request.body as Record<string, unknown> | null | undefined;
-    if (!body || typeof body !== 'object' || Array.isArray(body)) {
-      return reply
-        .status(400)
-        .send({ error: 'Request body must be a JSON object' });
-    }
+      const previous = readEffectiveConfig(configPath);
+      const result = await applyConfig({ patch, replace });
+      // jeeves' own failures (invalid merged config 400, write error 500)
+      // pass through with its standard body.
+      if (result.status !== 200)
+        return {
+          status: result.status as 400 | 500,
+          body: result.body as HandlerErrorBody,
+        };
 
-    const { patch, replace } = body as { patch: unknown; replace?: unknown };
+      // Never echo the resolved config: it may hold secrets (gatewayApiKey).
+      const { config: next = {}, warning } = result.body as AppliedBody;
+      const restartRequired = RESTART_REQUIRED_FIELDS.some(
+        (field) =>
+          JSON.stringify(previous[field]) !== JSON.stringify(next[field]),
+      );
 
-    if (
-      patch === null ||
-      patch === undefined ||
-      typeof patch !== 'object' ||
-      Array.isArray(patch)
-    ) {
-      return reply
-        .status(400)
-        .send({ error: '`patch` must be a non-null object' });
-    }
-
-    if (replace !== undefined && typeof replace !== 'boolean') {
-      return reply
-        .status(400)
-        .send({ error: '`replace` must be a boolean if provided' });
-    }
-
-    const previous = readEffectiveConfig(configPath);
-
-    const result = await applyConfig({
-      patch: patch as Record<string, unknown>,
-      replace,
-    });
-
-    if (result.status !== 200) {
-      return reply.status(result.status).send(result.body);
-    }
-
-    // Never echo the resolved config: it may hold secrets (gatewayApiKey).
-    const { config: next = {}, warning } = result.body as AppliedBody;
-
-    const restartRequired = RESTART_REQUIRED_FIELDS.some(
-      (field) =>
-        JSON.stringify(previous[field]) !== JSON.stringify(next[field]),
-    );
-
-    return reply.status(200).send({
-      applied: true,
-      ...(warning ? { warning } : {}),
-      restartRequired,
-    });
-  });
+      return {
+        status: 200,
+        body: {
+          applied: true,
+          ...(warning ? { warning } : {}),
+          restartRequired,
+        },
+      };
+    },
+  };
 }

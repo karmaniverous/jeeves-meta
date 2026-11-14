@@ -5,7 +5,8 @@
     "checkJs": true,
     "incremental": true,
     "paths": {
-      "@karmaniverous/jeeves-meta-core": ["../core/src/index.ts"]
+      "@karmaniverous/jeeves-meta-core": ["../core/src/index.ts"],
+      "@karmaniverous/jeeves-meta-sdk": ["../sdk/src/index.ts"]
     },
     "tsBuildInfoFile": "./.tsbuildinfo",
     "types": ["node", "vitest/globals"]

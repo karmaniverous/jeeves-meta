@@ -122,11 +122,14 @@ describe('register', () => {
       const params = { action: 'list', path: 'x', config: {}, updates: {} };
       for (const [name, tool] of tools) {
         if (name === 'meta_service') continue;
+        // The SDK validates replies, so the marker body may be refused: a
+        // request reaching fetch is what proves the tool ran ungated.
+        const before = fetchStub.mock.calls.length;
         const text = JSON.stringify(await tool.execute('id', params));
         expect({
           name,
           gated: text.includes('configRoot not configured'),
-          reachedService: text.includes('from-service'),
+          reachedService: fetchStub.mock.calls.length === before + 1,
         }).toEqual({ name, gated: false, reachedService: true });
       }
       expect(fetchStub).toHaveBeenCalledTimes(tools.size - 1);

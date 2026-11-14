@@ -1,0 +1,101 @@
+{
+  "name": "@karmaniverous/jeeves-meta-sdk",
+  "version": "0.1.0-0",
+  "author": "Jason Williscroft",
+  "description": "Typed TypeScript client for the jeeves-meta HTTP API (metas, synthesis, queue, preview, seed, unlock, status and config), built from jeeves-meta's endpoint catalog.",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "types": "dist/index.d.ts",
+  "keywords": [
+    "jeeves-meta",
+    "sdk",
+    "client",
+    "synthesis"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/karmaniverous/jeeves-meta.git",
+    "directory": "packages/sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/karmaniverous/jeeves-meta/issues"
+  },
+  "homepage": "https://github.com/karmaniverous/jeeves-meta#readme",
+  "engines": {
+    "node": ">=24.22.2"
+  },
+  "dependencies": {
+    "@karmaniverous/jeeves": "0.11.0",
+    "@karmaniverous/jeeves-meta-core": "^0.4.0-0"
+  },
+  "devDependencies": {
+    "@dotenvx/dotenvx": "^2.38.2",
+    "@rollup/plugin-typescript": "^12.3.1",
+    "cross-env": "^10.1.0",
+    "release-it": "^21.1.2",
+    "rollup": "^4.68.3",
+    "tslib": "^2.9.1",
+    "vitest": "^5.1.0"
+  },
+  "scripts": {
+    "build": "rimraf dist && cross-env NO_COLOR=1 rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "changelog": "git-cliff -o CHANGELOG.md",
+    "knip": "knip",
+    "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "release": "dotenvx run -f .env.local -- release-it",
+    "release:pre": "dotenvx run -f .env.local -- release-it --no-git.requireBranch --github.preRelease --preRelease",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "release-it": {
+    "git": {
+      "changelog": "npx git-cliff --unreleased --strip header",
+      "commitMessage": "chore: release @karmaniverous/jeeves-meta-sdk v${version}",
+      "tagName": "sdk/${version}",
+      "requireBranch": "main"
+    },
+    "github": {
+      "release": true,
+      "releaseName": "${name.split('/').pop()}@${version}",
+      "releaseNotes": "npx git-cliff --tag sdk/${version} --unreleased --strip header"
+    },
+    "hooks": {
+      "after:init": [
+        "npm run lint",
+        "npm run typecheck",
+        "npm run test",
+        "npm run build"
+      ],
+      "after:bump": [
+        "npm install --package-lock-only --ignore-scripts"
+      ],
+      "before:npm:release": [
+        "npx git-cliff --tag sdk/${version} -o CHANGELOG.md",
+        "git add -A"
+      ],
+      "after:release": [
+        "git switch -c release/sdk/${version}",
+        "git push -u origin release/sdk/${version}",
+        "git switch ${branchName}"
+      ]
+    },
+    "npm": {
+      "publish": true
+    }
+  }
+}

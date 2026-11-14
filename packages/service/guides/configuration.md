@@ -65,7 +65,7 @@ All config fields hot-reload without a service restart **except** these restart-
 - `gatewayUrl` — OpenClaw gateway URL
 - `gatewayApiKey` — gateway authentication key
 
-When a restart-required field changes, the service logs a warning but the change does not take effect until restart. All other fields (including `schedule`, `reportChannel`, `autoSeed`, timeouts, `metaProperty`, `logging.level`, etc.) are applied immediately on config file save.
+When a restart-required field changes, the service logs a warning but the change does not take effect until restart. All other fields (including `schedule`, `reportChannel`, `autoSeed`, `metaProperty`, `logging.level`, etc.) are applied immediately on config file save.
 
 ## Environment Variables
 

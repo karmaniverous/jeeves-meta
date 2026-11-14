@@ -19,7 +19,6 @@ import { z } from 'zod';
 
 import { createConfigRootGate, warnIfConfigRootMissing } from './configRoot.js';
 import { getServiceUrl } from './helpers.js';
-import { MetaServiceClient } from './serviceClient.js';
 import { registerMetaTools } from './tools.js';
 
 export { type PluginConfig, pluginConfigSchema } from './pluginConfigSchema.js';
@@ -59,9 +58,9 @@ function buildDescriptor(): JeevesComponentDescriptor {
  * lazily when a tool that needs it runs.
  */
 export default function register(api: PluginApi): void {
-  const client = new MetaServiceClient({ apiUrl: getServiceUrl(api) });
+  const baseUrl = getServiceUrl(api).replace(/\/$/, '');
 
   warnIfConfigRootMissing(api);
 
-  registerMetaTools(api, client, buildDescriptor(), createConfigRootGate(api));
+  registerMetaTools(api, baseUrl, buildDescriptor(), createConfigRootGate(api));
 }

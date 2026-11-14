@@ -10,6 +10,7 @@ import type { Logger } from 'pino';
 
 import type { MetaCache } from '../cache.js';
 import { getScopeFiles } from '../discovery/scope.js';
+import type { WatcherClient } from '../interfaces/index.js';
 import { acquireLock, releaseLock } from '../lock.js';
 import { persistPhaseState } from '../orchestrator/runPhase.js';
 import {
@@ -26,7 +27,7 @@ import { readMetaJson } from '../readMetaJson.js';
 import type { RuleRegistrar } from '../rules/index.js';
 import type { ServiceConfig } from '../schema/config.js';
 import { autoSeedPass } from '../seed/index.js';
-import type { HttpWatcherClient } from '../watcher-client/index.js';
+import { probeWatcher } from '../watcher-client/index.js';
 
 const MAX_BACKOFF_MULTIPLIER = 4;
 
@@ -51,7 +52,7 @@ export class Scheduler {
   private readonly config: ServiceConfig;
   private readonly queue: SynthesisQueue;
   private readonly logger: Logger;
-  private readonly watcher: HttpWatcherClient;
+  private readonly watcher: WatcherClient;
   private readonly cache: MetaCache;
   private registrar: RuleRegistrar | null = null;
   private currentExpression: string;
@@ -60,7 +61,7 @@ export class Scheduler {
     config: ServiceConfig,
     queue: SynthesisQueue,
     logger: Logger,
-    watcher: HttpWatcherClient,
+    watcher: WatcherClient,
     cache: MetaCache,
   ) {
     this.config = config;
@@ -195,21 +196,13 @@ export class Scheduler {
 
     // Opportunistic watcher restart detection
     if (this.registrar) {
-      try {
-        const statusRes = await fetch(
-          new URL('/status', this.config.watcherUrl),
-          {
-            signal: AbortSignal.timeout(3000),
-          },
-        );
-        if (statusRes.ok) {
-          const status = (await statusRes.json()) as { uptime?: number };
-          if (typeof status.uptime === 'number') {
-            await this.registrar.checkAndReregister(status.uptime);
-          }
+      const probe = await probeWatcher(this.config.watcherUrl, 3000);
+      if (probe.uptime !== undefined) {
+        try {
+          await this.registrar.checkAndReregister(probe.uptime);
+        } catch {
+          // Re-registration failed; the health check retries.
         }
-      } catch {
-        // Watcher unreachable — skip uptime check
       }
     }
   }

@@ -1,6 +1,6 @@
 # @karmaniverous/jeeves-meta-core
 
-Shared types, schemas, endpoint descriptors, and utilities for the jeeves-meta monorepo. This package is the single source of truth for API contracts consumed by both the [service](../service/) and the [OpenClaw plugin](../openclaw/).
+Shared types, schemas, the endpoint catalog and utilities for the jeeves-meta monorepo. This package is the single source of truth for the API contract: the [service](../service/) registers its routes from it, and the [SDK](../sdk/) and [OpenClaw plugin](../openclaw/) call them through it.
 
 ## Install
 
@@ -16,13 +16,24 @@ npm install @karmaniverous/jeeves-meta-core
 
 ### Endpoint Catalog
 
-- **`META_ENDPOINTS`** — 13 endpoint descriptors (name, method, path, description)
-- **`getEndpoint(name)`** — look up an endpoint by name
-- Types: `HttpMethod`, `EndpointDescriptor`, `EndpointName`, `Endpoint<N>`
+- **`META_CATALOG`** — the 13 endpoints as jeeves catalog entries: name, method, path, description, auth (`none`), kind, and Zod request (params, query, body) and response schemas
+- Types: `MetaCatalog`, `MetaEntryName`, `MetaEntry<N>`, `MetaInput<N>`, `MetaResponse<N>`, `MetaHealth`
+- Request schemas (`metasQuerySchema`, `metaDetailQuerySchema`, `updateBodySchema`, `seedBodySchema`, `synthesizeBodySchema`, `unlockBodySchema`, `previewQuerySchema`), response schemas (`metasResponseSchema`, `metaDetailResponseSchema`, ...) and `metaHealthSchema` (the `health` block of `GET /status`)
+- **`META_OPENAPI_DOCUMENT`** — the OpenAPI 3.1 document generated from the catalog; also the `@karmaniverous/jeeves-meta-core/openapi.json` sub-path
+
+### Error Codes
+
+- **`META_ERROR_CODES`** — every `META_*` code an error response can carry; type `MetaErrorCode`
+- **`META_ERROR_STATUS`** — the HTTP status of each code
+- Error responses are Fastify's standard body `{ statusCode, code?, error, message }`; see the [service README](../service/README.md#errors)
+
+### Deprecated
+
+- **`META_ENDPOINTS`**, **`getEndpoint(name)`** and types `HttpMethod`, `EndpointDescriptor`, `EndpointName`, `Endpoint<N>` — the name, method, path and description of each catalog entry. Use `META_CATALOG.entries`.
 
 ### Configuration Schema
 
-- **`metaConfigSchema`** — Zod schema for core config fields (watcherUrl, gatewayUrl, timeouts, etc.)
+- **`metaConfigSchema`** — Zod schema for core config fields (watcherUrl, gatewayUrl, schedule, etc.)
 - Type: `MetaConfig`
 
 ### Phase Vocabulary
@@ -32,9 +43,9 @@ npm install @karmaniverous/jeeves-meta-core
 - **`phaseStateSchema`** / **`phaseStatusSchema`** — Zod schemas
 - Types: `PhaseName`, `PhaseStatus`, `PhaseState`
 
-### Error Schema
+### Synthesis Error Schema
 
-- **`metaErrorSchema`** — Zod schema for `{ step, code, message }`
+- **`metaErrorSchema`** — Zod schema for the `_error` a failed phase writes to `meta.json`: `{ step, code, message }`
 - Type: `MetaError`
 
 ### HTTP Response Contracts
@@ -51,7 +62,7 @@ npm install @karmaniverous/jeeves-meta-core
 
 ## Requirements
 
-- Node.js >= 22
+- Node.js >= 24.22.2
 - ESM only
 
 ## License

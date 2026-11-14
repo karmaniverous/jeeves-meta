@@ -1,0 +1,60 @@
+# git-cliff config for @karmaniverous/jeeves-meta-sdk
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+header = """
+# Changelog
+
+All notable changes to this project will be documented in this file.\n
+"""
+body = """
+{% if version %}\
+    ## [{{ version | trim_start_matches(pat="sdk/") }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+{% else %}\
+    ## [unreleased]
+{% endif %}\
+{% for group, commits in commits | group_by(attribute="group") %}
+    ### {{ group | striptags | trim | upper_first }}
+    {% for commit in commits %}
+        - {% if commit.scope %}*({{ commit.scope }})* {% endif %}\
+            {% if commit.breaking %}[**breaking**] {% endif %}\
+            {{ commit.message | upper_first }}\
+            {% if commit.remote.pr_number %} \
+                ([#{{ commit.remote.pr_number }}](https://github.com/karmaniverous/jeeves-meta/pull/{{ commit.remote.pr_number }}))\
+            {% endif %}\
+            {% if commit.breaking and commit.breaking_description and commit.breaking_description != commit.message %}
+
+{{ commit.breaking_description }}
+
+            {% endif %}\
+    {% endfor %}
+{% endfor %}
+"""
+trim = true
+render_always = true
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+commit_parsers = [
+    { message = "^Merge pull request", skip = true },
+    { message = "^Merge branch", skip = true },
+    { message = "^feat", group = "<!-- 0 -->≡ƒÜÇ Features" },
+    { message = "^fix", group = "<!-- 1 -->≡ƒÉ¢ Bug Fixes" },
+    { message = "^doc", group = "<!-- 3 -->≡ƒôÜ Documentation" },
+    { message = "^perf", group = "<!-- 4 -->ΓÜí Performance" },
+    { message = "^refactor", group = "<!-- 2 -->≡ƒÜ£ Refactor" },
+    { message = "^style", group = "<!-- 5 -->≡ƒÄ¿ Styling" },
+    { message = "^test", group = "<!-- 6 -->≡ƒº¬ Testing" },
+    { message = "^chore\\(release\\)", skip = true },
+    { message = "^chore\\(deps.*\\)", skip = true },
+    { message = "^chore|^ci", group = "<!-- 7 -->ΓÜÖ∩╕Å Miscellaneous Tasks" },
+    { message = "^revert", group = "<!-- 9 -->ΓùÇ∩╕Å Revert" },
+    { message = ".*", group = "<!-- 10 -->≡ƒÆ╝ Other" },
+]
+filter_commits = false
+tag_pattern = "sdk/[0-9].*"
+sort_commits = "oldest"
+topo_order_commits = true
+include_paths = ["packages/sdk/**"]

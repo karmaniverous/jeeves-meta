@@ -10,13 +10,15 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import type { Logger } from 'pino';
+import type { FastifyInstance } from 'fastify';
+import { type Logger, pino } from 'pino';
 import { vi } from 'vitest';
 
 import { MetaCache } from '../cache.js';
 import type { WatcherClient } from '../interfaces/index.js';
 import { SynthesisQueue } from '../queue/index.js';
 import { DEFAULT_TEMPLATE_STRINGS } from '../schema/config.js';
+import { createServer } from '../server.js';
 import type { RouteDeps, ServiceStats } from './index.js';
 
 /** Default service config for tests. */
@@ -139,4 +141,15 @@ export function createTestMeta(
     }),
   );
   return join(metaDir, 'meta.json');
+}
+
+/**
+ * The full server (all catalog routes, error handlers, readiness gate)
+ * over the given dependencies, with a silent logger.
+ *
+ * @param deps - Route dependencies.
+ * @returns The Fastify app (not listening).
+ */
+export function createTestApp(deps: RouteDeps): FastifyInstance {
+  return createServer({ logger: pino({ level: 'silent' }), deps });
 }

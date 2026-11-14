@@ -8,16 +8,16 @@ import { rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  createTestApp,
   createTestMeta,
   makeFailingTestWatcher,
   makeTestDeps,
   makeTestWatcher,
 } from './__testUtils.js';
-import { registerPreviewRoute } from './preview.js';
 
 const previewRoot = join(
   tmpdir(),
@@ -47,8 +47,7 @@ describe('GET /preview', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/preview' });
@@ -70,8 +69,7 @@ describe('GET /preview', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const metaDir = join(owner, '.meta');
@@ -90,15 +88,14 @@ describe('GET /preview', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/preview' });
     expect(res.statusCode).toBe(503);
-    const body = res.json<{ error: string }>();
+    const body = res.json<{ code: string }>();
 
-    expect(body.error).toBe('SERVICE_UNAVAILABLE');
+    expect(body.code).toBe('META_WATCHER_UNAVAILABLE');
   });
 
   it('response includes architectWillRun, scope, staleness, estimatedTokens', async () => {
@@ -115,8 +112,7 @@ describe('GET /preview', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/preview' });
@@ -146,8 +142,7 @@ describe('GET /preview', () => {
     });
     const watcher = makeTestWatcher([metaJsonPath]);
     const deps = makeTestDeps({ watcher });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({
@@ -155,8 +150,8 @@ describe('GET /preview', () => {
       url: `/preview?path=${encodeURIComponent('j:/does/not/exist/.meta')}`,
     });
     expect(res.statusCode).toBe(404);
-    const body = res.json<{ error: string }>();
-    expect(body.error).toBe('NOT_FOUND');
+    const body = res.json<{ code: string }>();
+    expect(body.code).toBe('META_NOT_FOUND');
   });
 
   it('deltaFilesTruncated is true when delta files exceed previewDeltaFilesCap', async () => {
@@ -195,8 +190,7 @@ describe('GET /preview', () => {
       watcher: customWatcher,
       config: { previewDeltaFilesCap: 2 },
     });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const metaDir = join(owner, '.meta');
@@ -224,8 +218,7 @@ describe('GET /preview', () => {
       watcher,
       config: { previewDeltaFilesCap: 100 },
     });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const metaDir = join(owner, '.meta');
@@ -251,8 +244,7 @@ describe('GET /preview', () => {
     const deps = makeTestDeps({
       watcher: watcher,
     });
-    app = Fastify();
-    registerPreviewRoute(app, deps);
+    app = createTestApp(deps);
     await app.ready();
 
     const res = await app.inject({ method: 'GET', url: '/preview' });

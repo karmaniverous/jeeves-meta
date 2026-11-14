@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.0-0] - 2026-11-13
+
+### 🚀 Features
+
+- *(openclaw)* Custom tools on the SDK (T10)
+
+### 💼 Other
+
+- Updated dependencies
+- Updated core
+- Updated sdk dependency
+
+### 📚 Documentation
+
+- [**breaking**] Catalog, SDK, error codes and migration guide (T11)
+
+### 🧪 Testing
+
+- T12 review fixes
+
+### ⚙️ Miscellaneous Tasks
+
+- Adopt @karmaniverous/jeeves 0.8.0
+- *(skills)* Trim jeeves-meta skill description to 160 chars or less
+- [**breaking**] Jeeves 0.11.0 and Node >=24.22.2 (T2)
 ## [0.16.0] - 2026-10-14
 
 ### 🚀 Features
@@ -20,6 +45,7 @@ All notable changes to this project will be documented in this file.
 
 - Update @karmaniverous/jeeves to 0.7.0 and dependencies
 - Tag-aware changelog and release notes, <package>@<version> release names (#224, #225)
+- Release @karmaniverous/jeeves-meta-openclaw v0.16.0
 ## [0.15.0] - 2026-09-29
 
 ### 🐛 Bug Fixes

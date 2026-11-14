@@ -8,11 +8,10 @@ import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { makeTestDeps } from './__testUtils.js';
-import { registerSeedRoute } from './seed.js';
+import { createTestApp, makeTestDeps } from './__testUtils.js';
 
 const testRoot = join(tmpdir(), `jeeves-meta-seed-${Date.now().toString()}`);
 
@@ -21,8 +20,7 @@ describe('POST /seed', () => {
   let ownerDir: string;
 
   beforeEach(async () => {
-    app = Fastify();
-    registerSeedRoute(app, makeTestDeps({ config: { depthWeight: 1 } }));
+    app = createTestApp(makeTestDeps({ config: { depthWeight: 1 } }));
     await app.ready();
     ownerDir = join(testRoot, `owner-${Date.now().toString()}`);
   });

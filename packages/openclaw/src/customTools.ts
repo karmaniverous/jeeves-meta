@@ -2,27 +2,30 @@
  * Custom domain-specific tool descriptors for the meta plugin.
  *
  * These tools supplement the standard factory-produced tools
- * (meta_status, meta_config, meta_config_apply, meta_service).
+ * (meta_status, meta_config, meta_config_apply, meta_service). Each calls
+ * its catalog entry through the SDK (Decision 187); descriptions come from
+ * `META_CATALOG`; input schemas stay hand-written (Decision 188).
  *
  * @module customTools
  */
 
+import { ok, type ToolDescriptor } from '@karmaniverous/jeeves';
 import {
-  connectionFail,
-  ok,
-  type ToolDescriptor,
-  type ToolResult,
-} from '@karmaniverous/jeeves';
-import { getEndpoint } from '@karmaniverous/jeeves-meta-core';
+  createMetaClient,
+  type MetaClient,
+} from '@karmaniverous/jeeves-meta-sdk';
 
-import { PLUGIN_ID } from './constants.js';
-import type { MetaServiceClient } from './serviceClient.js';
+import { entryDescription, flag, list, str, wrap } from './toolHelpers.js';
+import {
+  buildMetaSeedTool,
+  buildMetaTriggerTool,
+  buildMetaUnlockTool,
+  buildMetaUpdateTool,
+} from './writeTools.js';
 
 /** Build the array of custom domain-specific tool descriptors. */
-export function buildCustomTools(
-  client: MetaServiceClient,
-  baseUrl: string,
-): ToolDescriptor[] {
+export function buildCustomTools(baseUrl: string): ToolDescriptor[] {
+  const client = createMetaClient({ baseUrl });
   return [
     buildMetaListTool(client, baseUrl),
     buildMetaDetailTool(client, baseUrl),
@@ -35,23 +38,13 @@ export function buildCustomTools(
   ];
 }
 
-/** Wrap tool execution with connection error handling. */
-function wrap(
-  baseUrl: string,
-  fn: () => Promise<unknown>,
-): Promise<ToolResult> {
-  return fn()
-    .then(ok)
-    .catch((error: unknown) => connectionFail(error, baseUrl, PLUGIN_ID));
-}
-
 function buildMetaListTool(
-  client: MetaServiceClient,
+  client: MetaClient,
   baseUrl: string,
 ): ToolDescriptor {
   return {
     name: 'meta_list',
-    description: getEndpoint('listMetas').description,
+    description: entryDescription('listMetas'),
     parameters: {
       type: 'object',
       properties: {
@@ -82,13 +75,13 @@ function buildMetaListTool(
       const filter = params.filter as Record<string, unknown> | undefined;
       return wrap(baseUrl, () =>
         client.listMetas({
-          pathPrefix: params.pathPrefix as string | undefined,
-          hasError: filter?.hasError as boolean | undefined,
-          staleHours: filter?.staleHours as number | undefined,
-          neverSynthesized: filter?.neverSynthesized as boolean | undefined,
-          locked: filter?.locked as boolean | undefined,
-          disabled: filter?.disabled as boolean | undefined,
-          fields: params.fields as string[] | undefined,
+          pathPrefix: (params.pathPrefix as string | undefined) || undefined,
+          hasError: flag(filter?.hasError),
+          staleHours: str(filter?.staleHours),
+          neverSynthesized: flag(filter?.neverSynthesized),
+          locked: flag(filter?.locked),
+          disabled: flag(filter?.disabled),
+          fields: list(params.fields),
         }),
       );
     },
@@ -96,12 +89,12 @@ function buildMetaListTool(
 }
 
 function buildMetaDetailTool(
-  client: MetaServiceClient,
+  client: MetaClient,
   baseUrl: string,
 ): ToolDescriptor {
   return {
     name: 'meta_detail',
-    description: getEndpoint('metaDetail').description,
+    description: entryDescription('metaDetail'),
     parameters: {
       type: 'object',
       properties: {
@@ -124,21 +117,22 @@ function buildMetaDetailTool(
     },
     execute: async (_id: string, params: Record<string, unknown>) =>
       wrap(baseUrl, () =>
-        client.detail(params.path as string, {
-          includeArchive: params.includeArchive as boolean | number | undefined,
-          fields: params.fields as string[] | undefined,
+        client.metaDetail({
+          path: params.path as string,
+          includeArchive: str(params.includeArchive),
+          fields: list(params.fields),
         }),
       ),
   };
 }
 
 function buildMetaPreviewTool(
-  client: MetaServiceClient,
+  client: MetaClient,
   baseUrl: string,
 ): ToolDescriptor {
   return {
     name: 'meta_preview',
-    description: getEndpoint('preview').description,
+    description: entryDescription('preview'),
     parameters: {
       type: 'object',
       properties: {
@@ -150,112 +144,19 @@ function buildMetaPreviewTool(
       },
     },
     execute: async (_id: string, params: Record<string, unknown>) =>
-      wrap(baseUrl, () => client.preview(params.path as string | undefined)),
-  };
-}
-
-function buildMetaTriggerTool(
-  client: MetaServiceClient,
-  baseUrl: string,
-): ToolDescriptor {
-  return {
-    name: 'meta_trigger',
-    description: getEndpoint('synthesize').description,
-    parameters: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'Optional: specific .meta/ or owner path to synthesize.',
-        },
-      },
-    },
-    execute: async (_id: string, params: Record<string, unknown>) =>
-      wrap(baseUrl, () => client.synthesize(params.path as string | undefined)),
-  };
-}
-
-function buildMetaSeedTool(
-  client: MetaServiceClient,
-  baseUrl: string,
-): ToolDescriptor {
-  return {
-    name: 'meta_seed',
-    description: getEndpoint('seed').description,
-    parameters: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description:
-            'Owner directory path to seed with .meta/ and meta.json.',
-        },
-        crossRefs: {
-          type: 'string',
-          description:
-            'JSON array of cross-ref owner paths (e.g. \'["<drive label>:/path/a","<drive label>:/path/b"]\'). Use server_drives to discover available drive labels.',
-        },
-        steer: {
-          type: 'string',
-          description:
-            'Steering prompt written as _steer in the initial meta.json.',
-        },
-      },
-      required: ['path'],
-    },
-    execute: async (_id: string, params: Record<string, unknown>) => {
-      let crossRefs: string[] | undefined;
-      if (typeof params.crossRefs === 'string' && params.crossRefs) {
-        try {
-          crossRefs = JSON.parse(params.crossRefs) as string[];
-        } catch (e) {
-          const message = e instanceof Error ? e.message : String(e);
-          return ok({
-            error: 'Invalid JSON in crossRefs parameter.',
-            details: message,
-          });
-        }
-      }
-      const steer =
-        typeof params.steer === 'string' && params.steer
-          ? params.steer
-          : undefined;
-      return wrap(baseUrl, () =>
-        client.seed(params.path as string, crossRefs, steer),
-      );
-    },
-  };
-}
-
-function buildMetaUnlockTool(
-  client: MetaServiceClient,
-  baseUrl: string,
-): ToolDescriptor {
-  return {
-    name: 'meta_unlock',
-    description: getEndpoint('unlock').description,
-    parameters: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'Path to the .meta/ directory or owner directory.',
-        },
-      },
-      required: ['path'],
-    },
-    execute: async (_id: string, params: Record<string, unknown>) =>
-      wrap(baseUrl, () => client.unlock(params.path as string)),
+      wrap(baseUrl, () =>
+        client.preview(params.path ? { path: params.path as string } : {}),
+      ),
   };
 }
 
 function buildMetaQueueTool(
-  client: MetaServiceClient,
+  client: MetaClient,
   baseUrl: string,
 ): ToolDescriptor {
   return {
     name: 'meta_queue',
-    description: `Queue management. list: ${getEndpoint('queue').description} clear: ${getEndpoint('queueClear').description} abort: ${getEndpoint('abort').description}`,
+    description: `Queue management. list: ${entryDescription('queue')} clear: ${entryDescription('queueClear')} abort: ${entryDescription('abort')}`,
     parameters: {
       type: 'object',
       properties: {
@@ -274,56 +175,12 @@ function buildMetaQueueTool(
         case 'list':
           return wrap(baseUrl, () => client.queue());
         case 'clear':
-          return wrap(baseUrl, () => client.clearQueue());
+          return wrap(baseUrl, () => client.queueClear());
         case 'abort':
           return wrap(baseUrl, () => client.abort());
         default:
           return ok({ error: `Unknown action: ${action}` });
       }
     },
-  };
-}
-
-function buildMetaUpdateTool(
-  client: MetaServiceClient,
-  baseUrl: string,
-): ToolDescriptor {
-  return {
-    name: 'meta_update',
-    description: getEndpoint('updateMeta').description,
-    parameters: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'Path to the .meta/ directory or owner directory.',
-        },
-        updates: {
-          type: 'object',
-          description:
-            'Properties to set. Supported: _steer, _emphasis, _depth, _crossRefs, _disabled. Set to null to remove.',
-          properties: {
-            _steer: { type: ['string', 'null'] },
-            _emphasis: { type: ['number', 'null'] },
-            _depth: { type: ['number', 'null'] },
-            _crossRefs: {
-              oneOf: [
-                { type: 'array', items: { type: 'string' } },
-                { type: 'null' },
-              ],
-            },
-            _disabled: { type: ['boolean', 'null'] },
-          },
-        },
-      },
-      required: ['path', 'updates'],
-    },
-    execute: async (_id: string, params: Record<string, unknown>) =>
-      wrap(baseUrl, () =>
-        client.update(
-          params.path as string,
-          params.updates as Parameters<MetaServiceClient['update']>[1],
-        ),
-      ),
   };
 }

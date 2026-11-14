@@ -1,138 +1,106 @@
 /**
- * Shared endpoint catalog — single source of truth for the jeeves-meta API.
+ * The original endpoint list of the jeeves-meta API (name, method, path,
+ * description), superseded by `META_CATALOG` and kept for existing
+ * consumers (Decision 183). Derived from the catalog, so names, routes and
+ * descriptions have one source. Pure.
  *
- * Both the CLI service and the OpenClaw plugin derive their registrations
- * from this declarative catalog, eliminating drift between the two.
+ * @remarks
+ * Only the deprecated aliases are exported, so the package entry re-exports
+ * this module with `export *` (a named re-export of a deprecated symbol fails
+ * `no-deprecated`); the list and its types are module-internal.
  *
+ * @module endpoints
  */
 
+import { META_CATALOG, type MetaCatalog } from './catalog.js';
+
 /** HTTP methods used by the API. */
-export type HttpMethod = 'GET' | 'PATCH' | 'POST';
+type Method = 'GET' | 'PATCH' | 'POST';
 
 /** Descriptor for a single API endpoint. */
-export interface EndpointDescriptor {
+interface Descriptor {
   /** Unique endpoint identifier (camelCase). */
   name: string;
   /** HTTP method. */
-  method: HttpMethod;
+  method: Method;
   /** URL path pattern (e.g. '/metas/:path'). */
   path: string;
   /** Human-readable description of the endpoint's purpose. */
   description: string;
 }
 
-/**
- * Canonical endpoint catalog for the jeeves-meta API.
- *
- * Every entry describes a single HTTP endpoint exposed by the service.
- * Route handlers, plugin tools, and HTTP clients should reference these
- * descriptors rather than hard-coding paths and descriptions.
- */
-export const META_ENDPOINTS = [
-  {
-    name: 'status',
-    method: 'GET',
-    path: '/status',
-    description: 'Service health and status overview.',
-  },
-  {
-    name: 'listMetas',
-    method: 'GET',
-    path: '/metas',
-    description:
-      'List metas with summary stats and per-meta projection. Response includes phaseState and owedPhase per meta.',
-  },
-  {
-    name: 'metaDetail',
-    method: 'GET',
-    path: '/metas/:path',
-    description:
-      'Full detail for a single meta, with optional archive history. Response includes phaseState, owedPhase, and crossRefs.',
-  },
-  {
-    name: 'updateMeta',
-    method: 'PATCH',
-    path: '/metas/:path',
-    description:
-      'Update user-settable reserved properties on a meta entity. Returns { path, meta } with large fields excluded. Rejects unknown property keys with a 400 error.',
-  },
-  {
-    name: 'synthesize',
-    method: 'POST',
-    path: '/synthesize',
-    description:
-      'Trigger synthesis. Path-targeted creates an override queue entry; returns owedPhase. Fully-fresh metas return status:skipped.',
-  },
-  {
-    name: 'abort',
-    method: 'POST',
-    path: '/synthesize/abort',
-    description: 'Abort the currently running synthesis.',
-  },
-  {
-    name: 'preview',
-    method: 'GET',
-    path: '/preview',
-    description:
-      'Dry-run preview of next synthesis. Returns owedPhase, priorityBand, phaseState, inputStatus, and architectInvalidators.',
-  },
-  {
-    name: 'seed',
-    method: 'POST',
-    path: '/seed',
-    description:
-      'Create a .meta/ directory and initial meta.json for a new entity path.',
-  },
-  {
-    name: 'unlock',
-    method: 'POST',
-    path: '/unlock',
-    description: 'Remove a stale .lock from a meta entity that is stuck.',
-  },
-  {
-    name: 'config',
-    method: 'GET',
-    path: '/config',
-    description: 'Query service configuration with optional JSONPath.',
-  },
-  {
-    name: 'configApply',
-    method: 'POST',
-    path: '/config/apply',
-    description: 'Apply a configuration patch.',
-  },
-  {
-    name: 'queue',
-    method: 'GET',
-    path: '/queue',
-    description:
-      'List queued synthesis operations (3-layer model: current, overrides, automatic).',
-  },
-  {
-    name: 'queueClear',
-    method: 'POST',
-    path: '/queue/clear',
-    description: 'Clear override entries from the queue.',
-  },
-] as const satisfies readonly EndpointDescriptor[];
+/** The descriptor fields of catalog entry `E` (distributive). */
+type EntryDescriptor<E> = E extends {
+  name: unknown;
+  method: unknown;
+  path: unknown;
+  description: unknown;
+}
+  ? Pick<E, 'name' | 'method' | 'path' | 'description'>
+  : never;
+
+/** The descriptor fields of every catalog entry, in catalog order. */
+type Descriptors = readonly EntryDescriptor<MetaCatalog['entries'][number]>[];
+
+const ENDPOINTS = META_CATALOG.entries.map(
+  ({ name, method, path, description }) => ({
+    name,
+    method,
+    path,
+    description,
+  }),
+) as unknown as Descriptors;
 
 /** Union of all endpoint names. */
-export type EndpointName = (typeof META_ENDPOINTS)[number]['name'];
+type Name = (typeof ENDPOINTS)[number]['name'];
 
-/** Single entry from the catalog, narrowed by name. */
-export type Endpoint<N extends EndpointName> = Extract<
-  (typeof META_ENDPOINTS)[number],
-  { name: N }
->;
+/** Single entry from the list, narrowed by name. */
+type Entry<N extends Name> = Extract<(typeof ENDPOINTS)[number], { name: N }>;
+
+/**
+ * HTTP methods used by the API.
+ *
+ * @deprecated Use `META_CATALOG` entries (`CatalogEntry['method']`).
+ */
+export type HttpMethod = Method;
+
+/**
+ * Descriptor for a single API endpoint.
+ *
+ * @deprecated Use `META_CATALOG` entries, which add schemas, auth and kind.
+ */
+export type EndpointDescriptor = Descriptor;
+
+/**
+ * Every endpoint: name, method, path and description of each entry.
+ *
+ * @deprecated Use `META_CATALOG.entries`.
+ */
+export const META_ENDPOINTS = ENDPOINTS;
+
+/**
+ * Union of all endpoint names.
+ *
+ * @deprecated Use `MetaEntryName`.
+ */
+export type EndpointName = Name;
+
+/**
+ * Single entry from the list, narrowed by name.
+ *
+ * @deprecated Use `MetaEntry<N>`.
+ */
+export type Endpoint<N extends Name> = Entry<N>;
 
 /**
  * Look up an endpoint descriptor by name.
  *
  * @param name - The endpoint identifier.
- * @returns The matching {@link EndpointDescriptor}.
+ * @returns The matching descriptor.
+ * @deprecated Find the entry in `META_CATALOG.entries`.
  */
-export function getEndpoint<N extends EndpointName>(name: N): Endpoint<N> {
-  const ep = META_ENDPOINTS.find((e) => e.name === name);
+export function getEndpoint<N extends Name>(name: N): Entry<N> {
+  const ep = ENDPOINTS.find((e) => e.name === name);
   if (!ep) throw new Error(`Unknown endpoint: ${name}`);
-  return ep as Endpoint<N>;
+  return ep as Entry<N>;
 }

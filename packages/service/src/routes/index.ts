@@ -1,13 +1,32 @@
 /**
- * Route registration for jeeves-meta service.
+ * jeeves-meta's HTTP API: every route of `META_CATALOG`, registered by
+ * jeeves `registerCatalogRoutes` with request and strict response
+ * validation (spec 4.4.6), plus `GET /openapi.json`.
+ *
+ * @remarks
+ * Errors: jeeves' catalog scope answers every error on catalog routes, and
+ * `registerErrorHandlers` gives the other routes (`/openapi.json`, unknown
+ * routes, the readiness gate) the same rule: a `defineError` error
+ * (`api/errors.ts`) or a Fastify 4xx is sent as Fastify's standard body;
+ * anything else is a logged, masked 500.
  *
  * @module routes
  */
 
 import type { ConfigApplyHandler } from '@karmaniverous/jeeves';
+import {
+  registerCatalogRoutes,
+  registerErrorHandlers,
+  registerOpenApiRoute,
+} from '@karmaniverous/jeeves/fastify';
+import {
+  META_CATALOG,
+  META_OPENAPI_DOCUMENT,
+} from '@karmaniverous/jeeves-meta-core';
 import type { FastifyInstance } from 'fastify';
 import type { Logger } from 'pino';
 
+import type { MetaHandlers } from '../api/handlerTypes.js';
 import type { MetaCache } from '../cache.js';
 import type { GatewayExecutor } from '../executor/index.js';
 import type { WatcherClient } from '../interfaces/index.js';
@@ -15,16 +34,16 @@ import type { SynthesisQueue } from '../queue/index.js';
 import type { RuleRegistrar } from '../rules/index.js';
 import type { Scheduler } from '../scheduler/index.js';
 import type { ServiceConfig } from '../schema/config.js';
-import { registerConfigRoute } from './config.js';
-import { registerConfigApplyRoute } from './configApply.js';
-import { registerMetasRoutes } from './metas.js';
-import { registerMetasUpdateRoute } from './metasUpdate.js';
-import { registerPreviewRoute } from './preview.js';
-import { registerQueueRoutes } from './queue.js';
-import { registerSeedRoute } from './seed.js';
-import { registerStatusRoute } from './status.js';
-import { registerSynthesizeRoute } from './synthesize.js';
-import { registerUnlockRoute } from './unlock.js';
+import { createConfigHandlers } from './config.js';
+import { createConfigApplyHandlers } from './configApply.js';
+import { createMetasHandlers } from './metas.js';
+import { createMetasUpdateHandlers } from './metasUpdate.js';
+import { createPreviewHandlers } from './preview.js';
+import { createQueueHandlers } from './queue.js';
+import { createSeedHandlers } from './seed.js';
+import { createStatusHandlers } from './status.js';
+import { createSynthesizeHandlers } from './synthesize.js';
+import { createUnlockHandlers } from './unlock.js';
 
 /** Runtime stats tracked by the service. */
 export interface ServiceStats {
@@ -71,40 +90,41 @@ export interface RouteDeps {
   configApply?: ConfigApplyHandler;
 }
 
-/** Register all HTTP routes on the Fastify instance. */
-export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
-  // Global error handler for validation + watcher errors
-  app.setErrorHandler(
-    (
-      error: Error & { validation?: unknown; statusCode?: number },
-      _request,
-      reply,
-    ) => {
-      if (error.validation) {
-        return reply
-          .status(400)
-          .send({ error: 'BAD_REQUEST', message: error.message });
-      }
-      if (error.statusCode === 404) {
-        return reply
-          .status(404)
-          .send({ error: 'NOT_FOUND', message: error.message });
-      }
-      deps.logger.error(error, 'Unhandled route error');
-      return reply
-        .status(500)
-        .send({ error: 'INTERNAL_ERROR', message: error.message });
-    },
-  );
+/**
+ * One handler per catalog entry.
+ *
+ * @param deps - Route dependencies.
+ * @returns The handlers.
+ */
+export function createMetaHandlers(deps: RouteDeps): MetaHandlers {
+  return {
+    ...createStatusHandlers(deps),
+    ...createMetasHandlers(deps),
+    ...createMetasUpdateHandlers(deps),
+    ...createSynthesizeHandlers(deps),
+    ...createQueueHandlers(deps),
+    ...createPreviewHandlers(deps),
+    ...createSeedHandlers(deps),
+    ...createUnlockHandlers(deps),
+    ...createConfigHandlers(deps),
+    ...createConfigApplyHandlers(deps),
+  };
+}
 
-  registerStatusRoute(app, deps);
-  registerMetasRoutes(app, deps);
-  registerMetasUpdateRoute(app, deps);
-  registerSynthesizeRoute(app, deps);
-  registerPreviewRoute(app, deps);
-  registerSeedRoute(app, deps);
-  registerUnlockRoute(app, deps);
-  registerConfigRoute(app, deps);
-  registerConfigApplyRoute(app, deps.configApply, deps.configPath);
-  registerQueueRoutes(app, deps);
+/**
+ * Register all HTTP routes on the Fastify instance. The catalog routes go
+ * in a child plugin, so a registration error surfaces from `ready()`.
+ *
+ * @param app - Fastify instance.
+ * @param deps - Route dependencies.
+ */
+export function registerRoutes(app: FastifyInstance, deps: RouteDeps): void {
+  const handlers = createMetaHandlers(deps);
+  registerErrorHandlers(app);
+  void app.register(async (child) => {
+    await registerCatalogRoutes(child, META_CATALOG, handlers, {
+      responseValidation: 'strict',
+    });
+  });
+  registerOpenApiRoute(app, META_OPENAPI_DOCUMENT);
 }

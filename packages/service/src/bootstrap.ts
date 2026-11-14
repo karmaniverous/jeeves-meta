@@ -14,7 +14,6 @@ import {
   registerConfigHotReloadRuntime,
 } from './configHotReload.js';
 import { loadServiceConfig } from './configLoader.js';
-import { listMetas } from './discovery/index.js';
 import { GatewayExecutor } from './executor/index.js';
 import { cleanupStaleLocks } from './lock.js';
 import { createLogger } from './logger/index.js';
@@ -29,7 +28,7 @@ import { Scheduler } from './scheduler/index.js';
 import { type ServiceConfig } from './schema/config.js';
 import { createServer } from './server.js';
 import { registerShutdownHandlers } from './shutdown/index.js';
-import { HttpWatcherClient } from './watcher-client/index.js';
+import { SdkWatcherClient } from './watcher-client/index.js';
 
 /**
  * Compute per-cycle token total from a completed meta.
@@ -73,7 +72,7 @@ export async function startService(
   });
 
   // Wire synthesis executor + watcher
-  const watcher = new HttpWatcherClient({ baseUrl: config.watcherUrl });
+  const watcher = new SdkWatcherClient({ baseUrl: config.watcherUrl });
   const executor = new GatewayExecutor({
     gatewayUrl: config.gatewayUrl,
     apiKey: config.gatewayApiKey,
@@ -222,9 +221,10 @@ export async function startService(
     void queue.processQueue(synthesizeFn);
   });
 
-  // Startup: clean stale locks (gap #16)
+  // Startup: clean stale locks (gap #16). Through the cache, so the first
+  // GET /status after start-up answers without a second walk.
   try {
-    const metaResult = await listMetas(config, watcher);
+    const metaResult = await cache.get(config, watcher);
     const metaPaths = metaResult.entries.map((e) => e.node.metaPath);
     cleanupStaleLocks(metaPaths, logger);
   } catch (err) {

@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0-1] - 2026-11-14
+
+### 🐛 Bug Fixes
+
+- *(service)* CLI commands initialise jeeves before resolving the service URL
+## [0.20.0-0] - 2026-11-13
+
+### 🚀 Features
+
+- *(service)* Watcher SDK replaces HttpWatcherClient (T3)
+- *(core)* META_CATALOG, metaHealthSchema and META_ERROR_CODES (T4)
+- *(service)* [**breaking**] Routes on META_CATALOG with standard errors (T6)
+- *(sdk)* @karmaniverous/jeeves-meta-sdk (T8)
+- *(service)* CLI commands on the SDK (T9)
+
+### 💼 Other
+
+- Updated dependencies
+- Updated core
+- Updated sdk dependency
+
+### 🚜 Refactor
+
+- *(service)* Use jeeves computeInsiderKey (T2)
+
+### 📚 Documentation
+
+- [**breaking**] Catalog, SDK, error codes and migration guide (T11)
+
+### 🧪 Testing
+
+- *(service)* Record the 0.19.0 wire baseline (T1)
+- *(service)* Split the wire fixture corpus out of wireApp (300-line limit)
+- *(service)* Error contract tests (T7)
+- T12 review fixes
+
+### ⚙️ Miscellaneous Tasks
+
+- Adopt @karmaniverous/jeeves 0.8.0
+- [**breaking**] Jeeves 0.11.0 and Node >=24.22.2 (T2)
+- Release @karmaniverous/jeeves-meta v0.20.0-0
 ## [0.19.0] - 2026-10-14
 
 ### 🚀 Features
@@ -25,6 +66,7 @@ All notable changes to this project will be documented in this file.
 
 - Update @karmaniverous/jeeves to 0.7.0 and dependencies
 - Tag-aware changelog and release notes, <package>@<version> release names (#224, #225)
+- Release @karmaniverous/jeeves-meta v0.19.0
 ## [0.18.0] - 2026-09-29
 
 ### 💼 Other

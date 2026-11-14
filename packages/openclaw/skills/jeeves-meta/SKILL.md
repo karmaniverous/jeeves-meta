@@ -30,7 +30,7 @@ List all `.meta/` directories with summary stats and per-meta projection. Suppor
 
 ### meta_detail
 
-Full detail for a single meta, with optional archive history. Includes `_phaseState` showing the per-phase state machine status.
+Full detail for a single meta, with optional archive history. Includes `phaseState` showing the per-phase state machine status.
 
 **Parameters:**
 
@@ -436,10 +436,30 @@ The service exposes these endpoints (default port 1938):
 | POST | `/unlock` | Remove `.lock` file from a meta entity |
 | GET | `/config` | Query sanitized config with optional JSONPath (`?path=$.schedule`) |
 | POST | `/config/apply` | Apply a config patch (merge or replace) |
-| GET | `/queue` | Queue state: current (with phase), overrides, automatic, pending |
+| GET | `/queue` | Queue state: `current` (with phase), `pending` overrides, `automatic` candidates |
 | POST | `/queue/clear` | Remove all override queue entries |
+| GET | `/openapi.json` | OpenAPI 3.1 document of every route |
 
-All endpoints return JSON. The OpenClaw plugin tools are thin wrappers around these endpoints.
+All endpoints return JSON and validate their requests (a malformed request is `HTTP 400` `FST_ERR_VALIDATION`). The OpenClaw plugin tools call these endpoints through `@karmaniverous/jeeves-meta-sdk`.
+
+### Error codes
+
+A failed tool reads `Error: HTTP <status>: <body>`; the body is `{ statusCode, code, error, message }`. Act on the `code`:
+
+| `code` | Status | What it means | What to do |
+| --- | --- | --- | --- |
+| `META_NOT_FOUND` | 404 | No meta at that path | Check the path with `meta_list` (owner path or `.meta/` path); create it with `meta_seed` |
+| `META_ALREADY_EXISTS` | 409 | `meta_seed` on a path that already has `.meta/` | Nothing to create; use `meta_update` to change it |
+| `META_NOT_LOCKED` | 409 | `meta_unlock` on a meta with no lock | Nothing to do; it is already unlocked |
+| `META_WATCHER_UNAVAILABLE` | 503 | The service could not reach jeeves-watcher | Check `watcher_status`; retry once the watcher is up (see Troubleshooting) |
+| `META_NOT_READY` | 503 | The service is starting | Retry in a few seconds; `meta_status` (it reports `serviceState: "starting"`) and `meta_config` work meanwhile |
+| `META_INVALID_JSONPATH` | 400 | `meta_config` with a JSONPath that cannot be evaluated | Fix the expression (e.g. `$.schedule`) |
+| `META_CONFIG_UNAVAILABLE` | 500 | `meta_config_apply` on a service started without a config file | Restart the service with `--config <path>`, or edit the config file directly |
+| `JEEVES_CONFIG_INVALID` | 400 | `meta_config_apply`: the patched config is invalid | Read `message` for the failing field; fix the patch |
+| `FST_ERR_VALIDATION` | 400 | A tool sent a request its route rejects | Read `message`; check the tool's parameters |
+| (no code) | 500 | An unexpected failure | Read the service log (`jeeves-meta service status`); report it |
+
+No error carries `Retry-After`. A connection error (no HTTP status) means the service is unreachable: see Troubleshooting.
 
 ## Service CLI
 
@@ -449,7 +469,7 @@ The service package ships a CLI:
 jeeves-meta <command> [options]
 ```
 
-Commands: `start`, `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `abort`, `prune`, `config`, `queue list|clear`, `service install|start|stop|status|remove`.
+Commands: `start`, `status`, `list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `abort`, `prune` (no API route yet, #69), `config`, `queue list|clear`, `service install|start|stop|status|remove`.
 
 Config resolution: `--config` flag → `JEEVES_META_CONFIG` env var → error. All client commands support `-p, --port` to specify the service port (default: 1938). The `start` command uses `--config`/`-c` instead (port is read from the config file).
 

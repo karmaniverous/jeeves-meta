@@ -99,7 +99,7 @@ Enqueue synthesis for a specific meta or the stalest candidate.
 
 - `path` (string, optional) — specific path, or omit for stalest candidate
 
-**Response (path-targeted):** `{ status: "queued"|"skipped", path, owedPhase, queuePosition, alreadyQueued }` **Response (corpus-wide):** `{ status: "accepted"|"skipped", path?, message?, queuePosition?, alreadyQueued? }`
+**Response (path-targeted):** `{ status: "queued"|"skipped", path, owedPhase, queuePosition, alreadyQueued }` **Response (corpus-wide):** `{ status: "queued", path, owedPhase, queuePosition, alreadyQueued }`, or `{ status: "skipped", message }` when nothing is stale. Fails with `META_WATCHER_UNAVAILABLE` (503) when the watcher is unreachable.
 
 ## meta_seed
 
@@ -111,7 +111,7 @@ Create a `.meta/` directory with a skeleton `meta.json` for a new entity path.
 - `crossRefs` (string, optional) — JSON array of cross-ref owner paths (e.g. `'["j:/path/a","j:/path/b"]'`). Written as `_crossRefs` in the initial `meta.json`.
 - `steer` (string, optional) — steering prompt written as `_steer` in the initial `meta.json`
 
-**Response:** `{ path, _id }` (201 Created) or 409 Conflict if already exists.
+**Response:** `{ status: "created", path, metaDir, _id }` (201), or `HTTP 409` with code `META_ALREADY_EXISTS` if a `.meta/` exists.
 
 ## meta_unlock
 
@@ -121,7 +121,7 @@ Remove a stale `.lock` file from a meta entity that is stuck.
 
 - `path` (string, required) — `.meta/` or owner directory path
 
-**Response:** `{ path, unlocked: true }` or 409 if already unlocked
+**Response:** `{ status: "unlocked", path }`, or `HTTP 409` with code `META_NOT_LOCKED` if there is no lock.
 
 ## meta_queue
 
@@ -134,7 +134,7 @@ Queue management: list pending items, clear the queue, or abort current synthesi
   - `clear` — remove all pending queue entries
   - `abort` — stop the currently running synthesis and release its lock
 
-**Response (list):** `{ current, overrides, automatic, pending, state }` **Response (clear):** `{ cleared: <count> }` **Response (abort):** `{ status: "aborted", path }` or 404 if nothing running
+**Response (list):** `{ current, pending, automatic }` **Response (clear):** `{ cleared: <count> }` **Response (abort):** `{ status: "aborted", path, phase }`, or `{ status: "idle" }` if nothing is running
 
 ## meta_update
 
@@ -147,4 +147,8 @@ Update user-settable reserved properties on a meta entity. Delegates to `PATCH /
 
 **Response:** `{ path, meta }` — the updated meta with large generated fields (`_architect`, `_builder`, `_critic`, `_content`, `_feedback`) excluded.
 
-Engine-managed properties (tokens, timestamps, errors, synthesis output) are rejected. Unknown keys fail validation (400). Missing meta paths return 404.
+Engine-managed properties (tokens, timestamps, errors, synthesis output) are rejected. Unknown keys fail validation (`HTTP 400`, `FST_ERR_VALIDATION`). Missing meta paths return `HTTP 404` with `META_NOT_FOUND`.
+
+## Errors
+
+A failed custom tool returns `Error: HTTP <status>: <body>`, where the body is the service's standard error body `{ statusCode, code?, error, message }`; branch on `code` (see the [service README](../../service/README.md#errors) for every code). An unreachable service returns connection guidance instead; a timeout or anything else reads `Error: <message>`.

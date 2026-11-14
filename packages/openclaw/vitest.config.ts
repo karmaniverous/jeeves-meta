@@ -9,6 +9,9 @@ export default defineConfig({
       '@karmaniverous/jeeves-meta-core': fileURLToPath(
         new URL('../core/src/index.ts', import.meta.url),
       ),
+      '@karmaniverous/jeeves-meta-sdk': fileURLToPath(
+        new URL('../sdk/src/index.ts', import.meta.url),
+      ),
     },
   },
   test: {

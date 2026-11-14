@@ -10,12 +10,11 @@
 
 import type { Logger } from 'pino';
 
+import { probeWatcher } from '../watcher-client/index.js';
 import type { RuleRegistrar } from './index.js';
 
-interface WatcherStatusResponse {
-  status: string;
-  uptime: number;
-}
+/** Health probe timeout (ms). */
+const PROBE_TIMEOUT_MS = 5000;
 
 /**
  * Manages the periodic watcher health check loop.
@@ -74,26 +73,23 @@ export class WatcherHealthCheck {
 
   /** Single health check iteration. */
   private async check(): Promise<void> {
+    const probe = await probeWatcher(this.watcherUrl, PROBE_TIMEOUT_MS);
+    if (probe.status === 'unreachable') {
+      this.logger.debug(
+        'Watcher health check: unreachable (expected during startup)',
+      );
+      return;
+    }
+    if (probe.uptime === undefined) {
+      this.logger.warn('Watcher health check: non-OK response');
+      return;
+    }
     try {
-      const res = await fetch(this.watcherUrl + '/status', {
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (!res.ok) {
-        this.logger.warn(
-          { status: res.status },
-          'Watcher health check: non-OK response',
-        );
-        return;
-      }
-
-      const data = (await res.json()) as WatcherStatusResponse;
-
-      await this.registrar.checkAndReregister(data.uptime);
+      await this.registrar.checkAndReregister(probe.uptime);
     } catch (err) {
       this.logger.debug(
         { err },
-        'Watcher health check: unreachable (expected during startup)',
+        'Watcher health check: re-registration failed',
       );
     }
   }

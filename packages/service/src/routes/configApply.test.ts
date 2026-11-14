@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { createConfigApplyHandler } from '@karmaniverous/jeeves';
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../configHotReload.js', () => ({
@@ -24,11 +24,11 @@ vi.mock('../configHotReload.js', () => ({
 }));
 
 const { metaDescriptor } = await import('../descriptor.js');
-const { registerConfigApplyRoute } = await import('./configApply.js');
+const { createTestApp, makeTestDeps } = await import('./__testUtils.js');
 
 /**
  * Base config: includes keys the schema does not know (api, configRoot,
- * defaultArchitect, defaultCritic, serverBaseUrl) and omits defaulted keys.
+ * defaultArchitect, defaultCritic, customKey) and omits defaulted keys.
  */
 const BASE_CONFIG = {
   watcherUrl: 'http://localhost:3456',
@@ -42,7 +42,7 @@ const BASE_CONFIG = {
   configRoot: 'J:/config',
   defaultArchitect: 'architect prompt',
   defaultCritic: 'critic prompt',
-  serverBaseUrl: 'http://localhost:1934',
+  customKey: 'kept',
 };
 
 const BASE_TEXT = JSON.stringify(BASE_CONFIG, null, 2) + '\n';
@@ -71,11 +71,11 @@ describe('POST /config/apply', () => {
     configPath = join(testDir, 'config.json');
     writeFileSync(configPath, BASE_TEXT);
 
-    app = Fastify();
-    registerConfigApplyRoute(
-      app,
-      createConfigApplyHandler(metaDescriptor, configPath),
-      configPath,
+    app = createTestApp(
+      makeTestDeps({
+        configApply: createConfigApplyHandler(metaDescriptor, configPath),
+        configPath,
+      }),
     );
     await app.ready();
   });
@@ -151,9 +151,9 @@ describe('POST /config/apply', () => {
     const res = await apply({ patch: { port: 'bad' } });
 
     expect(res.statusCode).toBe(400);
-    expect(res.json<{ error: string }>().error).toBe(
-      'Config validation failed',
-    );
+    const body = res.json<{ code: string; message: string }>();
+    expect(body.code).toBe('JEEVES_CONFIG_INVALID');
+    expect(body.message).toMatch(/^Config validation failed: port: /);
     expect(readFileSync(configPath).equals(before)).toBe(true);
   });
 
@@ -190,8 +190,7 @@ describe('POST /config/apply', () => {
   });
 
   it('returns 500 when no config apply handler is wired', async () => {
-    const noPathApp = Fastify();
-    registerConfigApplyRoute(noPathApp);
+    const noPathApp = createTestApp(makeTestDeps());
     await noPathApp.ready();
 
     const res = await noPathApp.inject({

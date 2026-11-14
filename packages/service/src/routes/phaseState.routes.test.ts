@@ -7,13 +7,11 @@
  * Task #18: Operator-surface integration tests.
  */
 
-import Fastify, { type FastifyInstance } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { SynthesisQueue } from '../queue/index.js';
-import { makeTestDeps, makeTestLogger } from './__testUtils.js';
-import { registerQueueRoutes } from './queue.js';
-import { registerStatusRoute } from './status.js';
+import { createTestApp, makeTestDeps, makeTestLogger } from './__testUtils.js';
 
 describe('phase-state operator surfaces (Task #18)', () => {
   let app: FastifyInstance | undefined;
@@ -25,8 +23,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
   describe('GET /status — phaseStateSummary and nextPhase', () => {
     it('includes phaseStateSummary in health', async () => {
       const deps = makeTestDeps();
-      app = Fastify();
-      registerStatusRoute(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({ method: 'GET', url: '/status' });
@@ -61,8 +58,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
 
     it('includes nextPhase in health (null when no candidates)', async () => {
       const deps = makeTestDeps();
-      app = Fastify();
-      registerStatusRoute(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({ method: 'GET', url: '/status' });
@@ -79,8 +75,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
       const logger = makeTestLogger();
       const queue = new SynthesisQueue(logger);
       const deps = makeTestDeps({ queue });
-      app = Fastify();
-      registerQueueRoutes(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({ method: 'GET', url: '/queue' });
@@ -101,8 +96,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
       queue.setCurrentPhase('/meta/test', 'builder');
 
       const deps = makeTestDeps({ queue });
-      app = Fastify();
-      registerQueueRoutes(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({ method: 'GET', url: '/queue' });
@@ -123,8 +117,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
       queue.enqueue('/meta/pending-b');
 
       const deps = makeTestDeps({ queue });
-      app = Fastify();
-      registerQueueRoutes(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({ method: 'GET', url: '/queue' });
@@ -148,8 +141,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
       queue.enqueue('/meta/pending-b');
 
       const deps = makeTestDeps({ queue });
-      app = Fastify();
-      registerQueueRoutes(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({ method: 'POST', url: '/queue/clear' });
@@ -164,8 +156,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
   describe('POST /synthesize/abort — phase-state integration', () => {
     it('returns {status: idle} when nothing is running', async () => {
       const deps = makeTestDeps();
-      app = Fastify();
-      registerQueueRoutes(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({
@@ -182,8 +173,7 @@ describe('phase-state operator surfaces (Task #18)', () => {
       queue.setCurrentPhase('/meta/active', 'critic');
 
       const deps = makeTestDeps({ queue, executor: { abort: vi.fn() } });
-      app = Fastify();
-      registerQueueRoutes(app, deps);
+      app = createTestApp(deps);
       await app.ready();
 
       const res = await app.inject({
