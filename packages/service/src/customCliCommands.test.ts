@@ -2,10 +2,17 @@
  * Tests for the custom CLI commands on the SDK (Decision 187): each command
  * calls its catalog entry against a real app on a loopback port and prints
  * the JSON response; a failure prints one error line and sets exit code 1.
+ * jeeves is not stubbed: the service URL comes from a real core config
+ * under a temporary config root, through `getServiceUrl('meta')`.
  *
  * @module customCliCommands.test
  */
 
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { resetInit } from '@karmaniverous/jeeves';
 import { Command } from 'commander';
 import type { FastifyInstance } from 'fastify';
 import {
@@ -19,34 +26,45 @@ import {
 } from 'vitest';
 
 import { DEFAULT_PORT_STR } from './constants.js';
-
-let base = 'http://127.0.0.1:1938';
-vi.mock('@karmaniverous/jeeves', async (importOriginal) => ({
-  ...(await importOriginal<object>()),
-  getServiceUrl: () => base,
-}));
-
-const { errorLine, registerCustomCliCommands, serviceBaseUrl } =
-  await import('./customCliCommands.js');
-const { createTestApp, makeTestDeps } = await import('./routes/__testUtils.js');
+import {
+  errorLine,
+  registerCustomCliCommands,
+  serviceBaseUrl,
+} from './customCliCommands.js';
+import { createTestApp, makeTestDeps } from './routes/__testUtils.js';
 
 let app: FastifyInstance;
 let port: string;
+let tmp: string;
+/** Config root whose core config points meta at the test app. */
+let configured: string;
+/** Config root with no core config. */
+let empty: string;
 
 beforeAll(async () => {
   app = createTestApp(makeTestDeps());
   const address = await app.listen({ host: '127.0.0.1', port: 0 });
   port = new URL(address).port;
-  base = `http://127.0.0.1:${DEFAULT_PORT_STR}`;
+  tmp = mkdtempSync(join(tmpdir(), 'meta-cli-'));
+  configured = join(tmp, 'configured');
+  empty = join(tmp, 'empty');
+  mkdirSync(join(configured, 'jeeves-core'), { recursive: true });
+  mkdirSync(empty);
+  writeFileSync(
+    join(configured, 'jeeves-core', 'config.json'),
+    JSON.stringify({ services: { meta: { url: address } } }),
+  );
 });
 
 afterAll(async () => {
   await app.close();
+  rmSync(tmp, { recursive: true, force: true });
 });
 
 afterEach(() => {
   process.exitCode = undefined;
   vi.restoreAllMocks();
+  resetInit();
 });
 
 /** Run the CLI with `args`; returns what it printed. */
@@ -63,22 +81,45 @@ async function cli(...args: string[]) {
   };
 }
 
+/** Root flags selecting config root `root` (workspace: the temp dir). */
+const roots = (root: string) => ['--workspace', tmp, '--config-root', root];
+
 describe('serviceBaseUrl', () => {
-  it('uses the service URL, with --port when it is not the default', () => {
-    expect(serviceBaseUrl(DEFAULT_PORT_STR)).toBe('http://127.0.0.1:1938');
-    expect(serviceBaseUrl('2000')).toBe('http://127.0.0.1:2000');
+  it("uses jeeves' configured URL for meta", () => {
+    expect(
+      serviceBaseUrl({
+        port: DEFAULT_PORT_STR,
+        workspace: tmp,
+        configRoot: configured,
+      }),
+    ).toBe(`http://127.0.0.1:${port}`);
+  });
+
+  it('falls back to the default port with no core config', () => {
+    expect(
+      serviceBaseUrl({
+        port: DEFAULT_PORT_STR,
+        workspace: tmp,
+        configRoot: empty,
+      }),
+    ).toBe('http://127.0.0.1:1938');
+  });
+
+  it('applies --port when it is not the default', () => {
+    expect(
+      serviceBaseUrl({ port: '2000', workspace: tmp, configRoot: configured }),
+    ).toBe('http://127.0.0.1:2000');
   });
 });
-
 describe('commands', () => {
-  it('prints the response as JSON', async () => {
-    const res = await cli('queue', 'clear', '--port', port);
+  it('prints the response from the configured service as JSON', async () => {
+    const res = await cli('queue', 'clear', ...roots(configured));
     expect(res.exitCode).toBeUndefined();
     expect(JSON.parse(res.stdout)).toEqual({ cleared: 0 });
   });
 
   it('passes a path argument to its entry', async () => {
-    const res = await cli('unlock', 'j:/no/such', '--port', port);
+    const res = await cli('unlock', 'j:/no/such', ...roots(configured));
     expect(res.stdout).toBe('');
     expect(res.stderr).toBe(
       'Error: No lock file at j:/no/such (already unlocked) (HTTP 409 META_NOT_LOCKED)',
@@ -87,7 +128,7 @@ describe('commands', () => {
   });
 
   it('prints one error line and exits 1 when the service is down', async () => {
-    const res = await cli('list', '--port', '9');
+    const res = await cli('list', '--port', '9', ...roots(configured));
     expect(res.stderr).toMatch(/^Error: listMetas request failed: /);
     expect(res.stderr.split('\n')).toHaveLength(1);
     expect(res.exitCode).toBe(1);

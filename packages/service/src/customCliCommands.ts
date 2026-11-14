@@ -2,7 +2,9 @@
  * Custom CLI commands for the jeeves-meta service, built on the SDK
  * (`@karmaniverous/jeeves-meta-sdk`, Decision 187). Each command calls one
  * catalog entry and prints the response as JSON; a failure prints one
- * error line to stderr and sets exit code 1.
+ * error line to stderr and sets exit code 1. The service URL comes from
+ * jeeves (`getServiceUrl('meta')`) after the workspace and config root are
+ * resolved (`cliRoots`); `--port` overrides its port.
  *
  * Registered via `descriptor.customCliCommands` and added to the
  * standard service CLI produced by `createServiceCli`.
@@ -18,17 +20,26 @@ import {
 } from '@karmaniverous/jeeves-meta-sdk';
 import { type Command } from 'commander';
 
+import { initRoots, type RootOptions } from './cliRoots.js';
 import { DEFAULT_PORT_STR } from './constants.js';
 
+/** Options every command takes. */
+export interface CommandOptions extends RootOptions {
+  /** `-p/--port`. */
+  port: string;
+}
+
 /**
- * The service's base URL on the given port.
+ * The service's base URL: jeeves' URL for meta, with `--port` when it is
+ * not the default.
  *
- * @param port - Port string from `--port`.
+ * @param opts - The command's options.
  * @returns The base URL.
  */
-export function serviceBaseUrl(port: string): string {
+export function serviceBaseUrl(opts: CommandOptions): string {
+  initRoots(opts);
   const url = new URL(getServiceUrl('meta'));
-  if (port !== DEFAULT_PORT_STR) url.port = port;
+  if (opts.port !== DEFAULT_PORT_STR) url.port = opts.port;
   return url.origin;
 }
 
@@ -49,16 +60,16 @@ export function errorLine(error: unknown): string {
  * Run one command: call the service, print the result as JSON, or print
  * the error line and set exit code 1.
  *
- * @param port - Port string from `--port`.
+ * @param opts - The command's options.
  * @param call - The SDK call.
  */
 export async function runCommand(
-  port: string,
+  opts: CommandOptions,
   call: (meta: MetaClient) => Promise<unknown>,
 ): Promise<void> {
   try {
     const data = await call(
-      createMetaClient({ baseUrl: serviceBaseUrl(port) }),
+      createMetaClient({ baseUrl: serviceBaseUrl(opts) }),
     );
     console.log(JSON.stringify(data, null, 2));
   } catch (error) {
@@ -67,9 +78,19 @@ export async function runCommand(
   }
 }
 
-/** Options every command takes. */
-interface PortOption {
-  port: string;
+/**
+ * Add the options every service command takes: `--port`, and the roots
+ * jeeves resolves the service URL from (no defaults, so the environment and
+ * `jeeves.config.json` apply when a flag is absent).
+ *
+ * @param cmd - The command.
+ * @returns It.
+ */
+function withServiceOptions(cmd: Command): Command {
+  return cmd
+    .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
+    .option('-w, --workspace <path>', 'Workspace root path')
+    .option('--config-root <path>', 'Platform config root path');
 }
 
 /**
@@ -79,32 +100,29 @@ interface PortOption {
  */
 export function registerCustomCliCommands(program: Command): void {
   const command = (spec: string, description: string): Command =>
-    program
-      .command(spec)
-      .description(description)
-      .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR);
+    withServiceOptions(program.command(spec).description(description));
 
   command('list', 'List all discovered meta entities').action(
-    (opts: PortOption) => runCommand(opts.port, (meta) => meta.listMetas()),
+    (opts: CommandOptions) => runCommand(opts, (meta) => meta.listMetas()),
   );
 
   command('detail <path>', 'Show full detail for a single meta entity').action(
-    (path: string, opts: PortOption) =>
-      runCommand(opts.port, (meta) => meta.metaDetail({ path })),
+    (path: string, opts: CommandOptions) =>
+      runCommand(opts, (meta) => meta.metaDetail({ path })),
   );
 
   command('preview', 'Dry-run: preview inputs for next synthesis cycle')
     .option('--path <path>', 'Specific meta path to preview')
-    .action((opts: PortOption & { path?: string }) =>
-      runCommand(opts.port, (meta) =>
+    .action((opts: CommandOptions & { path?: string }) =>
+      runCommand(opts, (meta) =>
         meta.preview(opts.path ? { path: opts.path } : {}),
       ),
     );
 
   command('synthesize', 'Trigger synthesis (enqueues work)')
     .option('--path <path>', 'Specific meta path to synthesize')
-    .action((opts: PortOption & { path?: string }) =>
-      runCommand(opts.port, (meta) =>
+    .action((opts: CommandOptions & { path?: string }) =>
+      runCommand(opts, (meta) =>
         meta.synthesize(opts.path ? { path: opts.path } : {}),
       ),
     );
@@ -112,17 +130,17 @@ export function registerCustomCliCommands(program: Command): void {
   command(
     'seed <path>',
     'Create .meta/ directory + meta.json for a path',
-  ).action((path: string, opts: PortOption) =>
-    runCommand(opts.port, (meta) => meta.seed({ path })),
+  ).action((path: string, opts: CommandOptions) =>
+    runCommand(opts, (meta) => meta.seed({ path })),
   );
 
   command('unlock <path>', 'Remove .lock file from a meta entity').action(
-    (path: string, opts: PortOption) =>
-      runCommand(opts.port, (meta) => meta.unlock({ path })),
+    (path: string, opts: CommandOptions) =>
+      runCommand(opts, (meta) => meta.unlock({ path })),
   );
 
   command('abort', 'Abort the current synthesis in progress').action(
-    (opts: PortOption) => runCommand(opts.port, (meta) => meta.abort()),
+    (opts: CommandOptions) => runCommand(opts, (meta) => meta.abort()),
   );
 
   command('prune', 'Prune old archive snapshots beyond maxArchive').action(
@@ -140,19 +158,14 @@ export function registerCustomCliCommands(program: Command): void {
     .command('queue')
     .description('Queue management commands');
 
-  queue
-    .command('list')
-    .description('Show current queue state')
-    .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
-    .action((opts: PortOption) =>
-      runCommand(opts.port, (meta) => meta.queue()),
-    );
+  const queueCommand = (name: string, description: string): Command =>
+    withServiceOptions(queue.command(name).description(description));
 
-  queue
-    .command('clear')
-    .description('Remove all pending items from the queue')
-    .option('-p, --port <port>', 'Service port', DEFAULT_PORT_STR)
-    .action((opts: PortOption) =>
-      runCommand(opts.port, (meta) => meta.queueClear()),
-    );
+  queueCommand('list', 'Show current queue state').action(
+    (opts: CommandOptions) => runCommand(opts, (meta) => meta.queue()),
+  );
+
+  queueCommand('clear', 'Remove all pending items from the queue').action(
+    (opts: CommandOptions) => runCommand(opts, (meta) => meta.queueClear()),
+  );
 }

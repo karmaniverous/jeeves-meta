@@ -6,6 +6,8 @@ title: CLI Reference
 
 All commands support `-p, --port <port>` to specify the service port (default: 1938).
 
+The commands that call the service (`list`, `detail`, `preview`, `synthesize`, `seed`, `unlock`, `abort`, `queue list`, `queue clear`) find it the way every Jeeves component does: the meta URL in the platform core config (`<configRoot>/jeeves-core/config.json`, `services.meta.url`), else `http://127.0.0.1:1938`; a non-default `--port` replaces the port. They take `-w, --workspace <path>` and `--config-root <path>`; when a flag is absent, `JEEVES_WORKSPACE` / `JEEVES_CONFIG_ROOT`, then `core.workspace` / `core.configRoot` in the workspace's `jeeves.config.json`, then `.` / `./config` apply.
+
 ## `jeeves-meta start`
 
 Start the HTTP service.
