@@ -56,7 +56,7 @@ jeeves-meta service install --config /path/to/jeeves-meta/config.json
 
 | Method | Path | Description |
 | --- | --- | --- |
-| GET | `/status` | Service health, queue state, dependency checks, phase-state summary |
+| GET | `/status` | Service health, queue state, dependency checks, phase-state summary. Meta counts come from the last meta list (at most 60 s old, refreshed in the background), so the check never waits on a corpus walk. |
 | GET | `/metas` | List metas with summary stats and per-meta projection. Response includes `phaseState` and `owedPhase` per meta. |
 | GET | `/metas/:path` | Full detail for a single meta, with optional archive history. Response includes `phaseState`, `owedPhase` and `crossRefs`. |
 | GET | `/preview` | Dry-run: preview inputs for next synthesis |

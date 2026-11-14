@@ -159,4 +159,59 @@ describe('MetaCache', () => {
     const got = await cache.get(config, watcher);
     expect((got.tree as unknown as { metaPath: string }).metaPath).toBe('ok');
   });
+
+  describe('peek', () => {
+    it('awaits the first load when nothing is cached', async () => {
+      const result = fakeResult('first');
+      mockListMetas.mockResolvedValue(result);
+      expect(await cache.peek(config, watcher)).toBe(result);
+      expect(mockListMetas).toHaveBeenCalledTimes(1);
+    });
+
+    it('answers a fresh result without a refresh', async () => {
+      mockListMetas.mockResolvedValue(fakeResult('r1'));
+      const r1 = await cache.get(config, watcher);
+      expect(await cache.peek(config, watcher)).toBe(r1);
+      expect(mockListMetas).toHaveBeenCalledTimes(1);
+    });
+
+    it('answers a stale result at once and refreshes in the background', async () => {
+      const r1 = fakeResult('r1');
+      const r2 = fakeResult('r2');
+      let finish!: (v: typeof r2) => void;
+      mockListMetas.mockResolvedValueOnce(r1).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          }),
+      );
+      await cache.get(config, watcher);
+      vi.advanceTimersByTime(61_000);
+
+      // The refresh is still pending, yet peek answers with the old list.
+      expect(await cache.peek(config, watcher)).toBe(r1);
+      expect(mockListMetas).toHaveBeenCalledTimes(2);
+
+      finish(r2);
+      await vi.waitFor(async () => {
+        expect(await cache.peek(config, watcher)).toBe(r2);
+      });
+      expect(mockListMetas).toHaveBeenCalledTimes(2);
+    });
+
+    it('keeps the stale result when the background refresh fails', async () => {
+      const r1 = fakeResult('r1');
+      mockListMetas
+        .mockResolvedValueOnce(r1)
+        .mockRejectedValueOnce(new Error('watcher down'));
+      await cache.get(config, watcher);
+      vi.advanceTimersByTime(61_000);
+
+      expect(await cache.peek(config, watcher)).toBe(r1);
+      await vi.waitFor(() => {
+        expect(mockListMetas).toHaveBeenCalledTimes(2);
+      });
+      expect(await cache.peek(config, watcher)).toBe(r1);
+    });
+  });
 });

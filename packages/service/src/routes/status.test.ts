@@ -244,7 +244,7 @@ describe('GET /status', () => {
       },
     ] as MetaEntry[];
 
-    vi.spyOn(cache, 'get').mockResolvedValue({
+    vi.spyOn(cache, 'peek').mockResolvedValue({
       entries,
       summary: {
         total: 2,
@@ -283,5 +283,29 @@ describe('GET /status', () => {
       errors: 1,
       locked: 0,
     });
+  });
+});
+
+describe('GET /status meta list', () => {
+  it('answers from the cached list without waiting on a refresh', async () => {
+    const cache = new MetaCache();
+    // A blocking read would fail; the health check must not use it.
+    const get = vi
+      .spyOn(cache, 'get')
+      .mockRejectedValue(new Error('refresh in flight'));
+    vi.spyOn(cache, 'peek').mockResolvedValue({
+      entries: [],
+      tree: {},
+    } as unknown as MetaListResult);
+    const app = createTestApp(makeTestDeps({ cache }));
+    try {
+      const res = await app.inject({ method: 'GET', url: '/status' });
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ health: { metaCounts: unknown } }>();
+      expect(body.health.metaCounts).toMatchObject({ total: 0 });
+      expect(get).not.toHaveBeenCalled();
+    } finally {
+      await app.close();
+    }
   });
 });

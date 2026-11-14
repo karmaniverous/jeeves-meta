@@ -1,5 +1,6 @@
 /**
- * In-memory cache for listMetas results with TTL and concurrent refresh guard.
+ * In-memory cache for listMetas results with TTL, concurrent refresh guard
+ * and a non-blocking read (`peek`) for health checks.
  *
  * @module cache
  */
@@ -28,6 +29,25 @@ export class MetaCache {
       return this.result;
     }
     return this.refresh(config, watcher);
+  }
+
+  /**
+   * The cached result without waiting on a stale one: when it has expired,
+   * return it anyway and refresh in the background. Only the first load,
+   * with nothing cached yet, is awaited. For callers that must answer fast
+   * (`GET /status`), where a 60 s-old list is good enough.
+   */
+  async peek(
+    config: ServiceConfig,
+    watcher: WatcherClient,
+  ): Promise<MetaListResult> {
+    if (!this.result) return this.refresh(config, watcher);
+    if (Date.now() - this.updatedAt >= TTL_MS) {
+      // A failed background refresh keeps the old result; the next caller
+      // retries it.
+      this.refresh(config, watcher).catch(() => undefined);
+    }
+    return this.result;
   }
 
   /** Force-expire the cache so next get() triggers a refresh. */

@@ -105,7 +105,9 @@ export function createStatusHandlers(
       } | null = null;
 
       try {
-        const metaResult = await cache.get(config, watcher);
+        // Never wait on a refresh of the whole corpus: a health check answers
+        // from the last list, refreshed in the background.
+        const metaResult = await cache.peek(config, watcher);
 
         // Count raw phase states (before retry) for display
         for (const entry of metaResult.entries) {

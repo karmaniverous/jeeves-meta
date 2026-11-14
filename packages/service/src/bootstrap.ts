@@ -14,7 +14,6 @@ import {
   registerConfigHotReloadRuntime,
 } from './configHotReload.js';
 import { loadServiceConfig } from './configLoader.js';
-import { listMetas } from './discovery/index.js';
 import { GatewayExecutor } from './executor/index.js';
 import { cleanupStaleLocks } from './lock.js';
 import { createLogger } from './logger/index.js';
@@ -222,9 +221,10 @@ export async function startService(
     void queue.processQueue(synthesizeFn);
   });
 
-  // Startup: clean stale locks (gap #16)
+  // Startup: clean stale locks (gap #16). Through the cache, so the first
+  // GET /status after start-up answers without a second walk.
   try {
-    const metaResult = await listMetas(config, watcher);
+    const metaResult = await cache.get(config, watcher);
     const metaPaths = metaResult.entries.map((e) => e.node.metaPath);
     cleanupStaleLocks(metaPaths, logger);
   } catch (err) {
