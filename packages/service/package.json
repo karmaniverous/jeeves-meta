@@ -9,7 +9,7 @@
   "dependencies": {
     "@karmaniverous/jeeves": "0.11.0",
     "@karmaniverous/jeeves-meta-core": "^0.4.0",
-    "@karmaniverous/jeeves-meta-sdk": "^0.0.0 || ^0.1.0-0",
+    "@karmaniverous/jeeves-meta-sdk": "^0.1.0",
     "@karmaniverous/jeeves-watcher-sdk": "^0.4.1",
     "commander": "^15",
     "croner": "^10",
