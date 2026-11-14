@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0] - 2026-11-14
+
+### 💼 Other
+
+- Updated core
+- Updated sdk
 ## [0.20.0-2] - 2026-11-14
 
 ### 🚀 Features
@@ -15,6 +21,10 @@ All notable changes to this project will be documented in this file.
 ### 💼 Other
 
 - Updated core
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta v0.20.0-2
 ## [0.20.0-1] - 2026-11-14
 
 ### 🐛 Bug Fixes
