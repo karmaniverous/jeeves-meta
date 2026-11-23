@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-11-23
+
+### ≡ƒÆ╝ Other
+
+- Updated core
 ## [0.1.0] - 2026-11-14
 
 ### ≡ƒÆ╝ Other
@@ -11,6 +16,10 @@ All notable changes to this project will be documented in this file.
 Starting is a state, not an error: GET /status is exempt from the readiness gate and answers 200 with health.serviceState 'starting', dependencies and stats, and null metaCounts/nextPhase without touching the meta cache. Other routes still answer 503 META_NOT_READY. Core's ServiceState and metaHealthSchema gain 'starting' (openapi.json regenerated). Decision 199 amended (Jason, 2026-11-14). Wire departure 'status not ready' is now a readiness change to 200; docs (service and SDK READMEs, SKILL, migration guide) updated. Tests mutation-checked.
 - Updated core
 - Updated core
+
+### ΓÜÖ∩╕Å Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-sdk v0.1.0
 ## [0.1.0-0] - 2026-11-13
 
 ### ≡ƒÆ╝ Other
