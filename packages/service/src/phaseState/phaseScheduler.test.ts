@@ -6,6 +6,7 @@ import type { MetaJson, PhaseState } from '../schema/meta.js';
 import {
   buildPhaseCandidates,
   rankPhaseCandidates,
+  resolvePhaseState,
   selectAllTier2Candidates,
   selectPhaseCandidate,
   selectTier2Candidate,
@@ -259,6 +260,51 @@ describe('selectPhaseCandidate', () => {
     const withWeight = selectPhaseCandidate(metas, 2);
     expect(withWeight).not.toBeNull();
     expect(withWeight!.node.metaPath).toBe('deep/.meta');
+  });
+});
+
+describe('resolvePhaseState', () => {
+  const fresh: PhaseState = {
+    architect: 'fresh',
+    builder: 'fresh',
+    critic: 'fresh',
+  };
+
+  it('keeps a fully-fresh meta fresh below architectEvery', () => {
+    const meta = makeMeta({
+      _builder: 'brief',
+      _synthesisCount: 9,
+      _phaseState: fresh,
+    });
+    expect(resolvePhaseState(meta, 10)).toEqual(fresh);
+  });
+
+  it('forces architect pending at architectEvery even though disk says fresh', () => {
+    const meta = makeMeta({
+      _builder: 'brief',
+      _synthesisCount: 10,
+      _phaseState: fresh,
+    });
+    expect(resolvePhaseState(meta, 10)).toEqual({
+      architect: 'pending',
+      builder: 'stale',
+      critic: 'stale',
+    });
+    // Pure: the persisted state is not mutated.
+    expect(meta._phaseState).toEqual(fresh);
+  });
+
+  it('retries a failed phase instead of forcing architect', () => {
+    const meta = makeMeta({
+      _builder: 'brief',
+      _synthesisCount: 10,
+      _phaseState: { architect: 'fresh', builder: 'failed', critic: 'stale' },
+    });
+    expect(resolvePhaseState(meta, 10)).toEqual({
+      architect: 'fresh',
+      builder: 'pending',
+      critic: 'stale',
+    });
   });
 });
 

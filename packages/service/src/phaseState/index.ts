@@ -10,6 +10,7 @@ export {
   buildPhaseCandidates,
   type PhaseCandidateInput,
   rankPhaseCandidates,
+  resolvePhaseState,
   selectAllTier2Candidates,
   selectPhaseCandidate,
 } from './phaseScheduler.js';
@@ -23,5 +24,4 @@ export {
   isFullyFresh,
   phaseFailed,
   phaseRunning,
-  retryAllFailed,
 } from './phaseTransitions.js';
