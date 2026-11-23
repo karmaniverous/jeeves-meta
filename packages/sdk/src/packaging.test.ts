@@ -38,7 +38,7 @@ describe('packaging', () => {
       '@karmaniverous/jeeves',
       '@karmaniverous/jeeves-meta-core',
     ]);
-    expect(pkg.dependencies['@karmaniverous/jeeves']).toBe('0.11.0');
+    expect(pkg.dependencies['@karmaniverous/jeeves']).toBe('0.11.1');
     expect(pkg.dependencies['@karmaniverous/jeeves']).toBe(
       core.dependencies['@karmaniverous/jeeves'],
     );

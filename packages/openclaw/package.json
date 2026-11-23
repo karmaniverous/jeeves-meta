@@ -4,7 +4,7 @@
     "url": "https://github.com/karmaniverous/jeeves-meta/issues"
   },
   "dependencies": {
-    "@karmaniverous/jeeves": "0.11.0",
+    "@karmaniverous/jeeves": "0.11.1",
     "@karmaniverous/jeeves-meta-core": "^0.4.0",
     "@karmaniverous/jeeves-meta-sdk": "^0.1.0",
     "zod": "^4.6.7"
@@ -16,10 +16,10 @@
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-typescript": "^12.3.1",
     "cross-env": "^10.1.0",
-    "release-it": "^21.1.2",
-    "rollup": "^4.68.3",
+    "release-it": "^21.1.3",
+    "rollup": "^4.68.8",
     "tslib": "^2.9.1",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   },
   "engines": {
     "node": ">=24.22.2"
