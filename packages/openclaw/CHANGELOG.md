@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.1] - 2026-11-23
+
+### 💼 Other
+
+- Updated core
+- Updated sdk
 ## [0.17.0] - 2026-11-14
 
 ### 🚀 Features
@@ -13,6 +19,10 @@ All notable changes to this project will be documented in this file.
 - Updated core
 - Updated core
 - Updated sdk
+
+### ⚙️ Miscellaneous Tasks
+
+- Release @karmaniverous/jeeves-meta-openclaw v0.17.0
 ## [0.17.0-0] - 2026-11-13
 
 ### 🚀 Features
