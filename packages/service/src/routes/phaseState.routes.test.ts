@@ -7,6 +7,10 @@
  * Task #18: Operator-surface integration tests.
  */
 
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -132,6 +136,43 @@ describe('phase-state operator surfaces (Task #18)', () => {
       expect(body.pending).toHaveLength(2);
       expect(body.pending[0].path).toBe('/meta/pending-a');
       expect(body.pending[1].path).toBe('/meta/pending-b');
+    });
+
+    it('pending owedPhase applies Tier 1 like selection and execution (#249)', async () => {
+      const root = mkdtempSync(join(tmpdir(), 'jeeves-queue-249-'));
+      try {
+        const metaDir = join(root, 'mailbox', '.meta');
+        mkdirSync(metaDir, { recursive: true });
+        writeFileSync(
+          join(metaDir, 'meta.json'),
+          JSON.stringify({
+            _builder: 'brief',
+            _content: '# Synthesis',
+            _synthesisCount: 10,
+            _phaseState: {
+              architect: 'fresh',
+              builder: 'fresh',
+              critic: 'fresh',
+            },
+          }),
+        );
+
+        const queue = new SynthesisQueue(makeTestLogger());
+        queue.enqueue(metaDir);
+
+        const deps = makeTestDeps({ queue });
+        app = createTestApp(deps);
+        await app.ready();
+
+        const res = await app.inject({ method: 'GET', url: '/queue' });
+        const body = res.json<{
+          pending: Array<{ owedPhase: string | null }>;
+        }>();
+
+        expect(body.pending[0].owedPhase).toBe('architect');
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
     });
 
     it('POST /queue/clear removes pending entries', async () => {

@@ -32,33 +32,52 @@ export interface PhaseCandidateInput {
 }
 
 /**
- * Build phase candidates from listMetas entries.
+ * Resolve the schedulable phase state of a meta from meta.json alone.
  *
  * Derives phase state, auto-retries failed phases, and applies Tier 1
- * cheap-invalidation (no I/O) for metas with persisted _phaseState.
- * Used by orchestratePhase, queue route, and status route.
+ * cheap invalidation (no I/O): a meta with persisted, fully-fresh
+ * _phaseState owes an architect phase when it has no _builder or its
+ * _synthesisCount has reached architectEvery.
+ *
+ * The scheduler (selection) and the queue processor (execution) must both
+ * use this function, so that a meta selected for a phase runs that phase
+ * (#249).
+ *
+ * @param meta - The meta.json content.
+ * @param architectEvery - Config: run architect every N cycles.
+ * @returns The phase state to schedule and execute against.
+ */
+export function resolvePhaseState(
+  meta: MetaJson,
+  architectEvery: number,
+): PhaseState {
+  const ps = retryAllFailed(derivePhaseState(meta));
+
+  if (!meta._phaseState || !isFullyFresh(ps)) return ps;
+
+  const needsArchitect =
+    !meta._builder || (meta._synthesisCount ?? 0) >= architectEvery;
+
+  return needsArchitect
+    ? { architect: 'pending', builder: 'stale', critic: 'stale' }
+    : ps;
+}
+
+/**
+ * Build phase candidates from listMetas entries.
+ *
+ * Resolves each meta's phase state via {@link resolvePhaseState}.
+ * Used by the scheduler and the queue, status, preview and synthesize routes.
  */
 export function buildPhaseCandidates(
   entries: MetaEntry[],
   architectEvery: number,
 ): PhaseCandidateInput[] {
   return entries.map((entry) => {
-    let ps = retryAllFailed(derivePhaseState(entry.meta));
-
-    // Tier 1 cheap invalidation for metas with persisted _phaseState
-    if (entry.meta._phaseState) {
-      const needsArchitect =
-        !entry.meta._builder ||
-        (entry.meta._synthesisCount ?? 0) >= architectEvery;
-      if (needsArchitect && isFullyFresh(ps)) {
-        ps = { architect: 'pending', builder: 'stale', critic: 'stale' };
-      }
-    }
-
     return {
       node: entry.node,
       meta: entry.meta,
-      phaseState: ps,
+      phaseState: resolvePhaseState(entry.meta, architectEvery),
       actualStaleness: entry.stalenessSeconds,
       locked: entry.locked,
       disabled: entry.disabled,

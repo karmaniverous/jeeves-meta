@@ -39,7 +39,7 @@ Each tick:
 2. Discover all metas via watcher `/walk` endpoint
 3. **Derive phase state** — reconstruct `_phaseState` for legacy metas without it
 4. **Auto-retry** — promote `failed` → `pending` for all failed phases
-5. **Tier 1 cheap invalidation** (no I/O) — for metas with persisted `_phaseState`, check `_synthesisCount >= architectEvery` and bump architect to `pending` if needed
+5. **Tier 1 cheap invalidation** (no I/O) — for metas with persisted `_phaseState`, when all phases are `fresh` and the meta has no `_builder` or `_synthesisCount >= architectEvery`, bump architect to `pending`. This is computed, not persisted: when the queued meta runs, its owed phase is resolved from `meta.json` by the same rule, so the phase the scheduler selected is the phase that runs
 6. **Select phase candidate** — pick the highest-priority owed phase (critic > builder > architect, staleness tiebreak)
 7. **Tier 2 deep invalidation** (with I/O) — for all-fresh metas (up to `tier2ScanLimit`, default 50), walk scope for structure hash changes and check steer/crossRefs changes against archive to detect invalidation
 8. Enqueue the selected phase (if no candidates, increase backoff and return)
@@ -72,4 +72,5 @@ Key behaviors:
 - Duplicate paths in overrides are rejected
 - `POST /queue/clear` removes only override entries
 - Errors are logged but don't block subsequent items
+- A queued meta that owes no phase when it runs is dropped with a `warn` log (`Queued meta owes no phase, dropped`). Selection and execution resolve the owed phase by the same rule, so this signals a bug
 - Legacy `pending` and `state` fields remain for backward compatibility

@@ -22,6 +22,7 @@ import {
   getOwedPhase,
   phaseFailed,
   rankPhaseCandidates,
+  resolvePhaseState,
 } from '../phaseState/index.js';
 import { readMetaJson } from '../readMetaJson.js';
 import type { RouteDeps } from './index.js';
@@ -47,7 +48,8 @@ export function createQueueHandlers(
         try {
           const metaDir = resolveMetaDir(entry.path);
           const meta = await readMetaJson(metaDir);
-          const ps = derivePhaseState(meta);
+          // Same rule as selection and execution (#249).
+          const ps = resolvePhaseState(meta, deps.config.architectEvery);
           return {
             path: entry.path,
             owedPhase: getOwedPhase(ps),
